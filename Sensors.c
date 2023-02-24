@@ -75,27 +75,10 @@ const Interface SPI = {
 //Перечень интерфейсов подключения
 //static const Interface* interfaces[] = {&SINGLE_WIRE, &I2C, &ONE_WIRE, &SPI};
 //Перечень датчиков
-static const SensorType* sensorTypes[] = {
-    &DHT11,
-    &DHT12_SW,
-    &DHT20,
-    &DHT21,
-    &DHT22,
-    &Dallas,
-    &AM2320_SW,
-    &AM2320_I2C,
-    &HTU21x,
-    &AHT10,
-    &SHT30,
-    &GXHT30,
-    &LM75,
-    &HDC1080,
-    &BMP180,
-    &BMP280,
-    &BME280,
-    &BME680,
-    &MAX31855,
-    &MAX6675};
+static const SensorType* sensorTypes[] = {&DHT11,  &DHT12_SW,  &DHT20,      &DHT21,    &DHT22,
+                                          &Dallas, &AM2320_SW, &AM2320_I2C, &HTU21x,   &AHT10,
+                                          &SHT30,  &GXHT30,    &LM75,       &HDC1080,  &BMP180,
+                                          &BMP280, &BME280,    &BME680,     &MAX31855, &MAX6675};
 
 const SensorType* unitemp_sensors_getTypeFromInt(uint8_t index) {
     if(index > SENSOR_TYPES_COUNT) return NULL;
@@ -166,8 +149,7 @@ uint8_t unitemp_gpio_getAviablePortsCount(const Interface* interface, const GPIO
     for(uint8_t i = 0; i < GPIO_ITEMS; i++) {
         //Проверка для one wire
         if(interface == &ONE_WIRE) {
-            if(((gpio_interfaces_list[i] == NULL || gpio_interfaces_list[i] == &ONE_WIRE) &&
-                (i != 12)) || //Почему-то не работает на 17 порте
+            if(((gpio_interfaces_list[i] == NULL || gpio_interfaces_list[i] == &ONE_WIRE)) ||
                (unitemp_gpio_getFromIndex(i) == extraport)) {
                 aviable_ports_count++;
             }
@@ -225,9 +207,7 @@ const GPIO*
     for(uint8_t i = 0; i < GPIO_ITEMS; i++) {
         //Проверка для one wire
         if(interface == &ONE_WIRE) {
-            //Почему-то не работает на 17 порте
-            if(((gpio_interfaces_list[i] == NULL || gpio_interfaces_list[i] == &ONE_WIRE) &&
-                (i != 12)) || //Почему-то не работает на 17 порте
+            if(((gpio_interfaces_list[i] == NULL || gpio_interfaces_list[i] == &ONE_WIRE)) ||
                (unitemp_gpio_getFromIndex(i) == extraport)) {
                 if(aviable_index == index) {
                     return unitemp_gpio_getFromIndex(i);
