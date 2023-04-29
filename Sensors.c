@@ -23,6 +23,7 @@ const GpioPin SWC_10 = {.pin = LL_GPIO_PIN_14, .port = GPIOA};
 const GpioPin SIO_12 = {.pin = LL_GPIO_PIN_13, .port = GPIOA};
 const GpioPin TX_13 = {.pin = LL_GPIO_PIN_6, .port = GPIOB};
 const GpioPin RX_14 = {.pin = LL_GPIO_PIN_7, .port = GPIOB};
+const GpioPin ibutton_gpio = {.pin = LL_GPIO_PIN_14, .port = GPIOB};
 
 //Количество доступных портов ввода/вывода
 #define GPIO_ITEMS (sizeof(GPIOList) / sizeof(GPIO))
@@ -45,7 +46,7 @@ static const GPIO GPIOList[] = {
     {14, "14 (RX)", &RX_14},
     {15, "15 (C1)", &gpio_ext_pc1},
     {16, "16 (C0)", &gpio_ext_pc0},
-    {17, "17 (1W)", &gpio_ibutton}};
+    {17, "17 (1W)", &ibutton_gpio}};
 
 //Список интерфейсов, которые прикреплены к GPIO (определяется индексом)
 //NULL - порт свободен, указатель на интерфейс - порт занят этим интерфейсом
