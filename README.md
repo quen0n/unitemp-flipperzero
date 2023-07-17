@@ -2,7 +2,7 @@
 # Unitemp - Universal temperature sensor reader
 [![GitHub release](https://img.shields.io/github/release/quen0n/unitemp-flipperzero?include_prereleases=&sort=semver&color=blue)](https://github.com/quen0n/unitemp-flipperzero/releases/)
 [![GitHub](https://img.shields.io/github/license/quen0n/unitemp-flipperzero)](https://github.com/quen0n/unitemp-flipperzero/blob/dev/LICENSE.md)
-[![Build](https://github.com/farafonoff/unitemp-flipperzero/actions/workflows/main.yml/badge.svg?branch=main)](https://github.com/quen0n/unitemp-flipperzero/actions/workflows/build_dev.yml)  
+[![Build](https://github.com/farafonoff/unitemp-flipperzero/actions/workflows/main.yml/badge.svg?branch=master)](https://github.com/quen0n/unitemp-flipperzero/actions/workflows/build_dev.yml)  
 [Flipper Zero](https://flipperzero.one/) application for reading temperature, humidity and pressure sensors like a DHT11/22, DS18B20, BMP280, HTU21 and more. 
 ## List of supported sensors
 ![image](https://user-images.githubusercontent.com/10090793/215605424-54b1c08c-e41b-4fb4-b966-dd959507200b.png)
