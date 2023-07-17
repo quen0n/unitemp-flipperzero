@@ -267,7 +267,7 @@ static bool loadFloat(uint8_t* buff, float* val) {
         if(buff[2] != expectedCRC) return false;
         buff += 3;
     }
-    uint32_t tmpVal = load32_be(floatBuff);
+    float tmpVal = load32_be(floatBuff);
     *val = *(float*)&tmpVal;
     return true;
 }
