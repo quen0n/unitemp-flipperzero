@@ -35,7 +35,7 @@ bool unitemp_HDC2080_alloc(Sensor* sensor, char* args) {
 
     //Адреса на шине I2C (7 бит)
     i2c_sensor->minI2CAdr = 0x40 << 1;
-    i2c_sensor->maxI2CAdr = 0x41 << 1;
+    i2c_sensor->maxI2CAdr = 0x40 << 1;
     return true;
 }
 
