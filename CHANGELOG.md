@@ -1,4 +1,6 @@
 # Unitemp changelog
+## Unitemp 1.5
+- Add Cry_dolph_55x52 image (build on latest API) (Thanks jamisonderek)
 ## Unitemp 1.4
 - Remove version value from application manifest
 - Small fix (Thanks for JamesDavid)
