@@ -16,7 +16,7 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 #include "unitemp.h"
-#include "interfaces/SingleWireSensor.h"
+//#include "interfaces/SingleWireSensor.h"
 #include "Sensors.h"
 #include "./views/UnitempViews.h"
 
@@ -178,6 +178,14 @@ bool unitemp_loadSettings(void) {
     return true;
 }
 
+static void view_dispatcher_tick_event_callback(void* context) {
+    UNUSED(context);
+
+    if((app->sensors_ready) && (app->sensors_update)) {
+        unitemp_sensors_updateValues();
+    }
+}
+
 /**
  * @brief Выделение места под переменные плагина
  * 
@@ -187,8 +195,8 @@ bool unitemp_loadSettings(void) {
 static bool unitemp_alloc(void) {
     //Выделение памяти под данные приложения
     app = malloc(sizeof(Unitemp));
-    //Разрешение работы приложения
-    app->processing = true;
+
+    app->sensors_ready = false;
 
     //Открытие хранилища (?)
     app->storage = furi_record_open(RECORD_STORAGE);
@@ -202,6 +210,7 @@ static bool unitemp_alloc(void) {
     app->settings.pressure_unit = UT_PRESSURE_MM_HG; //Единица измерения давления - мм рт. ст.
 
     app->gui = furi_record_open(RECORD_GUI);
+
     //Диспетчер окон
     app->view_dispatcher = view_dispatcher_alloc();
 
@@ -222,6 +231,9 @@ static bool unitemp_alloc(void) {
     //Всплывающее окно
     app->popup = popup_alloc();
     view_dispatcher_add_view(app->view_dispatcher, UnitempViewPopup, popup_get_view(app->popup));
+
+    view_dispatcher_set_tick_event_callback(
+        app->view_dispatcher, view_dispatcher_tick_event_callback, furi_ms_to_ticks(100));
 
     view_dispatcher_attach_to_gui(app->view_dispatcher, app->gui, ViewDispatcherTypeFullscreen);
 
@@ -279,31 +291,35 @@ int32_t unitemp_app() {
 
     //Загрузка настроек из SD-карты
     unitemp_loadSettings();
+
     //Применение настроек
     if(app->settings.infinityBacklight == true) {
         //Постоянное свечение подсветки
         notification_message(app->notifications, &sequence_display_backlight_enforce_on);
     }
+
     app->settings.lastOTGState = furi_hal_power_is_otg_enabled();
+
     //Загрузка датчиков из SD-карты
     unitemp_sensors_load();
+
     //Инициализация датчиков
     unitemp_sensors_init();
 
     unitemp_General_switch();
 
-    while(app->processing) {
-        if(app->sensors_ready) unitemp_sensors_updateValues();
-        furi_delay_ms(100);
-    }
+    view_dispatcher_run(app->view_dispatcher);
 
     //Деинициализация датчиков
     unitemp_sensors_deInit();
+
     //Автоматическое управление подсветкой
     if(app->settings.infinityBacklight == true)
         notification_message(app->notifications, &sequence_display_backlight_enforce_auto);
+
     //Освобождение памяти
     unitemp_free();
+
     //Выход
     return 0;
 }
