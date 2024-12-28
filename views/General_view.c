@@ -438,11 +438,11 @@ static void _draw_view_sensorsCarousel(Canvas* canvas) {
 static void _draw_callback(Canvas* canvas, void* _model) {
     UNUSED(_model);
 
-    app->sensors_ready = true;
+    app->sensors_update = true;
 
     uint8_t sensors_count = unitemp_sensors_getActiveCount();
 
-    if(generalview_sensor_index + 1 > sensors_count) generalview_sensor_index = 0;
+    if(generalview_sensor_index >= sensors_count) generalview_sensor_index = 0;
 
     if(sensors_count == 0) {
         current_view = G_NO_SENSORS_VIEW;
@@ -462,14 +462,14 @@ static bool _input_callback(InputEvent* event, void* context) {
     if(event->key == InputKeyOk && event->type == InputTypeShort) {
         //Меню добавления датчика при их отсутствии
         if(current_view == G_NO_SENSORS_VIEW) {
-            app->sensors_ready = false;
+            app->sensors_update = false;
             unitemp_SensorsList_switch();
         } else if(current_view == G_LIST_VIEW) {
             //Переход в главное меню при выключенном селекторе
-            app->sensors_ready = false;
+            app->sensors_update = false;
             unitemp_MainMenu_switch();
         } else if(current_view == G_CAROUSEL_VIEW) {
-            app->sensors_ready = false;
+            app->sensors_update = false;
             unitemp_SensorActions_switch(unitemp_sensor_getActive(generalview_sensor_index));
         }
     }
@@ -553,7 +553,7 @@ static bool _input_callback(InputEvent* event, void* context) {
         //Выход из приложения при карусели или отсутствии датчиков
         if(current_view == G_NO_SENSORS_VIEW ||
            ((current_view == G_CAROUSEL_VIEW) && (carousel_info_selector == CAROUSEL_VALUES))) {
-            app->processing = false;
+            view_dispatcher_stop(app->view_dispatcher);
             return true;
         }
         //Переключение селектора вида карусели
@@ -585,7 +585,6 @@ void unitemp_General_alloc(void) {
 }
 
 void unitemp_General_switch(void) {
-    app->sensors_ready = true;
     view_dispatcher_switch_to_view(app->view_dispatcher, UnitempViewGeneral);
 }
 
