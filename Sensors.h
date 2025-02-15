@@ -141,7 +141,7 @@ extern const Interface SPI; //SPI_1 (MOSI - 2, MISO - 3, CS - 4, SCK - 5)
 /* ============================= Датчик(и) ============================= */
 /**
  * @brief Выделение памяти под датчик
- * 
+ *
  * @param name Имя датчика
  * @param type Тип датчика
  * @param args Указатель на строку с парамерами датчика
@@ -164,7 +164,7 @@ UnitempStatus unitemp_sensor_updateData(Sensor* sensor);
 
 /**
  * @brief Проверка наличия датчика в памяти
- * 
+ *
  * @param sensor Указатель на датчик
  * @return Истина если этот датчик уже загружен, ложь если это новый датчик
  */
@@ -172,7 +172,7 @@ bool unitemp_sensor_isContains(Sensor* sensor);
 
 /**
  * @brief Получить датчик из списка по индексу
- * 
+ *
  * @param index Индекс датчика (0 - unitemp_sensors_getCount())
  * @return Указатель на датчик при успехе, NULL при неудаче
  */
@@ -197,7 +197,7 @@ bool unitemp_sensors_save(void);
 
 /**
  * @brief Удаление датчика
- * 
+ *
  * @param sensor Указатель на датчик
  */
 void unitemp_sensor_delete(Sensor* sensor);
@@ -251,13 +251,13 @@ uint8_t unitemp_sensors_getTypesCount(void);
 /**
  * @brief Получить тип сенсора по его индексу
  * @param index Индекс типа датчика (от 0 до SENSOR_TYPES_COUNT)
- * @return const SensorType* 
+ * @return const SensorType*
  */
 const SensorType* unitemp_sensors_getTypeFromInt(uint8_t index);
 
 /**
  * @brief Преобразовать строчное название датчка в указатель
- * 
+ *
  * @param str Имя датчика в виде строки
  * @return Указатель на тип датчика при успехе, иначе NULL
  */
@@ -265,14 +265,14 @@ const SensorType* unitemp_sensors_getTypeFromStr(char* str);
 
 /**
  * @brief Получить количество активных датчиков
- * 
+ *
  * @return Количество активных датчиков
  */
 uint8_t unitemp_sensors_getActiveCount(void);
 
 /* ============================= GPIO ============================= */
 /**
- * @brief Конвертация номера порта на корпусе FZ в GPIO 
+ * @brief Конвертация номера порта на корпусе FZ в GPIO
  * @param name Номер порта на корпусе FZ
  * @return Указатель на GPIO при успехе, NULL при ошибке
  */
@@ -303,7 +303,7 @@ void unitemp_gpio_unlock(const GPIO* gpio);
  */
 uint8_t unitemp_gpio_getAviablePortsCount(const Interface* interface, const GPIO* extraport);
 /**
- * @brief Получить указатель на доступный для интерфейса порт по индексу 
+ * @brief Получить указатель на доступный для интерфейса порт по индексу
  * @param interface Указатель на интерфейс
  * @param index Номер порта (от 0 до unitemp_gpio_getAviablePortsCount())
  * @param extraport Указатель на дополнительный порт, который будет принудительно считаться доступным. Можно указать NULL если не требуется
@@ -324,6 +324,7 @@ const GPIO*
 #include "./sensors/AM2320.h"
 #include "./sensors/DHT20.h"
 #include "./sensors/SHT30.h"
+#include "./sensors/SHTC3.h"
 #include "./sensors/BMP180.h"
 #include "./sensors/HTU21x.h"
 #include "./sensors/HDC1080.h"
