@@ -379,8 +379,8 @@ static void _draw_carousel_info(Canvas* canvas) {
     if(unitemp_sensor_getActive(generalview_sensor_index)->type->interface == &I2C) {
         canvas_set_font(canvas, FontPrimary);
         canvas_draw_str(canvas, 10, 35, "I2C addr:");
-        canvas_draw_str(canvas, 10, 46, "SDA pin:");
-        canvas_draw_str(canvas, 10, 58, "SCL pin:");
+        canvas_draw_str(canvas, 10, 46, "SCL pin:");
+        canvas_draw_str(canvas, 10, 58, "SDA pin:");
         canvas_set_font(canvas, FontSecondary);
         canvas_draw_str(
             canvas, 41, 23, unitemp_sensor_getActive(generalview_sensor_index)->type->typename);
