@@ -21,41 +21,27 @@
 #include "MAX31725.h"
 #include "../interfaces/I2CSensor.h"
 
-// I2C registry
+// I2C registers
 #define MAX31725_REG_TEMP       0x00
 #define MAX31725_REG_CONFIG     0x01
 
-// Konfigurační bity registru CONFIG (Tabulka 5)
-// D7: ONE_SHOT - jednorázová konverze při shutdown
-#define MAX31725_CONFIG_ONE_SHOT         (1 << 7)
+// Configuration bits (datasheet Table 5)
 
-// D6: TIMEOUT - disable (1) / enable (0) I2C timeout
+#define MAX31725_CONFIG_ONE_SHOT         (1 << 7)
 #define MAX31725_CONFIG_TIMEOUT_DISABLE  (1 << 6)
 #define MAX31725_CONFIG_TIMEOUT_ENABLE   (0 << 6)
-
-// D5: DATA_FORMAT - extended (1) / normal (0) formát
 #define MAX31725_CONFIG_EXTENDED_FORMAT  (1 << 5)
 #define MAX31725_CONFIG_NORMAL_FORMAT    (0 << 5)
-
-// D4–D3: FAULT_QUEUE [1:0] - počet chyb pro aktivaci OS
 #define MAX31725_CONFIG_FAULTQUEUE_1     (0 << 3)
 #define MAX31725_CONFIG_FAULTQUEUE_2     (1 << 3)
 #define MAX31725_CONFIG_FAULTQUEUE_4     (2 << 3)
 #define MAX31725_CONFIG_FAULTQUEUE_6     (3 << 3)
-
-// D2: OS_POLARITY - active high (1) / active low (0)
 #define MAX31725_CONFIG_OS_POL_HIGH      (1 << 2)
 #define MAX31725_CONFIG_OS_POL_LOW       (0 << 2)
-
-// D1: COMPARATOR_MODE (0) / INTERRUPT_MODE (1)
 #define MAX31725_CONFIG_COMPARATOR_MODE  (0 << 1)
 #define MAX31725_CONFIG_INTERRUPT_MODE   (1 << 1)
-
-// D0: SHUTDOWN - shutdown (1) / active (0)
 #define MAX31725_CONFIG_SHUTDOWN         (1 << 0)
 
-
-// Definice senzoru
 const SensorType MAX31725 = {
     .typename        = "MAX31725",
     .interface       = &I2C,
@@ -71,7 +57,7 @@ const SensorType MAX31725 = {
 bool unitemp_MAX31725_alloc(Sensor* sensor, char* args) {
     UNUSED(args);
     I2CSensor* i2c_sensor = (I2CSensor*)sensor->instance;
-    // Adresní rozsah 0x48–0x4F (nastavitelné piny A0–A2)
+    // I2C address range: 0x48–0x4F
     i2c_sensor->minI2CAdr = (0x48 << 1);
     i2c_sensor->maxI2CAdr = (0x4F << 1);
     return true;
@@ -84,7 +70,8 @@ bool unitemp_MAX31725_free(Sensor* sensor) {
 
 bool unitemp_MAX31725_init(Sensor* sensor) {
     I2CSensor* i2c_sensor = (I2CSensor*)sensor->instance;
-    // Inicializace: komparator mód, OS nízká aktivita, normální formát, timeout
+    // Default configuration: comparator mode, OS low, 1-fault queue,
+    // normal format, timeout enabled
     uint8_t cfg = MAX31725_CONFIG_COMPARATOR_MODE |
                   MAX31725_CONFIG_OS_POL_HIGH   |
                   MAX31725_CONFIG_FAULTQUEUE_1  |
