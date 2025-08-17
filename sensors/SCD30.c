@@ -246,7 +246,7 @@ static bool readMeasurement(Sensor* sensor) {
     uint8_t* bytes = buff;
     I2CSensor* i2c_sensor = (I2CSensor*)sensor->instance;
     if(!unitemp_i2c_readArray(i2c_sensor, respSize, bytes)) {
-        FURI_LOG_E(APP_NAME, "Error while read measures");
+        FURI_LOG_E(APP_NAME, "Error while read measures from SCD30");
         return false;
     }
 

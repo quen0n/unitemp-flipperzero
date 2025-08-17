@@ -25,7 +25,7 @@ inline static uint32_t load32(uint8_t *b) {
     return x;
 }
 
-#if BYTE_ORDER == BIG_ENDIAN
+#if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
 #define htobe16(x) (x)
 #define htobe32(x) (x)
 #define htole16(x) __builtin_bswap16 (x)
@@ -34,7 +34,7 @@ inline static uint32_t load32(uint8_t *b) {
 #define be32toh(x) (x)
 #define le16toh(x) __builtin_bswap16 (x)
 #define le32toh(x) __builtin_bswap32 (x)
-#elif BYTE_ORDER == LITTLE_ENDIAN
+#elif __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
 #define htobe16(x) __builtin_bswap16 (x)
 #define htobe32(x) __builtin_bswap32 (x)
 #define htole16(x) (x)

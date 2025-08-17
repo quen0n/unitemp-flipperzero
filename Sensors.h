@@ -25,6 +25,7 @@
 #define UT_HUMIDITY 0b00000010
 #define UT_PRESSURE 0b00000100
 #define UT_CO2 0b00001000
+#define UT_CALIBRATION 0b10000000
 
 //Статусы опроса датчика
 typedef enum {
@@ -77,6 +78,8 @@ typedef bool(SensorDeinitializer)(Sensor* sensor);
  */
 typedef UnitempStatus(SensorUpdater)(Sensor* sensor);
 
+typedef UnitempStatus(Calibrate)(Sensor*,float);
+
 //Типы подключения датчиков
 typedef struct Interface {
     //Имя интерфейса
@@ -112,6 +115,11 @@ typedef struct {
     //Функция обновления значения датчка
     SensorUpdater* updater;
 } SensorType;
+
+typedef struct {
+    SensorType super;
+    Calibrate* calibrate;
+} SensorTypeWithCalibration;
 
 //Датчик
 typedef struct Sensor {

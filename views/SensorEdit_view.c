@@ -40,6 +40,8 @@ static VariableItem* onewire_type_item;
 //Элемент списка - смещение температуры
 VariableItem* temp_offset_item;
 
+VariableItem* calibration_item;
+
 #define OFFSET_BUFF_SIZE 5
 //Буффер для текста смещения
 static char* offset_buff;
@@ -228,6 +230,13 @@ static void _name_change_callback(VariableItem* item) {
     variable_item_set_current_value_index(item, 0);
     unitemp_SensorNameEdit_switch(editable_sensor);
 }
+
+static void _calibrate_callback(VariableItem* item) {
+    variable_item_set_current_value_index(item, 0);
+    const SensorTypeWithCalibration* extSensor = (const SensorTypeWithCalibration*)editable_sensor->type;
+    extSensor->calibrate(editable_sensor, 450);
+}
+
 /**
  * @brief Функция обработки изменения значения адреса датчика one wire
  * 
@@ -368,6 +377,12 @@ void unitemp_SensorEdit_switch(Sensor* sensor) {
             variable_item_set_current_value_text(onewire_addr_item, app->buff);
         }
     }
+
+    // Has calibration
+    if((sensor->type->datatype & UT_CALIBRATION) == UT_CALIBRATION) {
+        calibration_item = variable_item_list_add(variable_item_list, "Calibrate", 1, _calibrate_callback, NULL);
+    }
+
     variable_item_list_add(variable_item_list, "Save", 1, NULL, NULL);
     view_dispatcher_switch_to_view(app->view_dispatcher, VIEW_ID);
 }

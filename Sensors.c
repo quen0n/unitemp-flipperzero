@@ -80,7 +80,7 @@ static const SensorType* sensorTypes[] = {&DHT11,  &DHT12_SW,  &DHT20,      &DHT
                                           &Dallas, &AM2320_SW, &AM2320_I2C, &HTU21x,   &AHT10,
                                           &SHT30,  &GXHT30,    &LM75,       &HDC1080,  &BMP180,
                                           &BMP280, &BME280,    &BME680,     &MAX31855, &MAX6675,
-                                          &SCD30, &SCD40};
+                                          &SCD30, &SCD40.super};
 
 const SensorType* unitemp_sensors_getTypeFromInt(uint8_t index) {
     if(index > SENSOR_TYPES_COUNT) return NULL;
@@ -489,14 +489,14 @@ Sensor* unitemp_sensor_alloc(char* name, const SensorType* type, char* args) {
     Sensor* sensor = malloc(sizeof(Sensor));
     if(sensor == NULL) {
         FURI_LOG_E(APP_NAME, "Sensor %s allocation error", name);
-        return false;
+        return NULL;
     }
 
     //Выделение памяти под имя
     sensor->name = malloc(11);
     if(sensor->name == NULL) {
         FURI_LOG_E(APP_NAME, "Sensor %s name allocation error", name);
-        return false;
+        return NULL;
     }
     //Запись имени датчка
     strcpy(sensor->name, name);

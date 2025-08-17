@@ -123,7 +123,7 @@ static void _draw_pressure(Canvas* canvas, Sensor* sensor) {
     canvas_draw_icon(canvas, x + 3, y + 4, &I_pressure_7x13);
 
     int16_t press_int = sensor->pressure;
-    int8_t press_dec = (int16_t)(sensor->temp * 10) % 10;
+    int8_t press_dec = (int16_t)(sensor->pressure * 10) % 10;
 
     //Целая часть давления
     snprintf(app->buff, BUFF_SIZE, "%d", press_int);
@@ -298,7 +298,7 @@ static void _draw_carousel_values(Canvas* canvas) {
     static const uint8_t temp_positions[3][2] = {{37, 23}, {37, 16}, {9, 16}};
     static const uint8_t hum_positions[2][2] = {{37, 38}, {65, 16}};
     //Селектор значений для отображения
-    switch(unitemp_sensor_getActive(generalview_sensor_index)->type->datatype) {
+    switch(unitemp_sensor_getActive(generalview_sensor_index)->type->datatype & (UT_TEMPERATURE | UT_HUMIDITY | UT_PRESSURE | UT_CO2)) {
     case UT_DATA_TYPE_TEMP:
         _draw_temperature(
             canvas,
@@ -314,8 +314,7 @@ static void _draw_carousel_values(Canvas* canvas) {
             temp_positions[1][0],
             temp_positions[1][1],
             ColorWhite);
-        _draw_humidity(
-            canvas, unitemp_sensor_getActive(generalview_sensor_index), hum_positions[0]);
+        _draw_humidity(canvas, unitemp_sensor_getActive(generalview_sensor_index), hum_positions[0]);
         break;
     case UT_DATA_TYPE_TEMP_PRESS:
         _draw_temperature(
@@ -333,8 +332,7 @@ static void _draw_carousel_values(Canvas* canvas) {
             temp_positions[2][0],
             temp_positions[2][1],
             ColorWhite);
-        _draw_humidity(
-            canvas, unitemp_sensor_getActive(generalview_sensor_index), hum_positions[1]);
+        _draw_humidity(canvas, unitemp_sensor_getActive(generalview_sensor_index), hum_positions[1]);
         _draw_pressure(canvas, unitemp_sensor_getActive(generalview_sensor_index));
         break;
     case UT_DATA_TYPE_TEMP_HUM_CO2:
@@ -479,11 +477,11 @@ static void _draw_view_sensorsCarousel(Canvas* canvas) {
 static void _draw_callback(Canvas* canvas, void* _model) {
     UNUSED(_model);
 
-    app->sensors_ready = true;
+    app->sensors_update = true;
 
     uint8_t sensors_count = unitemp_sensors_getActiveCount();
 
-    if(generalview_sensor_index + 1 > sensors_count) generalview_sensor_index = 0;
+    if(generalview_sensor_index >= sensors_count) generalview_sensor_index = 0;
 
     if(sensors_count == 0) {
         current_view = G_NO_SENSORS_VIEW;
@@ -503,14 +501,14 @@ static bool _input_callback(InputEvent* event, void* context) {
     if(event->key == InputKeyOk && event->type == InputTypeShort) {
         //Меню добавления датчика при их отсутствии
         if(current_view == G_NO_SENSORS_VIEW) {
-            app->sensors_ready = false;
+            app->sensors_update = false;
             unitemp_SensorsList_switch();
         } else if(current_view == G_LIST_VIEW) {
             //Переход в главное меню при выключенном селекторе
-            app->sensors_ready = false;
+            app->sensors_update = false;
             unitemp_MainMenu_switch();
         } else if(current_view == G_CAROUSEL_VIEW) {
-            app->sensors_ready = false;
+            app->sensors_update = false;
             unitemp_SensorActions_switch(unitemp_sensor_getActive(generalview_sensor_index));
         }
     }
@@ -594,7 +592,7 @@ static bool _input_callback(InputEvent* event, void* context) {
         //Выход из приложения при карусели или отсутствии датчиков
         if(current_view == G_NO_SENSORS_VIEW ||
            ((current_view == G_CAROUSEL_VIEW) && (carousel_info_selector == CAROUSEL_VALUES))) {
-            app->processing = false;
+            view_dispatcher_stop(app->view_dispatcher);
             return true;
         }
         //Переключение селектора вида карусели
@@ -626,7 +624,6 @@ void unitemp_General_alloc(void) {
 }
 
 void unitemp_General_switch(void) {
-    app->sensors_ready = true;
     view_dispatcher_switch_to_view(app->view_dispatcher, UnitempViewGeneral);
 }
 
