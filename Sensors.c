@@ -561,6 +561,8 @@ void unitemp_sensors_free(void) {
 bool unitemp_sensors_init(void) {
     bool result = true;
 
+    app->sensors_ready = false;
+
     //Перебор датчиков из списка
     for(uint8_t i = 0; i < unitemp_sensors_getCount(); i++) {
         //Включение 5V если на порту 1 FZ его нет
@@ -578,12 +580,15 @@ bool unitemp_sensors_init(void) {
         }
         FURI_LOG_I(APP_NAME, "Sensor %s successfully initialized", app->sensors[i]->name);
     }
+
     app->sensors_ready = true;
+
     return result;
 }
 
 bool unitemp_sensors_deInit(void) {
     bool result = true;
+
     //Выключение 5 В если до этого оно не было включено
     if(app->settings.lastOTGState != true) {
         furi_hal_power_disable_otg();
@@ -600,11 +605,14 @@ bool unitemp_sensors_deInit(void) {
             result = false;
         }
     }
+
     return result;
 }
 
 UnitempStatus unitemp_sensor_updateData(Sensor* sensor) {
-    if(sensor == NULL) return UT_SENSORSTATUS_ERROR;
+    if(sensor == NULL) {
+        return UT_SENSORSTATUS_ERROR;
+    }
 
     //Проверка на допустимость опроса датчика
     if(furi_get_tick() - sensor->lastPollingTime < sensor->type->pollingInterval) {
@@ -651,6 +659,7 @@ UnitempStatus unitemp_sensor_updateData(Sensor* sensor) {
             unitemp_pascalToHPa(sensor);
         }
     }
+
     return sensor->status;
 }
 
