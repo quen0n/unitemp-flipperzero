@@ -1,6 +1,6 @@
 /*
     Unitemp - Universal temperature reader
-    Copyright (C) 2022-2023  Victor Nikitchuk (https://github.com/quen0n)
+    Copyright (C) 2022-2026  Victor Nikitchuk (https://github.com/quen0n)
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -67,19 +67,19 @@ UnitempStatus unitemp_MAX31855_update(Sensor* sensor) {
 
     if(raw == 0xFFFFFFFF || raw == 0) return UT_SENSORSTATUS_TIMEOUT;
 
-    //Определение состояния термопары
+    //Determining the status of the thermocouple
     uint8_t state = raw & 0b111;
-    //Обрыв
+    //Break
     if(state == 0x01) {
         UNITEMP_DEBUG("%s has thermocouple open circuit", sensor->name);
         return UT_SENSORSTATUS_ERROR;
     }
-    //Короткое замыкание к земле
+    //Short circuit to ground
     if(state == 0x02) {
         UNITEMP_DEBUG("%s has thermocouple short to GND", sensor->name);
         return UT_SENSORSTATUS_ERROR;
     }
-    //Короткое замыкание к питанию
+    //Short circuit to power
     if(state == 0x04) {
         UNITEMP_DEBUG("%s has thermocouple short to VCC", sensor->name);
         return UT_SENSORSTATUS_ERROR;

@@ -1,6 +1,6 @@
 /*
     Unitemp - Universal temperature reader
-    Copyright (C) 2022-2023  Victor Nikitchuk (https://github.com/quen0n)
+    Copyright (C) 2022-2026  Victor Nikitchuk (https://github.com/quen0n)
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -15,7 +15,7 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
-//Использован код Дмитрия Погребняка: https://aterlux.ru/article/1wire
+//Code used by Dmitry Pogrebnyak: https://aterlux.ru/article/1wire
 
 #include "OneWireSensor.h"
 #include <furi.h>
@@ -34,22 +34,22 @@ const SensorType Dallas = {
     .deinitializer = unitemp_onewire_sensor_deinit,
     .updater = unitemp_onewire_sensor_update};
 
-// Переменные для хранения промежуточного результата сканирования шины
-// найденный восьмибайтовый адрес
+//Variables for storing the intermediate result of a bus scan
+//found eight-byte address
 static uint8_t onewire_enum[8] = {0};
-// последний нулевой бит, где была неоднозначность (нумеруя с единицы)
+//the last zero bit where there was ambiguity (numbering from one)
 static uint8_t onewire_enum_fork_bit = 65;
 
-OneWireBus* uintemp_onewire_bus_alloc(const GPIO* gpio) {
+OneWireBus* unitemp_onewire_bus_alloc(const GPIO* gpio) {
     if(gpio == NULL) {
         return NULL;
     }
 
-    //Проверка на наличие шины на этом порте
+    //Checking for bus presence on this port
     for(uint8_t i = 0; i < unitemp_sensors_getActiveCount(); i++) {
         if(unitemp_sensor_getActive(i)->type->interface == &ONE_WIRE &&
            ((OneWireSensor*)unitemp_sensor_getActive(i)->instance)->bus->gpio->num == gpio->num) {
-            //Если шина на этом порту уже есть, то возврат указателя на шину
+            //If there is already a bus on this port, then return a pointer to the bus
             return ((OneWireSensor*)unitemp_sensor_getActive(i)->instance)->bus;
         }
     }
@@ -66,18 +66,18 @@ OneWireBus* uintemp_onewire_bus_alloc(const GPIO* gpio) {
 bool unitemp_onewire_bus_init(OneWireBus* bus) {
     if(bus == NULL) return false;
     bus->device_count++;
-    //Выход если шина уже была инициализирована
+    //Output if the bus has already been initialized
     if(bus->device_count > 1) return true;
 
     unitemp_gpio_lock(bus->gpio, &ONE_WIRE);
-    //Высокий уровень по умолчанию
+    //High default level
     furi_hal_gpio_write(bus->gpio->pin, true);
-    //Режим работы - OpenDrain, подтяжка включается на всякий случай
+    //Operating mode - OpenDrain, the lift is turned on just in case
     furi_hal_gpio_init(
-        bus->gpio->pin, //Порт FZ
-        GpioModeOutputOpenDrain, //Режим работы - открытый сток
-        GpioPullUp, //Принудительная подтяжка линии данных к питанию
-        GpioSpeedVeryHigh); //Скорость работы - максимальная
+        bus->gpio->pin, //Port FZ
+        GpioModeOutputOpenDrain, //Operating mode - open drain
+        GpioPullUp, //Forced pull-up of the data line to power
+        GpioSpeedVeryHigh); //Operating speed - maximum
 
     return true;
 }
@@ -87,13 +87,13 @@ bool unitemp_onewire_bus_deinit(OneWireBus* bus) {
     if(bus->device_count <= 0) {
         bus->device_count = 0;
         unitemp_gpio_unlock(bus->gpio);
-        //Режим работы - аналог, подтяжка выключена
+        //Operating mode: analogue, lifting off
         furi_hal_gpio_init(
-            bus->gpio->pin, //Порт FZ
-            GpioModeAnalog, //Режим работы - аналог
-            GpioPullNo, //Подтяжка выключена
-            GpioSpeedLow); //Скорость работы - минимальная
-        //Низкий уровень по умолчанию
+            bus->gpio->pin, //Port FZ
+            GpioModeAnalog, //Operating mode - analog
+            GpioPullNo, //Pull-up is turned off
+            GpioSpeedLow); //Operating speed - minimum
+        //Low level by default
         furi_hal_gpio_write(bus->gpio->pin, false);
         return true;
     } else {
@@ -106,10 +106,10 @@ bool unitemp_onewire_bus_start(OneWireBus* bus) {
 
     furi_hal_gpio_write(bus->gpio->pin, true);
 
-    //Ожидание подъёма шины
+    //Waiting for the tire to rise
     uint32_t t = furi_get_tick();
     while(!furi_hal_gpio_read(bus->gpio->pin)) {
-        //Выход если шина не поднялась
+        //Exit if the tire does not rise
         if(furi_get_tick() - t > 10) return false;
     }
 
@@ -120,7 +120,7 @@ bool unitemp_onewire_bus_start(OneWireBus* bus) {
 }
 
 void unitemp_onewire_bus_send_bit(OneWireBus* bus, bool state) {
-    //Необходимо для стабильной работы при пассивном питании
+    //Necessary for stable operation with passive power supply
     if(bus->powerMode == PWR_PASSIVE) furi_delay_us(100);
 
     if(state) {
@@ -133,10 +133,10 @@ void unitemp_onewire_bus_send_bit(OneWireBus* bus, bool state) {
         furi_hal_gpio_write(bus->gpio->pin, false);
         furi_delay_us(90);
         furi_hal_gpio_write(bus->gpio->pin, true);
-        //Ожидание подъёма шины
+        //Waiting for the tire to rise
         uint32_t t = furi_get_tick();
         while(!furi_hal_gpio_read(bus->gpio->pin)) {
-            //Выход если шина не поднялась
+            //Exit if the tire does not rise
             if(furi_get_tick() - t > 10) return;
         }
     }
@@ -157,11 +157,11 @@ void unitemp_onewire_bus_send_byteArray(OneWireBus* bus, uint8_t* data, uint8_t 
 bool unitemp_onewire_bus_read_bit(OneWireBus* bus) {
     furi_delay_ms(1);
     furi_hal_gpio_write(bus->gpio->pin, false);
-    furi_delay_us(2); // Длительность низкого уровня, минимум 1 мкс
+    furi_delay_us(2); //Low level duration, minimum 1 µs
     furi_hal_gpio_write(bus->gpio->pin, true);
-    furi_delay_us(8); // Пауза до момента сэмплирования, всего не более 15 мкс
+    furi_delay_us(8); //Pause until sampling, no more than 15 μs in total
     bool r = furi_hal_gpio_read(bus->gpio->pin);
-    furi_delay_us(80); // Ожидание до следующего тайм-слота, минимум 60 мкс с начала низкого уровня
+    furi_delay_us(80); //Wait until next time slot, minimum 60 µs from start low
     return r;
 }
 
@@ -212,7 +212,7 @@ char* unitemp_onewire_sensor_getModel(Sensor* sensor) {
 
 bool unitemp_onewire_sensor_readID(OneWireSensor* instance) {
     if(!unitemp_onewire_bus_start(instance->bus)) return false;
-    unitemp_onewire_bus_send_byte(instance->bus, 0x33); // Чтение ПЗУ
+    unitemp_onewire_bus_send_byte(instance->bus, 0x33); //Reading ROM
     unitemp_onewire_bus_read_byteArray(instance->bus, instance->deviceID, 8);
     if(!unitemp_onewire_CRC_check(instance->deviceID, 8)) {
         memset(instance->deviceID, 0, 8);
@@ -226,14 +226,14 @@ void unitemp_onewire_bus_enum_init(void) {
     for(uint8_t p = 0; p < 8; p++) {
         onewire_enum[p] = 0;
     }
-    onewire_enum_fork_bit = 65; // правее правого
+    onewire_enum_fork_bit = 65; //to the right of the right
 }
 
 uint8_t* unitemp_onewire_bus_enum_next(OneWireBus* bus) {
     furi_delay_ms(10);
-    if(!onewire_enum_fork_bit) { // Если на предыдущем шаге уже не было разногласий
+    if(!onewire_enum_fork_bit) { //If there were no disagreements at the previous step
         UNITEMP_DEBUG("All devices on wire %d is found", unitemp_gpio_toInt(bus->gpio));
-        return 0; // то просто выходим ничего не возвращая
+        return 0; //then we just leave without returning anything
     }
     if(!unitemp_onewire_bus_start(bus)) {
         UNITEMP_DEBUG("Wire %d is empty", unitemp_gpio_toInt(bus->gpio));
@@ -250,26 +250,27 @@ uint8_t* unitemp_onewire_bus_enum_next(OneWireBus* bus) {
     for(;;) {
         uint8_t not0 = unitemp_onewire_bus_read_bit(bus);
         uint8_t not1 = unitemp_onewire_bus_read_bit(bus);
-        if(!not0) { // Если присутствует в адресах бит ноль
-            if(!not1) { // Но также присустствует бит 1 (вилка)
+        if(!not0) { //If bit zero is present in the addresses
+            if(!not1) { //But bit 1 (fork) is also present
                 if(p <
-                   onewire_enum_fork_bit) { // Если мы левее прошлого правого конфликтного бита,
+                   onewire_enum_fork_bit) { //If we are to the left of the past right conflict bit,
                     if(prev & 1) {
-                        next |= 0x80; // то копируем значение бита из прошлого прохода
+                        next |= 0x80; //then copy the bit value from the previous pass
                     } else {
-                        newfork = p; // если ноль, то запомним конфликтное место
+                        newfork = p; //if zero, then remember the conflict location
                     }
                 } else if(p == onewire_enum_fork_bit) {
                     next |=
-                        0x80; // если на этом месте в прошлый раз был правый конфликт с нулём, выведем 1
+                        0x80; //if at this place last time there was a right conflict with zero, print 1
                 } else {
-                    newfork = p; // правее - передаём ноль и запоминаем конфликтное место
+                    newfork =
+                        p; //to the right - we transmit zero and remember the conflict location
                 }
-            } // в противном случае идём, выбирая ноль в адресе
+            } //otherwise we go, choosing zero in the address
         } else {
-            if(!not1) { // Присутствует единица
+            if(!not1) { //Unit present
                 next |= 0x80;
-            } else { // Нет ни нулей ни единиц - ошибочная ситуация
+            } else { //There are no zeros or ones - an erroneous situation
 
                 UNITEMP_DEBUG("Wrong wire %d situation", unitemp_gpio_toInt(bus->gpio));
                 return 0;
@@ -307,7 +308,7 @@ bool unitemp_onewire_sensor_alloc(Sensor* sensor, char* args) {
         return false;
     }
     sensor->instance = instance;
-    //Очистка адреса
+    //Address clearing
     memset(instance->deviceID, 0, 8);
 
     int gpio, addr_0, addr_1, addr_2, addr_3, addr_4, addr_5, addr_6, addr_7;
@@ -334,7 +335,7 @@ bool unitemp_onewire_sensor_alloc(Sensor* sensor, char* args) {
 
     instance->familyCode = instance->deviceID[0];
 
-    instance->bus = uintemp_onewire_bus_alloc(unitemp_gpio_getFromInt(gpio));
+    instance->bus = unitemp_onewire_bus_alloc(unitemp_gpio_getFromInt(gpio));
 
     if(instance != NULL) {
         return true;
@@ -367,22 +368,22 @@ bool unitemp_onewire_sensor_init(Sensor* sensor) {
     furi_delay_ms(1);
 
     if(instance->familyCode == FC_DS18B20 || instance->familyCode == FC_DS1822) {
-        //Установка разрядности в 10 бит
+        //Setting the bit depth to 10 bits
         if(!unitemp_onewire_bus_start(instance->bus)) return false;
         unitemp_onewire_bus_select_sensor(instance);
-        unitemp_onewire_bus_send_byte(instance->bus, 0x4E); // Запись в память
+        unitemp_onewire_bus_send_byte(instance->bus, 0x4E); //Memory recording
         uint8_t buff[3];
-        //Значения тревоги
-        buff[0] = 0x4B; //Значение нижнего предела температуры
-        buff[1] = 0x46; //Значение верхнего предела температуры
-        //Конфигурация
-        buff[2] = 0b01111111; //12 бит разрядность преобразования
+        //Alarm values
+        buff[0] = 0x4B; //Temperature lower limit value
+        buff[1] = 0x46; //Upper temperature limit value
+        //Configuration
+        buff[2] = 0b01111111; //12 bit bit conversion
         unitemp_onewire_bus_send_byteArray(instance->bus, buff, 3);
 
-        //Сохранение значений в EEPROM для автоматического восстановления после сбоев питания
+        //Stores values ​​in EEPROM for automatic recovery after power failures
         if(!unitemp_onewire_bus_start(instance->bus)) return false;
         unitemp_onewire_bus_select_sensor(instance);
-        unitemp_onewire_bus_send_byte(instance->bus, 0x48); // Запись в EEPROM
+        unitemp_onewire_bus_send_byte(instance->bus, 0x48); //Write to EEPROM
     }
 
     return true;
@@ -397,7 +398,7 @@ bool unitemp_onewire_sensor_deinit(Sensor* sensor) {
 }
 
 UnitempStatus unitemp_onewire_sensor_update(Sensor* sensor) {
-    //Снятие особого статуса с датчика при пассивном режиме питания
+    //Removing the special status from the sensor in passive power mode
     if(sensor->status == UT_SENSORSTATUS_EARLYPOOL) {
         return UT_SENSORSTATUS_POLLING;
     }
@@ -405,7 +406,7 @@ UnitempStatus unitemp_onewire_sensor_update(Sensor* sensor) {
     OneWireSensor* instance = sensor->instance;
     uint8_t buff[9] = {0};
     if(sensor->status != UT_SENSORSTATUS_POLLING) {
-        //Если датчик в прошлый раз не отозвался, проверка его наличия на шине
+        //If the sensor did not respond last time, check its presence on the tire
         if(sensor->status == UT_SENSORSTATUS_TIMEOUT || sensor->status == UT_SENSORSTATUS_BADCRC) {
             if(!unitemp_onewire_bus_start(instance->bus)) return UT_SENSORSTATUS_TIMEOUT;
             unitemp_onewire_bus_select_sensor(instance);
@@ -418,10 +419,10 @@ UnitempStatus unitemp_onewire_sensor_update(Sensor* sensor) {
         }
 
         if(!unitemp_onewire_bus_start(instance->bus)) return UT_SENSORSTATUS_TIMEOUT;
-        //Запуск преобразования на всех датчиках в режиме пассивного питания
+        //Starting conversion on all sensors in passive power mode
         if(instance->bus->powerMode == PWR_PASSIVE) {
             unitemp_onewire_bus_send_byte(instance->bus, 0xCC); // skip addr
-            //Установка на всех датчиках этой шины особого статуса, чтобы не запускать преобразование ещё раз
+            //Setting a special status on all sensors of this bus so as not to start the conversion again
             for(uint8_t i = 0; i < unitemp_sensors_getActiveCount(); i++) {
                 if(unitemp_sensor_getActive(i)->type->interface == &ONE_WIRE &&
                    ((OneWireSensor*)unitemp_sensor_getActive(i)->instance)->bus == instance->bus) {
@@ -456,9 +457,9 @@ UnitempStatus unitemp_onewire_sensor_update(Sensor* sensor) {
         }
         int16_t raw = buff[0] | ((int16_t)buff[1] << 8);
         if(instance->familyCode == FC_DS18S20) {
-            //Песевдо-12-бит. Отключено из-за неестественности и нестабильности показаний по сравнению с DS18B20
+            //Pseudo-12-bit.
             //sensor->temp = ((float)raw / 2.0f) - 0.25f + (16.0f - buff[6]) / 16.0f;
-            //Честные 9 бит
+            //Honest 9 bits
             sensor->temp = ((float)raw / 2.0f);
         } else {
             sensor->temp = (float)raw / 16.0f;
