@@ -198,7 +198,7 @@ void unitemp_widget_about_switch(void) {
         16,
         121,
         44,
-        "Universal plugin for viewing the values of temperature\nsensors\n\e#Author: Quenon\ngithub.com/quen0n\n\e#Designer: Svaarich\ngithub.com/Svaarich\n\e#Issues & suggestions\ntiny.one/unitemp");
+        "Universal plugin for viewing the values of temperature\nsensors\n\e#Author: Quenon\ngithub.com/quen0n\n\e#Designer: Svaarich\ngithub.com/Svaarich\n\e#Issues & suggestions\ntiny.one/unitemp\n\e#Special thanks\nxMasterX");
 
     view_set_previous_callback(widget_get_view(app->widget), _help_exit_callback);
     view_dispatcher_switch_to_view(app->view_dispatcher, UnitempViewWidget);

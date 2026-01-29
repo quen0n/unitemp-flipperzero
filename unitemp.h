@@ -40,7 +40,7 @@
 //Application name
 #define APP_NAME              "Unitemp"
 //Application version
-#define UNITEMP_APP_VER       "1.6-catalog"
+#define UNITEMP_APP_VER       "1.8-catalog"
 //Plugin file storage path
 #define APP_PATH_FOLDER       "/ext/unitemp"
 //Settings file name
