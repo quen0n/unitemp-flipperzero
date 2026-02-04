@@ -13,8 +13,8 @@ Development of the Unitemp app began in 2022. Much has changed since then: the F
 | Model          | Interface    | Temperature range           | Humidity range       |              |
 |:---------------|:------------:|:----------------------------|:---------------------|:------------:|
 | DHT11 (AOSONG) | Single Wire  | 0...50°C (±2°C, 1°C)        | 20...90% (±5%, 1%)   | [<img src="images\sensors\DHT11\general.png" width="150"/>](https://www.aliexpress.com/w/wholesale-DHT11-module.html) |
-| DHT11 (ASAIR) | Single Wire  | -20...60°C (±2°C, 0.1°C)    | 5...95% (±5%, 1%)    | [<img src="images\sensors\DHT11\general.png" width="150"/>](https://www.aliexpress.com/w/wholesale-DHT11-module.html) |
-| DHT12          | Single Wire  | -20...60°C (±0.5°C, 0.1°C)  | 20...90% (±5%, 0.1%) | [<img src="images\sensors\DHT12\general.png" width="150"/>](https://www.aliexpress.com/w/wholesale-DHT12-module.html)|
+| DHT11 (ASAIR)  | Single Wire  | -20...60°C (±2°C, 0.1°C)    | 5...95% (±5%, 1%)    | [<img src="images\sensors\DHT11\general.png" width="150"/>](https://www.aliexpress.com/w/wholesale-DHT11-module.html) |
+| DHT12          | Single Wire  | -20...60°C (±0.5°C, 0.1°C)  | 20...90% (±5%, 0.1%) | [<img src="images\sensors\DHT12\general.png" width="150"/>](https://www.aliexpress.com/w/wholesale-DHT12-module.html) |
 
 ## Gratitudes
 - [Svaarich](https://github.com/Svaarich) for the UI design 
