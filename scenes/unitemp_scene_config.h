@@ -1,3 +1,2 @@
 ADD_SCENE(unitemp, menu, Menu)
-//ADD_SCENE(ibutton, info, Info)
-//ADD_SCENE(ibutton, read, Read)
+ADD_SCENE(unitemp, help, Help)

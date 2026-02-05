@@ -23,6 +23,8 @@
 #include <gui/scene_manager.h>
 #include <gui/view_dispatcher.h>
 #include <gui/modules/submenu.h>
+#include <gui/modules/popup.h>
+#include <gui/modules/widget.h>
 
 #include "scenes/unitemp_scene.h"
 
@@ -48,16 +50,18 @@
 
 typedef enum {
     UnitempViewSubmenu,
+    UnitempViewPopup,
+    UnitempViewWidget,
     // UnitempViewByteInput,
     // UnitempViewTextInput,
-    // UnitempViewPopup,
-    // UnitempViewWidget,
     // UnitempViewLoading,
 } UnitempView;
 
 typedef struct {
     SceneManager* scene_manager;
     ViewDispatcher* view_dispatcher;
+    Popup* popup;
+    Widget* widget;
 
     Gui* gui;
     FuriThread* reader_thread;
@@ -73,5 +77,6 @@ typedef enum {
 } UnitempThreadFlag;
 
 void unitemp_submenu_callback(void* context, uint32_t index);
+void unitemp_widget_callback(GuiButtonType result, InputType type, void* context);
 
 #endif //UNITEMP_H_

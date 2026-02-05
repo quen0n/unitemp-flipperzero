@@ -17,10 +17,10 @@
 */
 
 #include "unitemp.h"
-#include "interfaces/singlewire.h"
 
 #include <core/thread.h>
 #include <core/kernel.h>
+#include <stdlib.h>
 
 bool unitemp_custom_event_callback(void* context, uint32_t event) {
     furi_assert(context);
@@ -70,12 +70,23 @@ static UnitempApp* unitemp_app_alloc(void) {
     app->submenu = submenu_alloc();
     view_dispatcher_add_view(
         app->view_dispatcher, UnitempViewSubmenu, submenu_get_view(app->submenu));
+    app->popup = popup_alloc();
+
+    app->widget = widget_alloc();
+    view_dispatcher_add_view(
+        app->view_dispatcher, UnitempViewWidget, widget_get_view(app->widget));
+
+    view_dispatcher_add_view(app->view_dispatcher, UnitempViewPopup, popup_get_view(app->popup));
     return app;
 }
 
 static void unitemp_app_free(UnitempApp* app) {
     unitemp_sensors_free();
 
+    view_dispatcher_remove_view(app->view_dispatcher, UnitempViewWidget);
+    widget_free(app->widget);
+    view_dispatcher_remove_view(app->view_dispatcher, UnitempViewPopup);
+    popup_free(app->popup);
     view_dispatcher_remove_view(app->view_dispatcher, UnitempViewSubmenu);
     submenu_free(app->submenu);
 
