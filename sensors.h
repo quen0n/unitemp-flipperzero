@@ -221,4 +221,6 @@ SensorStatus unitemp_sensor_update(Sensor* sensor, void* ctx);
 
 Sensor** unitemp_sensors_get(void);
 
+int32_t unitemp_sensors_update_callback(void* ctx);
+
 #endif // UNITEMP_SENSORS

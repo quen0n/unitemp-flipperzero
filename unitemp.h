@@ -49,10 +49,9 @@ typedef struct {
     Power* power;
 } UnitempApp;
 
-/**
- * @brief Get pointer to the application context
- * @return Pointer to UnitempApp structure
- */
-UnitempApp* unitemp_get_app(void);
+/* Flags which the reader thread responds to */
+typedef enum {
+    UnitempThreadFlagExit = 1,
+} UnitempThreadFlag;
 
 #endif //UNITEMP_H_

@@ -21,13 +21,6 @@
 
 #include <core/thread.h>
 #include <core/kernel.h>
-#define THERMO_GPIO_PIN  (gpio_ext_pc3)
-#define UPDATE_PERIOD_MS 1000UL
-
-/* Flags which the reader thread responds to */
-typedef enum {
-    ReaderThreadFlagExit = 1,
-} ReaderThreadFlag;
 
 static void unitemp_draw_callback(Canvas* canvas, void* ctx) {
     UnitempApp* app = ctx;
@@ -74,25 +67,6 @@ static void unitemp_input_callback(InputEvent* event, void* ctx) {
     furi_message_queue_put(app->event_queue, event, FuriWaitForever);
 }
 
-//todo: перенести в sensors.c
-/* Periodically requests measurements and reads temperature. This function runs in a separare thread. */
-static int32_t unitemp_thread_callback(void* ctx) {
-    UnitempApp* app = ctx;
-    UNUSED(app);
-    for(;;) {
-        for(uint8_t i = 0; i < unitemp_sensors_get_count(); i++) {
-            unitemp_sensor_update((unitemp_sensors_get()[i]), app);
-        }
-        /* Wait for the measurement to finish. At the same time wait for an exit signal. */
-        const uint32_t flags =
-            furi_thread_flags_wait(ReaderThreadFlagExit, FuriFlagWaitAny, UPDATE_PERIOD_MS);
-
-        /* If an exit signal was received, return from this thread. */
-        if(flags != (unsigned)FuriFlagErrorTimeout) break;
-    }
-    return 0;
-}
-
 static UnitempApp* unitemp_app_alloc(void) {
     UnitempApp* app = malloc(sizeof(UnitempApp));
 
@@ -103,9 +77,9 @@ static UnitempApp* unitemp_app_alloc(void) {
     app->event_queue = furi_message_queue_alloc(8, sizeof(InputEvent));
 
     app->reader_thread = furi_thread_alloc();
-    furi_thread_set_stack_size(app->reader_thread, 2048U);
+    furi_thread_set_stack_size(app->reader_thread, 1024U);
     furi_thread_set_context(app->reader_thread, app);
-    furi_thread_set_callback(app->reader_thread, unitemp_thread_callback);
+    furi_thread_set_callback(app->reader_thread, unitemp_sensors_update_callback);
 
     app->gui = furi_record_open(RECORD_GUI);
     gui_add_view_port(app->gui, app->view_port, GuiLayerFullscreen);
@@ -158,16 +132,10 @@ static void unitemp_run(UnitempApp* app) {
     }
 
     /* Signal the reader thread to cease operation and exit */
-    furi_thread_flags_set(furi_thread_get_id(app->reader_thread), ReaderThreadFlagExit);
+    furi_thread_flags_set(furi_thread_get_id(app->reader_thread), UnitempThreadFlagExit);
 
     /* Wait for the reader thread to finish */
     furi_thread_join(app->reader_thread);
-
-    /* Reset the hardware */
-    //onewire_host_stop(app->onewire);
-
-    /* Disable power on external pins */
-    //power_enable_otg(app->power, false);
 }
 static void unitemp_stop(UnitempApp* app) {
     unitemp_sensors_deinit(app);

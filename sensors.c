@@ -4,6 +4,8 @@
 #include "sensors/DHTxx.h"
 #include "sensors/AM2320.h"
 
+#define UPDATE_PERIOD_MS 1000UL
+
 //TODO: Перенести всё что относится к GPIO в другой файл
 //List of available GPIO pins with their numbers and names
 #define GPIO_ITEMS 13U
@@ -80,6 +82,23 @@ void unitemp_gpio_unlock(const SensorGpioPin* gpio) {
     uint8_t i = unitemp_gpio_to_index(gpio->pin);
     if(i == 255) return;
     gpio_interfaces_list[i] = NULL;
+}
+
+/* Periodically requests measurements and reads temperature. This function runs in a separare thread. */
+int32_t unitemp_sensors_update_callback(void* ctx) {
+    UnitempApp* app = ctx;
+    for(;;) {
+        for(uint8_t i = 0; i < unitemp_sensors_get_count(); i++) {
+            unitemp_sensor_update((unitemp_sensors_get()[i]), app);
+        }
+        /* Wait for the measurement to finish. At the same time wait for an exit signal. */
+        const uint32_t flags =
+            furi_thread_flags_wait(UnitempThreadFlagExit, FuriFlagWaitAny, UPDATE_PERIOD_MS);
+
+        /* If an exit signal was received, return from this thread. */
+        if(flags != (unsigned)FuriFlagErrorTimeout) break;
+    }
+    return 0;
 }
 
 Sensor* unitemp_sensor_alloc(char* name, const SensorModel* type, char* args) {
