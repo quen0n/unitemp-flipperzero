@@ -3,8 +3,6 @@
 - General code quality improvements. Use of native Flipper Zero firmware libraries in the GUI and sensor drivers
 - Fixed memory leaks
 - Sensor polling and screen rendering now occur asynchronously in separate threads
-### Known issues:
-- Screen freezing when called from GPIO outside menu
 ## Unitemp 1.8
 - Fixes and improvements. Many thanks to [xMasterX](https://github.com/xMasterX) for their help and support.
 ## Unitemp 1.7
