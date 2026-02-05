@@ -19,7 +19,12 @@
 #define UNITEMP_H_
 
 #include <gui/gui.h>
-#include <gui/view_port.h>
+#include <gui/view.h>
+#include <gui/scene_manager.h>
+#include <gui/view_dispatcher.h>
+#include <gui/modules/submenu.h>
+
+#include "scenes/unitemp_scene.h"
 
 #include <power/power_service/power.h>
 
@@ -41,17 +46,32 @@
 #define UNITEMP_DEBUG(msg, ...)
 #endif
 
+typedef enum {
+    UnitempViewSubmenu,
+    // UnitempViewByteInput,
+    // UnitempViewTextInput,
+    // UnitempViewPopup,
+    // UnitempViewWidget,
+    // UnitempViewLoading,
+} UnitempView;
+
 typedef struct {
+    SceneManager* scene_manager;
+    ViewDispatcher* view_dispatcher;
+
     Gui* gui;
-    ViewPort* view_port;
     FuriThread* reader_thread;
     FuriMessageQueue* event_queue;
     Power* power;
+
+    Submenu* submenu;
 } UnitempApp;
 
 /* Flags which the reader thread responds to */
 typedef enum {
     UnitempThreadFlagExit = 1,
 } UnitempThreadFlag;
+
+void unitemp_submenu_callback(void* context, uint32_t index);
 
 #endif //UNITEMP_H_
