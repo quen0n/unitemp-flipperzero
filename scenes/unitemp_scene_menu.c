@@ -57,7 +57,7 @@ bool unitemp_scene_menu_on_event(void* context, SceneManagerEvent event) {
         } else if(event.event == SubmenuIndexHelp) {
             scene_manager_next_scene(app->scene_manager, UnitempSceneHelp);
         } else if(event.event == SubmenuIndexAbout) {
-            // scene_manager_next_scene(app->scene_manager, UnitempSceneAbout);
+            scene_manager_next_scene(app->scene_manager, UnitempSceneAbout);
         }
     }
 

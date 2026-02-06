@@ -17,6 +17,7 @@ Development of the Unitemp app began in 2022. Much has changed since then: the F
 | DHT12          | Single Wire  | -20...60°C (±0.5°C, 0.1°C)  | 20...90% (±5%, 0.1%) | [<img src=".github\images\sensors\DHT12\general.png" width="150"/>](https://www.aliexpress.com/w/wholesale-DHT12-module.html) |
 
 ## Gratitudes
+- Special thanks [xMasterX](https://github.com/xMasterX), [vladin79](https://github.com/vladin79), [divinebird](https://github.com/divinebird), [jamisonderek](https://github.com/jamisonderek), [kaklik](https://github.com/kaklik)
 - [Svaarich](https://github.com/Svaarich) for the UI design 
 - [Unleashed firmware](https://github.com/DarkFlippers/unleashed-firmware) community for sensors testing and feedbacks
-- ...and other people who send pull requests with new sensors and fixes
+- ...and everyone who helped with development and testing
