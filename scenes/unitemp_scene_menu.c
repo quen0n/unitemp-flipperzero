@@ -32,7 +32,7 @@ void unitemp_scene_menu_on_enter(void* context) {
     Submenu* submenu = app->submenu;
 
     submenu_add_item(
-        submenu, "Add new sensor", SubmenuIndexAddNewSensor, unitemp_submenu_callback, app);
+        submenu, "Add a new sensor", SubmenuIndexAddNewSensor, unitemp_submenu_callback, app);
     submenu_add_item(submenu, "Settings", SubmenuIndexSettings, unitemp_submenu_callback, app);
     submenu_add_item(submenu, "Help", SubmenuIndexHelp, unitemp_submenu_callback, app);
     submenu_add_item(submenu, "About", SubmenuIndexAbout, unitemp_submenu_callback, app);

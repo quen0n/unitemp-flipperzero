@@ -41,11 +41,10 @@ static void no_sensors_draw_callback(Canvas* canvas, void* model) {
     const uint8_t x = 65, y = 32;
     canvas_draw_rframe(canvas, x - 4, y - 10, 54, 33, 3);
     canvas_draw_rframe(canvas, x - 4, y - 10, 54, 34, 3);
-    canvas_draw_str(canvas, x, y, "To add a");
-    canvas_draw_str(canvas, x, y + 9, "new sensor");
-    canvas_draw_str(canvas, x, y + 18, "press OK");
-
-    canvas_draw_icon(canvas, x + 37, y + 10, &I_Ok_btn_9x9);
+    canvas_draw_str(canvas, x, y, "Press OK");
+    canvas_draw_icon(canvas, x + 38, y - 8, &I_Ok_btn_9x9);
+    canvas_draw_str(canvas, x, y + 9, "to add a");
+    canvas_draw_str(canvas, x, y + 18, "new sensor");
 }
 
 static bool no_sensors_input_callback(InputEvent* event, void* context) {
