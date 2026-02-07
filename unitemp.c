@@ -94,11 +94,7 @@ bool unitemp_settings_load(void* context) {
     furi_string_free(file_type);
     flipper_format_free(file);
     UNITEMP_DEBUG("Loading settings  %s", result ? "success" : "failed");
-    if(!result) {
-        FURI_LOG_W(
-            APP_NAME, "Settings file not found or corrupted. Using defaults and saving them");
-        unitemp_settings_save(app);
-    }
+
     return result;
 }
 bool unitemp_settings_save(void* context) {
@@ -210,7 +206,11 @@ static void unitemp_app_free(UnitempApp* app) {
 
 /* Starts the reader thread and handles the input */
 static void unitemp_run(UnitempApp* app) {
-    unitemp_settings_load(app);
+    if(!unitemp_settings_load(app)) {
+        FURI_LOG_W(
+            APP_NAME, "Settings file not found or corrupted. Using defaults and saving them");
+        unitemp_settings_save(app);
+    }
     unitemp_sensors_load();
     unitemp_sensors_init(app);
     /* Start the reader thread. It will talk to the thermometer in the background. */

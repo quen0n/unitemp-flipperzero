@@ -20,10 +20,10 @@
 
 static const char unitemp_scene_settings_backlight_text[2][9] = {"System", "Infinity"};
 static const char unitemp_scene_settings_temp_units_text[UT_TEMP_COUNT][3] = {"*C", "*F"};
-static const char unitemp_scene_settings_humidity_units_text[UT_HUMIDITY_COUNT][12] = {
+static const char unitemp_scene_settings_humidity_units_text[UT_HUMIDITY_COUNT][9] = {
     "Relative",
     "Dewpoint"};
-static const char unitemp_scene_settings_pressure_units_text[UT_PRESSURE_COUNT][6] =
+static const char unitemp_scene_settings_pressure_units_text[UT_PRESSURE_COUNT][5] =
     {"mmHg", "inHg", "kPa", "hPa"};
 static const char unitemp_scene_settings_heat_index_text[2][4] = {"OFF", "ON"};
 
