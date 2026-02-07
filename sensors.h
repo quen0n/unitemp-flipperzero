@@ -221,6 +221,13 @@ SensorStatus unitemp_sensor_update(Sensor* sensor, void* ctx);
 
 Sensor** unitemp_sensors_get(void);
 
+/**
+* @brief Get a list of available sensor types
+* @return Pointer to a list of sensors
+*/
+const SensorModel** unitemp_sensors_models_get(void);
+uint8_t unitemp_sensors_models_get_count(void);
+
 int32_t unitemp_sensors_update_callback(void* ctx);
 
 #endif // UNITEMP_SENSORS

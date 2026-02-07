@@ -27,7 +27,6 @@ enum SubmenuIndex {
 };
 
 void unitemp_scene_menu_on_enter(void* context) {
-    UNITEMP_DEBUG("Entering Menu Scene");
     UnitempApp* app = context;
     Submenu* submenu = app->submenu;
 
@@ -51,7 +50,7 @@ bool unitemp_scene_menu_on_event(void* context, SceneManagerEvent event) {
         scene_manager_set_scene_state(app->scene_manager, UnitempSceneMenu, event.event);
         consumed = true;
         if(event.event == SubmenuIndexAddNewSensor) {
-            // scene_manager_next_scene(app->scene_manager, UnitempSceneAddNewSensor);
+            scene_manager_next_scene(app->scene_manager, UnitempSceneSensorsList);
         } else if(event.event == SubmenuIndexSettings) {
             scene_manager_next_scene(app->scene_manager, UnitempSceneSettings);
         } else if(event.event == SubmenuIndexHelp) {
@@ -65,7 +64,6 @@ bool unitemp_scene_menu_on_event(void* context, SceneManagerEvent event) {
 }
 
 void unitemp_scene_menu_on_exit(void* context) {
-    UNITEMP_DEBUG("Exiting Menu Scene");
     UnitempApp* app = context;
     submenu_reset(app->submenu);
 }

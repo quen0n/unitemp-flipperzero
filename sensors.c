@@ -38,6 +38,14 @@ static const SensorModel* sensor_model_list[] = {
 //Number of sensor models
 #define SENSOR_TYPES_COUNT (int)(sizeof(sensor_model_list) / sizeof(const SensorModel*))
 
+const SensorModel** unitemp_sensors_models_get(void) {
+    return sensor_model_list;
+}
+
+uint8_t unitemp_sensors_models_get_count(void) {
+    return SENSOR_TYPES_COUNT;
+}
+
 const SensorModel* unitemp_sensors_get_model_from_str(char* str) {
     UNUSED(str);
     if(str == NULL) return NULL;

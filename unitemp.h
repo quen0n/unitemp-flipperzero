@@ -121,9 +121,10 @@ typedef struct {
     Widget* widget;
     Submenu* submenu;
     VariableItemList* var_item_list;
+    NoSensors* no_sensors;
     Gui* gui;
 
-    NoSensors* no_sensors;
+    Sensor** sensors_list;
 
     Storage* storage;
     File* file;
