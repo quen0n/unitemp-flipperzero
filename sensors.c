@@ -240,7 +240,7 @@ bool unitemp_sensors_deinit(void* ctx) {
 
     UnitempApp* app = (UnitempApp*)ctx;
     //Turning off 5 V if it was not turned on before
-    power_enable_otg(app->power, false);
+    power_enable_otg(app->power, app->settings->last_otg_state);
 
     //Searching through sensors from the list
     for(uint8_t i = 0; i < unitemp_sensors_get_count(); i++) {

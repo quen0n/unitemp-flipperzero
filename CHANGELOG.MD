@@ -3,8 +3,13 @@
 - General code quality improvements. Use of native Flipper Zero firmware libraries in the GUI and sensor drivers
 - Fixed memory leaks
 - Sensor polling and screen rendering now occur asynchronously in separate threads
+- Configuration and save files moved to apps_data
+- On first application launch, measurement units will be automatically selected based on system localization settings
+TODO: мигратор с старого конфига на новый
 TODO: бесконечная подсветка только на экране с датчиками. в меню она работает согласно настройкам системы
+TODO: для отображение точки росы в иконке использовать значки с *С и *F
 TODO: в readme добавить краткий гайд по использованию и основным фичам
+TODO: в readme у изображений удалить фон, добавить уже поддерживаемые датчики
 ## Unitemp 1.8
 - Fixes and improvements. Many thanks to [xMasterX](https://github.com/xMasterX) for their help and support.
 ## Unitemp 1.7

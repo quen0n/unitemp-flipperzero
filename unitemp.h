@@ -29,6 +29,7 @@
 #include "scenes/unitemp_scene.h"
 
 #include <power/power_service/power.h>
+#include <storage/storage.h>
 
 #include "sensors.h"
 
@@ -37,6 +38,10 @@
 #define APP_NAME        "Unitemp"
 //Application version
 #define UNITEMP_APP_VER "2.0.0-dev"
+
+//Settings file name
+#define APP_SETTINGS_FILENAME "settings.cfg"
+#define APP_SETTINGS_VERSION  (1)
 
 //Text buffer size
 #define TEXT_STORE_SIZE 32
@@ -57,18 +62,66 @@ typedef enum {
     // UnitempViewLoading,
 } UnitempView;
 
+//Temperature units
+typedef enum {
+    UT_TEMP_CELSIUS,
+    UT_TEMP_FAHRENHEIT,
+
+    UT_TEMP_COUNT
+} TempMeasureUnit;
+
+//Pressure units
+typedef enum {
+    UT_PRESSURE_MM_HG,
+    UT_PRESSURE_IN_HG,
+    UT_PRESSURE_KPA,
+    UT_PRESSURE_HPA,
+
+    UT_PRESSURE_COUNT
+} PressureMeasureUnit;
+
+// Humidity units
+typedef enum {
+    UT_HUMIDITY_RELATIVE, // Relative humidity
+    UT_HUMIDITY_DEWPOINT, // Dewpoint
+
+    UT_HUMIDITY_COUNT // Number of humidity modes
+} HumidityUnit;
+
+/* Declaration of structures */
+//Plugin settings
+typedef struct {
+    //Endless backlight operation
+    bool infinity_backlight;
+    //Temperature unit
+    TempMeasureUnit temp_unit;
+    // Humidity units
+    HumidityUnit humidity_unit;
+    //Pressure unit
+    PressureMeasureUnit pressure_unit;
+    // Do calculate and show heat index
+    bool heat_index;
+    //Latest OTG status
+    bool last_otg_state;
+} UnitempSettings;
+
 typedef struct {
     SceneManager* scene_manager;
     ViewDispatcher* view_dispatcher;
     Popup* popup;
     Widget* widget;
-
+    Submenu* submenu;
     Gui* gui;
+
+    Storage* storage;
+    File* file;
+
     FuriThread* reader_thread;
     FuriMessageQueue* event_queue;
     Power* power;
 
-    Submenu* submenu;
+    //TODO: переместить список загруженных датчиков в эту структуру
+    UnitempSettings* settings;
 } UnitempApp;
 
 /* Flags which the reader thread responds to */
@@ -78,5 +131,8 @@ typedef enum {
 
 void unitemp_submenu_callback(void* context, uint32_t index);
 void unitemp_widget_callback(GuiButtonType result, InputType type, void* context);
+
+bool unitemp_settings_load(void* context);
+bool unitemp_settings_save(void* context);
 
 #endif //UNITEMP_H_
