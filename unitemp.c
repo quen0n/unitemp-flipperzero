@@ -95,7 +95,9 @@ bool unitemp_settings_load(void* context) {
     flipper_format_free(file);
     UNITEMP_DEBUG("Loading settings  %s", result ? "success" : "failed");
     if(!result) {
-        FURI_LOG_W(APP_NAME, "Settings file not found or corrupted, using defaults");
+        FURI_LOG_W(
+            APP_NAME, "Settings file not found or corrupted. Using defaults and saving them");
+        unitemp_settings_save(app);
     }
     return result;
 }
@@ -160,20 +162,27 @@ static UnitempApp* unitemp_app_alloc(void) {
     app->submenu = submenu_alloc();
     view_dispatcher_add_view(
         app->view_dispatcher, UnitempViewSubmenu, submenu_get_view(app->submenu));
+
     app->popup = popup_alloc();
+    view_dispatcher_add_view(app->view_dispatcher, UnitempViewPopup, popup_get_view(app->popup));
 
     app->widget = widget_alloc();
     view_dispatcher_add_view(
         app->view_dispatcher, UnitempViewWidget, widget_get_view(app->widget));
 
-    view_dispatcher_add_view(app->view_dispatcher, UnitempViewPopup, popup_get_view(app->popup));
-
+    app->var_item_list = variable_item_list_alloc();
+    view_dispatcher_add_view(
+        app->view_dispatcher,
+        UnitempViewVariableList,
+        variable_item_list_get_view(app->var_item_list));
     return app;
 }
 
 static void unitemp_app_free(UnitempApp* app) {
     unitemp_sensors_free();
 
+    view_dispatcher_remove_view(app->view_dispatcher, UnitempViewVariableList);
+    variable_item_list_free(app->var_item_list);
     view_dispatcher_remove_view(app->view_dispatcher, UnitempViewWidget);
     widget_free(app->widget);
     view_dispatcher_remove_view(app->view_dispatcher, UnitempViewPopup);
@@ -215,7 +224,6 @@ static void unitemp_stop(UnitempApp* app) {
     furi_thread_join(app->reader_thread);
 
     unitemp_sensors_deinit(app);
-    unitemp_settings_save(app);
 }
 /**
  * @brief Точка входа в приложение

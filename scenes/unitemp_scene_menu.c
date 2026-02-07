@@ -53,7 +53,7 @@ bool unitemp_scene_menu_on_event(void* context, SceneManagerEvent event) {
         if(event.event == SubmenuIndexAddNewSensor) {
             // scene_manager_next_scene(app->scene_manager, UnitempSceneAddNewSensor);
         } else if(event.event == SubmenuIndexSettings) {
-            // scene_manager_next_scene(app->scene_manager, UnitempSceneSettings);
+            scene_manager_next_scene(app->scene_manager, UnitempSceneSettings);
         } else if(event.event == SubmenuIndexHelp) {
             scene_manager_next_scene(app->scene_manager, UnitempSceneHelp);
         } else if(event.event == SubmenuIndexAbout) {

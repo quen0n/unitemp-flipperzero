@@ -25,6 +25,7 @@
 #include <gui/modules/submenu.h>
 #include <gui/modules/popup.h>
 #include <gui/modules/widget.h>
+#include <gui/modules/variable_item_list.h>
 
 #include "scenes/unitemp_scene.h"
 
@@ -57,6 +58,7 @@ typedef enum {
     UnitempViewSubmenu,
     UnitempViewPopup,
     UnitempViewWidget,
+    UnitempViewVariableList,
     // UnitempViewByteInput,
     // UnitempViewTextInput,
     // UnitempViewLoading,
@@ -111,6 +113,7 @@ typedef struct {
     Popup* popup;
     Widget* widget;
     Submenu* submenu;
+    VariableItemList* var_item_list;
     Gui* gui;
 
     Storage* storage;
