@@ -78,9 +78,6 @@ void unitemp_scene_settings_on_enter(void* context) {
     VariableItem* item;
     uint8_t value_index;
 
-    //Resetting the last selected item
-    variable_item_list_set_selected_item(var_item_list, 0);
-
     item = variable_item_list_add(
         var_item_list,
         "Backlight time",
