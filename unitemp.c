@@ -125,6 +125,10 @@ bool unitemp_settings_save(void* context) {
     } while(0);
 
     flipper_format_free(file);
+    if(!result) {
+        FURI_LOG_E(APP_NAME, "Failed to save settings");
+    }
+
     UNITEMP_DEBUG("Saving settings  %s", result ? "success" : "failed");
     return result;
 }
@@ -171,12 +175,20 @@ static UnitempApp* unitemp_app_alloc(void) {
         app->view_dispatcher,
         UnitempViewVariableList,
         variable_item_list_get_view(app->var_item_list));
+
+    app->no_sensors = no_sensors_alloc(app);
+    view_dispatcher_add_view(
+        app->view_dispatcher, UnitempViewNoSensors, no_sensors_get_view(app->no_sensors));
+
+    app->notifications = furi_record_open(RECORD_NOTIFICATION);
     return app;
 }
 
 static void unitemp_app_free(UnitempApp* app) {
     unitemp_sensors_free();
 
+    view_dispatcher_remove_view(app->view_dispatcher, UnitempViewNoSensors);
+    no_sensors_free(app->no_sensors);
     view_dispatcher_remove_view(app->view_dispatcher, UnitempViewVariableList);
     variable_item_list_free(app->var_item_list);
     view_dispatcher_remove_view(app->view_dispatcher, UnitempViewWidget);
@@ -194,6 +206,7 @@ static void unitemp_app_free(UnitempApp* app) {
 
     storage_file_free(app->file);
 
+    furi_record_close(RECORD_NOTIFICATION);
     furi_record_close(RECORD_POWER);
     furi_record_close(RECORD_GUI);
     furi_record_close(RECORD_STORAGE);
@@ -236,7 +249,7 @@ int32_t unitemp_app() {
     unitemp_run(app);
 
     view_dispatcher_attach_to_gui(app->view_dispatcher, app->gui, ViewDispatcherTypeFullscreen);
-    scene_manager_next_scene(app->scene_manager, UnitempSceneMenu);
+    scene_manager_next_scene(app->scene_manager, UnitempSceneGeneral);
     view_dispatcher_run(app->view_dispatcher);
 
     unitemp_stop(app);

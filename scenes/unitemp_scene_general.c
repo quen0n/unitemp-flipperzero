@@ -1,0 +1,42 @@
+/*
+    Unitemp - Universal temperature reader
+    Copyright (C) 2022-2026  Victor Nikitchuk (https://github.com/quen0n)
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
+
+#include "../unitemp.h"
+
+void unitemp_scene_general_on_enter(void* context) {
+    furi_assert(context);
+    UnitempApp* app = context;
+    if(app->settings->infinity_backlight) {
+        notification_message(app->notifications, &sequence_display_backlight_enforce_on);
+    }
+    view_dispatcher_switch_to_view(app->view_dispatcher, UnitempViewNoSensors);
+}
+
+bool unitemp_scene_general_on_event(void* context, SceneManagerEvent event) {
+    UNUSED(context);
+    UNUSED(event);
+    return false;
+}
+
+void unitemp_scene_general_on_exit(void* context) {
+    furi_assert(context);
+    UnitempApp* app = context;
+    if(app->settings->infinity_backlight) {
+        notification_message(app->notifications, &sequence_display_backlight_enforce_auto);
+    }
+}

@@ -29,8 +29,14 @@
 
 #include "scenes/unitemp_scene.h"
 
+#include "views/no_sensors.h"
+
 #include <power/power_service/power.h>
+
 #include <storage/storage.h>
+
+#include <notification/notification.h>
+#include <notification/notification_messages.h>
 
 #include "sensors.h"
 
@@ -59,6 +65,7 @@ typedef enum {
     UnitempViewPopup,
     UnitempViewWidget,
     UnitempViewVariableList,
+    UnitempViewNoSensors,
     // UnitempViewByteInput,
     // UnitempViewTextInput,
     // UnitempViewLoading,
@@ -116,8 +123,11 @@ typedef struct {
     VariableItemList* var_item_list;
     Gui* gui;
 
+    NoSensors* no_sensors;
+
     Storage* storage;
     File* file;
+    NotificationApp* notifications;
 
     FuriThread* reader_thread;
     FuriMessageQueue* event_queue;

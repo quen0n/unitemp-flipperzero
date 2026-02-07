@@ -5,8 +5,10 @@
 - Sensor polling and screen rendering now occur asynchronously in separate threads
 - Configuration and save files moved to apps_data
 - On first application launch, measurement units will be automatically selected based on system localization settings
+- Saving the config is done only when it is initially created or subsequently modified
+- The backlight glows indefinitely only when displaying sensor values. In the menu, the backlight will off according to the system settings
+
 TODO: мигратор с старого конфига на новый
-TODO: бесконечная подсветка только на экране с датчиками. в меню она работает согласно настройкам системы notification_message(app->notifications, &sequence_display_backlight_enforce_on);/notification_message(app->notifications, &sequence_display_backlight_enforce_auto);
 TODO: для отображение точки росы в иконке использовать значки с *С и *F
 TODO: в readme добавить краткий гайд по использованию и основным фичам
 TODO: в readme у изображений удалить фон, добавить уже поддерживаемые датчики
