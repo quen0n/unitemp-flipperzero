@@ -52,9 +52,18 @@ void unitemp_scene_general_on_enter(void* context) {
 }
 
 bool unitemp_scene_general_on_event(void* context, SceneManagerEvent event) {
-    UNUSED(context);
-    UNUSED(event);
-    return false;
+    furi_assert(context);
+    UnitempApp* app = context;
+    bool consumed = false;
+
+    if(event.type == SceneManagerEventTypeTick) {
+        if(unitemp_scene_general_data->view_mode == SingleSensorViewMode) {
+            single_sensor_refresh_data(app->single_sensor);
+        }
+        consumed = true;
+    }
+
+    return consumed;
 }
 
 void unitemp_scene_general_on_exit(void* context) {

@@ -145,19 +145,21 @@ static UnitempApp* unitemp_app_alloc(void) {
     furi_thread_set_context(app->reader_thread, app);
     furi_thread_set_callback(app->reader_thread, unitemp_sensors_update_callback);
 
-    app->event_queue = furi_message_queue_alloc(8, sizeof(InputEvent));
     app->power = furi_record_open(RECORD_POWER);
+    app->notifications = furi_record_open(RECORD_NOTIFICATION);
+
+    //GUI allocations
     app->gui = furi_record_open(RECORD_GUI);
-
-    app->scene_manager = scene_manager_alloc(&unitemp_scene_handlers, app);
-
     app->view_dispatcher = view_dispatcher_alloc();
+    app->scene_manager = scene_manager_alloc(&unitemp_scene_handlers, app);
     view_dispatcher_set_event_callback_context(app->view_dispatcher, app);
+
     view_dispatcher_set_custom_event_callback(app->view_dispatcher, unitemp_custom_event_callback);
     view_dispatcher_set_navigation_event_callback(
         app->view_dispatcher, unitemp_back_event_callback);
     view_dispatcher_set_tick_event_callback(
-        app->view_dispatcher, unitemp_tick_event_callback, 100);
+        app->view_dispatcher, unitemp_tick_event_callback, 1000);
+    view_dispatcher_attach_to_gui(app->view_dispatcher, app->gui, ViewDispatcherTypeFullscreen);
 
     app->submenu = submenu_alloc();
     view_dispatcher_add_view(
@@ -183,7 +185,6 @@ static UnitempApp* unitemp_app_alloc(void) {
     view_dispatcher_add_view(
         app->view_dispatcher, UnitempViewSingleSensor, single_sensor_get_view(app->single_sensor));
 
-    app->notifications = furi_record_open(RECORD_NOTIFICATION);
     return app;
 }
 
@@ -207,7 +208,6 @@ static void unitemp_app_free(UnitempApp* app) {
     scene_manager_free(app->scene_manager);
 
     furi_thread_free(app->reader_thread);
-    furi_message_queue_free(app->event_queue);
 
     storage_file_free(app->file);
 
@@ -215,8 +215,6 @@ static void unitemp_app_free(UnitempApp* app) {
     furi_record_close(RECORD_POWER);
     furi_record_close(RECORD_GUI);
     furi_record_close(RECORD_STORAGE);
-
-    // Close storage
 
     free(app->settings);
     free(app);
@@ -233,6 +231,9 @@ static void unitemp_run(UnitempApp* app) {
     unitemp_sensors_init(app);
     /* Start the reader thread. It will talk to the thermometer in the background. */
     furi_thread_start(app->reader_thread);
+
+    scene_manager_next_scene(app->scene_manager, UnitempSceneGeneral);
+    view_dispatcher_run(app->view_dispatcher);
 }
 static void unitemp_stop(UnitempApp* app) {
     /* Signal the reader thread to cease operation and exit */
@@ -252,10 +253,6 @@ int32_t unitemp_app() {
     UNITEMP_DEBUG("Unitemp application started");
     UnitempApp* app = unitemp_app_alloc();
     unitemp_run(app);
-
-    view_dispatcher_attach_to_gui(app->view_dispatcher, app->gui, ViewDispatcherTypeFullscreen);
-    scene_manager_next_scene(app->scene_manager, UnitempSceneGeneral);
-    view_dispatcher_run(app->view_dispatcher);
 
     unitemp_stop(app);
     unitemp_app_free(app);

@@ -151,4 +151,9 @@ View* single_sensor_get_view(SingleSensor* single_sensor) {
     return single_sensor->view;
 }
 
-//TODO: вынести данные с датчиков в модель и обновлять экран из треда обновления датчиков
+void single_sensor_refresh_data(SingleSensor* instance) {
+    furi_assert(instance);
+
+    //Вызываем перерисовку вида псевдообновлением модели. Вызывается по таймеру каждую секнуду
+    with_view_model(instance->view, SingleSensorViewModel * model, { UNUSED(model); }, true);
+}

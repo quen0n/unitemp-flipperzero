@@ -134,7 +134,6 @@ typedef struct {
     NotificationApp* notifications;
 
     FuriThread* reader_thread;
-    FuriMessageQueue* event_queue;
     Power* power;
 
     //TODO: переместить список загруженных датчиков в эту структуру
