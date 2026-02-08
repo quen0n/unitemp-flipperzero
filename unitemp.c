@@ -179,6 +179,9 @@ static UnitempApp* unitemp_app_alloc(void) {
     app->no_sensors = no_sensors_alloc(app);
     view_dispatcher_add_view(
         app->view_dispatcher, UnitempViewNoSensors, no_sensors_get_view(app->no_sensors));
+    app->single_sensor = single_sensor_alloc(app);
+    view_dispatcher_add_view(
+        app->view_dispatcher, UnitempViewSingleSensor, single_sensor_get_view(app->single_sensor));
 
     app->notifications = furi_record_open(RECORD_NOTIFICATION);
     return app;
@@ -187,6 +190,8 @@ static UnitempApp* unitemp_app_alloc(void) {
 static void unitemp_app_free(UnitempApp* app) {
     unitemp_sensors_free();
 
+    view_dispatcher_remove_view(app->view_dispatcher, UnitempViewSingleSensor);
+    single_sensor_free(app->single_sensor);
     view_dispatcher_remove_view(app->view_dispatcher, UnitempViewNoSensors);
     no_sensors_free(app->no_sensors);
     view_dispatcher_remove_view(app->view_dispatcher, UnitempViewVariableList);

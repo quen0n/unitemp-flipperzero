@@ -18,13 +18,37 @@
 
 #include "../unitemp.h"
 
+typedef enum {
+    NoSensorsViewMode,
+    SingleSensorViewMode,
+    ListSensorViewMode,
+
+    ViewModesCount
+} GeneralViewMode;
+
+typedef struct {
+    GeneralViewMode view_mode;
+    void* context;
+} UnitempSceneGeneralStruct;
+
+UnitempSceneGeneralStruct* unitemp_scene_general_data;
+
 void unitemp_scene_general_on_enter(void* context) {
     furi_assert(context);
     UnitempApp* app = context;
+    unitemp_scene_general_data = malloc(sizeof(UnitempSceneGeneralStruct));
+
     if(app->settings->infinity_backlight) {
         notification_message(app->notifications, &sequence_display_backlight_enforce_on);
     }
-    view_dispatcher_switch_to_view(app->view_dispatcher, UnitempViewNoSensors);
+
+    if(unitemp_sensors_get_count() == 0) {
+        unitemp_scene_general_data->view_mode = NoSensorsViewMode;
+        view_dispatcher_switch_to_view(app->view_dispatcher, UnitempViewNoSensors);
+    } else {
+        unitemp_scene_general_data->view_mode = SingleSensorViewMode;
+        view_dispatcher_switch_to_view(app->view_dispatcher, UnitempViewSingleSensor);
+    }
 }
 
 bool unitemp_scene_general_on_event(void* context, SceneManagerEvent event) {
@@ -39,4 +63,5 @@ void unitemp_scene_general_on_exit(void* context) {
     if(app->settings->infinity_backlight) {
         notification_message(app->notifications, &sequence_display_backlight_enforce_auto);
     }
+    free(unitemp_scene_general_data);
 }

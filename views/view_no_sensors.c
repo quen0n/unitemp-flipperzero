@@ -15,7 +15,7 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
-#include "no_sensors.h"
+#include "view_no_sensors.h"
 #include "../unitemp.h"
 
 #include <gui/elements.h>
@@ -25,7 +25,6 @@ extern const Icon I_Ok_btn_9x9;
 
 struct NoSensors {
     View* view;
-    NoSensorsOkCallback callback;
     void* context;
 };
 

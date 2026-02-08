@@ -29,7 +29,8 @@
 
 #include "scenes/unitemp_scene.h"
 
-#include "views/no_sensors.h"
+#include "views/view_no_sensors.h"
+#include "views/view_single_sensor.h"
 
 #include <power/power_service/power.h>
 
@@ -66,6 +67,7 @@ typedef enum {
     UnitempViewWidget,
     UnitempViewVariableList,
     UnitempViewNoSensors,
+    UnitempViewSingleSensor,
     // UnitempViewByteInput,
     // UnitempViewTextInput,
     // UnitempViewLoading,
@@ -122,6 +124,7 @@ typedef struct {
     Submenu* submenu;
     VariableItemList* var_item_list;
     NoSensors* no_sensors;
+    SingleSensor* single_sensor;
     Gui* gui;
 
     Sensor** sensors_list;
