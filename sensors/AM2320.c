@@ -22,7 +22,7 @@
 const SensorModel AM2320_SW = {
     .modelname = "AM2320",
     .altname = "AM2320 (single wire)",
-    .interface = &SINGLE_WIRE,
+    .interface = &SINGLEWIRE,
     .data_type = UT_DATA_TYPE_TEMP_HUM,
     .polling_interval = 2000,
     .allocator = unitemp_singlewire_alloc,

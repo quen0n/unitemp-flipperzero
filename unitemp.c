@@ -158,7 +158,7 @@ static UnitempApp* unitemp_app_alloc(void) {
     view_dispatcher_set_navigation_event_callback(
         app->view_dispatcher, unitemp_back_event_callback);
     view_dispatcher_set_tick_event_callback(
-        app->view_dispatcher, unitemp_tick_event_callback, 1000);
+        app->view_dispatcher, unitemp_tick_event_callback, 250);
     view_dispatcher_attach_to_gui(app->view_dispatcher, app->gui, ViewDispatcherTypeFullscreen);
 
     app->submenu = submenu_alloc();
@@ -260,51 +260,6 @@ int32_t unitemp_app() {
     UNITEMP_DEBUG("Unitemp application finished");
     return 0;
 }
-
-// static void unitemp_draw_callback(Canvas* canvas, void* ctx) {
-//     UnitempApp* app = ctx;
-//     UNUSED(app);
-//     char text_store[TEXT_STORE_SIZE];
-//     const size_t middle_x = canvas_width(canvas) / 2U;
-
-//     canvas_set_font(canvas, FontPrimary);
-//     canvas_draw_str_aligned(canvas, middle_x, 12, AlignCenter, AlignBottom, "Thermometer Demo");
-//     canvas_draw_line(canvas, 0, 16, 128, 16);
-
-//     canvas_set_font(canvas, FontSecondary);
-//     canvas_draw_str_aligned(canvas, middle_x, 30, AlignCenter, AlignBottom, "Connect thermometer");
-
-//     if(unitemp_sensors_get_count() == 0) {
-//         canvas_draw_str_aligned(
-//             canvas, middle_x, 42, AlignCenter, AlignBottom, "No sensors loaded");
-//         return;
-//     } else {
-//         snprintf(
-//             text_store,
-//             TEXT_STORE_SIZE,
-//             "to GPIO pin %s",
-//             ((SingleWireSensor*)(unitemp_sensors_get()[0]->instance))->gpio_pin->name);
-//         canvas_draw_str_aligned(canvas, middle_x, 42, AlignCenter, AlignBottom, text_store);
-
-//         canvas_set_font(canvas, FontKeyboard);
-
-//         /* If a reading is available, display it */
-//         snprintf(
-//             text_store,
-//             TEXT_STORE_SIZE,
-//             "Temperature: %+.1f°C",
-//             (double)unitemp_sensors_get()[0]->temp);
-
-//         canvas_draw_str_aligned(canvas, middle_x, 58, AlignCenter, AlignBottom, text_store);
-//     }
-// }
-
-// /* This function is called from the GUI thread. All it does is put the event
-//    into the application's queue so it can be processed later. */
-// static void unitemp_input_callback(InputEvent* event, void* ctx) {
-//     UnitempApp* app = ctx;
-//     furi_message_queue_put(app->event_queue, event, FuriWaitForever);
-// }
 
 /*bool open_result = storage_file_open(
         app->file, APP_DATA_PATH(APP_SETTINGS_FILENAME), FSAM_READ, FSOM_OPEN_EXISTING);

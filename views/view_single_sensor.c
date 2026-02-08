@@ -17,13 +17,14 @@
 */
 #include "view_single_sensor.h"
 #include "../unitemp.h"
+#include "../interfaces/singlewire.h"
 
 #include <stdlib.h>
 #include <gui/elements.h>
 
 #include "unitemp_icons.h"
 
-#define TEMP_STR_SIZE 11
+#define TEMP_STR_SIZE 30
 static char temp_str[TEMP_STR_SIZE];
 
 struct SingleSensor {
@@ -38,6 +39,24 @@ typedef struct {
     void* context;
 } SingleSensorViewModel;
 
+// Координаты рисования значений
+// Первый индекс согласуется с SensorDataType. Второй индекс - координаты X и Y соответственно
+static const uint8_t temp_positions[UT_DATA_TYPE_COUNT][2] = {
+    {37, 23}, //UT_DATA_TYPE_TEMP
+    {37, 16}, //UT_DATA_TYPE_TEMP_HUM
+    {9, 16}, //UT_DATA_TYPE_TEMP_PRESS
+    {9, 16}, //UT_DATA_TYPE_TEMP_HUM_PRESS //TODO: проверить
+    {9, 16} //UT_DATA_TYPE_TEMP_HUM_CO2 //TODO: проверить
+};
+static const uint8_t hum_positions[UT_DATA_TYPE_COUNT][2] = {
+    {0, 0}, //UT_DATA_TYPE_TEMP (not used)
+    {37, 38}, //UT_DATA_TYPE_TEMP_HUM
+    {0, 0}, //UT_DATA_TYPE_TEMP_PRESS (not used)
+    {37, 16}, //UT_DATA_TYPE_TEMP_HUM_PRESS
+    {0, 0} //UT_DATA_TYPE_TEMP_HUM_CO2 (not used)
+};
+
+//TODO: убрать цвет из параметров функции
 static void _draw_temperature(
     Canvas* canvas,
     Sensor* sensor,
@@ -142,6 +161,35 @@ static void _draw_humidity(
     }
 }
 
+static void _draw_sensor_not_responding(Canvas* canvas, Sensor* sensor) {
+    const Icon* frames[] = {
+        &I_flipper_happy_60x38, &I_flipper_happy_2_60x38, &I_flipper_sad_60x38};
+    canvas_draw_icon(canvas, 34, 23, frames[furi_get_tick() % 2250 / 750]);
+
+    canvas_set_font(canvas, FontSecondary);
+
+    if(sensor->type->interface == &SINGLEWIRE) {
+        snprintf(
+            temp_str,
+            TEMP_STR_SIZE,
+            "Sensor waiting on %s",
+            ((SingleWireSensor*)sensor->instance)->gpio_pin->name);
+    }
+    // if(sensor->type->interface == &ONE_WIRE) {
+    //     snprintf(
+    //         temp_str,
+    //         TEMP_STR_SIZE,
+    //         "Sensor waiting on %d",
+    //         ((OneWireSensor*)sensor->instance)->bus->gpio->num);
+    // }
+    // if(sensor->type->interface == &I2C) {
+    //     snprintf(temp_str, TEMP_STR_SIZE, "Waiting for module on I2C pins");
+    // }
+    // if(sensor->type->interface == &SPI) {
+    //     snprintf(temp_str, TEMP_STR_SIZE, "Waiting for module on SPI pins");
+    // }
+    canvas_draw_str_aligned(canvas, 65, 19, AlignCenter, AlignCenter, temp_str);
+}
 void single_sensor_draw_sensor(
     Canvas* canvas,
     Sensor* sensor,
@@ -160,38 +208,27 @@ void single_sensor_draw_sensor(
     uint8_t line_len = canvas_string_width(canvas, sensor->name) + 2;
     canvas_draw_line(canvas, 64 - line_len / 2, 12, 64 + line_len / 2, 12);
 
-    //Первый индекс согласуется с SensorDataType. Второй индекс - координаты X и Y соответственно
-    static const uint8_t temp_positions[UT_DATA_TYPE_COUNT][2] = {
-        {37, 23}, //UT_DATA_TYPE_TEMP
-        {37, 16}, //UT_DATA_TYPE_TEMP_HUM
-        {9, 16}, //UT_DATA_TYPE_TEMP_PRESS
-        {9, 16}, //UT_DATA_TYPE_TEMP_HUM_PRESS //TODO: проверить
-        {9, 16} //UT_DATA_TYPE_TEMP_HUM_CO2 //TODO: проверить
-    };
-    static const uint8_t hum_positions[UT_DATA_TYPE_COUNT][2] = {
-        {0, 0}, //UT_DATA_TYPE_TEMP (not used)
-        {37, 38}, //UT_DATA_TYPE_TEMP_HUM
-        {0, 0}, //UT_DATA_TYPE_TEMP_PRESS (not used)
-        {37, 16}, //UT_DATA_TYPE_TEMP_HUM_PRESS
-        {0, 0} //UT_DATA_TYPE_TEMP_HUM_CO2 (not used)
-    };
     SensorDataType data_type = sensor->type->data_type;
 
-    //Значения с нулевыми координатами не отрисовываются
-    _draw_temperature(
-        canvas,
-        sensor,
-        temp_unit,
-        temp_positions[data_type][0],
-        temp_positions[data_type][1],
-        ColorWhite);
-    _draw_humidity(
-        canvas,
-        sensor,
-        humidity_unit,
-        temp_unit,
-        hum_positions[data_type][0],
-        hum_positions[data_type][1]);
+    if(sensor->status == UT_SENSORSTATUS_OK) {
+        //Значения с нулевыми координатами не отрисовываются
+        _draw_temperature(
+            canvas,
+            sensor,
+            temp_unit,
+            temp_positions[data_type][0],
+            temp_positions[data_type][1],
+            ColorWhite);
+        _draw_humidity(
+            canvas,
+            sensor,
+            humidity_unit,
+            temp_unit,
+            hum_positions[data_type][0],
+            hum_positions[data_type][1]);
+    } else {
+        _draw_sensor_not_responding(canvas, sensor);
+    }
 }
 
 static void single_sensor_draw_callback(Canvas* canvas, void* model) {

@@ -8,11 +8,15 @@
 - Saving the config is done only when it is initially created or subsequently modified
 - The backlight glows indefinitely only when displaying sensor values. In the menu, the backlight will off according to the system settings
 
-TODO: автоматическое включение питание сделать настраиваемым
-TODO: исправить необновление экрана при запуске из избранного
-TODO: запускать и останавливать тред с датчиками при входе и выходе из general scene
-TODO: мигратор с старого конфига на новый
+TODO: анимация при отсутствии датчика
+TODO: что там с temp. offset? он вообще используется?
+TODO: конвертация единиц измерения - температура, влажность, давление
 TODO: для отображение точки росы в иконке использовать значки с *С и *F
+TODO: поддержка onewire датчиков
+TODO: перелистывание датчиков в single sensor view
+TODO: запускать и останавливать тред с опросом датчиков при входе и выходе из general scene
+TODO: автоматическое включение питание сделать настраиваемым
+TODO: мигратор с старого конфига на новый
 TODO: в readme добавить краткий гайд по использованию и основным фичам
 TODO: в readme у изображений удалить фон, добавить уже поддерживаемые датчики
 ## Unitemp 1.8
