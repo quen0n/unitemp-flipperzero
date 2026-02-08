@@ -281,7 +281,7 @@ SensorStatus unitemp_sensor_update(Sensor* sensor, void* ctx) {
     }
 
     //Checking the validity of the sensor polling
-    if(furi_get_tick() - sensor->lastPollingTime < sensor->type->pollingInterval) {
+    if(furi_get_tick() - sensor->lastPollingTime < sensor->type->polling_interval) {
         //Return an error if the last sensor poll was unsuccessful
         if(sensor->status == UT_SENSORSTATUS_TIMEOUT) {
             return UT_SENSORSTATUS_TIMEOUT;
@@ -291,12 +291,19 @@ SensorStatus unitemp_sensor_update(Sensor* sensor, void* ctx) {
 
     sensor->lastPollingTime = furi_get_tick();
 
-    power_enable_otg(app->power, false);
+    //todo не включать питание если подключено USB
+    power_enable_otg(app->power, true);
 
     sensor->status = sensor->type->interface->updater(sensor);
 
     if(sensor->status != UT_SENSORSTATUS_OK && sensor->status != UT_SENSORSTATUS_POLLING) {
-        UNITEMP_DEBUG("Sensor %s update status %d", sensor->name, sensor->status);
+        FURI_LOG_W(APP_NAME, "Sensor %s update status %d", sensor->name, sensor->status);
+    } else {
+        UNITEMP_DEBUG(
+            "Sensor %s successfully updated. Values: temp=%.2f, hum=%.2f",
+            sensor->name,
+            (double)sensor->temp,
+            (double)sensor->hum);
     }
 
     if(sensor->status == UT_SENSORSTATUS_OK) {

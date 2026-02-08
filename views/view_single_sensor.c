@@ -33,7 +33,8 @@ struct SingleSensor {
 
 typedef struct {
     uint8_t sensor_index;
-    TempMeasureUnit unit;
+    TempMeasureUnit temp_unit;
+    HumidityMeausureUnit humidity_unit;
     void* context;
 } SingleSensorViewModel;
 
@@ -44,6 +45,8 @@ static void _draw_temperature(
     uint8_t x,
     uint8_t y,
     Color color) {
+    //Не рисовать, если координаты равны нулю
+    if(x == 0 && y == 0) return;
     //Drawing a frame
     canvas_draw_rframe(canvas, x, y, 54, 20, 3);
 
@@ -95,10 +98,106 @@ static void _draw_temperature(
     if(color == ColorBlack) canvas_invert_color(canvas);
 }
 
+static void _draw_humidity(
+    Canvas* canvas,
+    Sensor* sensor,
+    HumidityMeausureUnit hum_unit,
+    TempMeasureUnit temp_unit,
+    uint8_t x,
+    uint8_t y) {
+    //Не рисовать, если координаты равны нулю
+    if(x == 0 && y == 0) return;
+    // Drawing the frame
+    canvas_draw_rframe(canvas, x, y, 54, 20, 3);
+    canvas_draw_rframe(canvas, x, y, 54, 19, 3);
+
+    if(hum_unit == UT_HUMIDITY_RELATIVE) {
+        // Drawing the icon
+        canvas_draw_icon(canvas, x + 3, y + 2, &I_hum_relative_9x15);
+        // Relative humidity
+        snprintf(temp_str, TEMP_STR_SIZE, "%d", (uint8_t)sensor->hum);
+        canvas_set_font(canvas, FontBigNumbers);
+        canvas_draw_str_aligned(canvas, x + 27, y + 10, AlignCenter, AlignCenter, temp_str);
+        uint8_t int_len = canvas_string_width(canvas, temp_str);
+        // Adding '%' for relative humidity
+        canvas_set_font(canvas, FontPrimary);
+        canvas_draw_str(canvas, x + 27 + int_len / 2 + 4, y + 10 + 7, "%");
+    } else if(hum_unit == UT_HUMIDITY_DEWPOINT) {
+        // Drawing the icon
+        canvas_draw_icon(
+            canvas,
+            x + 3,
+            y + 2,
+            temp_unit == UT_TEMP_CELSIUS ? &I_hum_dewpoint_c_9x15 : &I_hum_dewpoint_f_9x15);
+        // Dewpoint with a decimal
+        int humidity_dec = abs((int16_t)(sensor->hum * 10) % 10);
+        snprintf(temp_str, TEMP_STR_SIZE, "%d", (int16_t)sensor->hum);
+        canvas_set_font(canvas, FontBigNumbers);
+        canvas_draw_str_aligned(canvas, x + 27, y + 10, AlignCenter, AlignCenter, temp_str);
+        uint8_t int_len = canvas_string_width(canvas, temp_str);
+        // Printing the decimal part similar to temperature display
+        snprintf(temp_str, TEMP_STR_SIZE, ".%d", humidity_dec);
+        canvas_set_font(canvas, FontPrimary);
+        canvas_draw_str(canvas, x + 27 + int_len / 2 + 2, y + 10 + 7, temp_str);
+    }
+}
+
+void single_sensor_draw_sensor(
+    Canvas* canvas,
+    Sensor* sensor,
+    TempMeasureUnit temp_unit,
+    HumidityMeausureUnit humidity_unit) {
+    if(sensor == NULL) return;
+
+    //Drawing a frame
+    canvas_draw_rframe(canvas, 0, 0, 128, 63, 7);
+    canvas_draw_rframe(canvas, 0, 0, 128, 64, 7);
+
+    //Name stamp
+    canvas_set_font(canvas, FontPrimary);
+    canvas_draw_str_aligned(canvas, 64, 7, AlignCenter, AlignCenter, sensor->name);
+    //Underscore
+    uint8_t line_len = canvas_string_width(canvas, sensor->name) + 2;
+    canvas_draw_line(canvas, 64 - line_len / 2, 12, 64 + line_len / 2, 12);
+
+    //Первый индекс согласуется с SensorDataType. Второй индекс - координаты X и Y соответственно
+    static const uint8_t temp_positions[UT_DATA_TYPE_COUNT][2] = {
+        {37, 23}, //UT_DATA_TYPE_TEMP
+        {37, 16}, //UT_DATA_TYPE_TEMP_HUM
+        {9, 16}, //UT_DATA_TYPE_TEMP_PRESS
+        {9, 16}, //UT_DATA_TYPE_TEMP_HUM_PRESS //TODO: проверить
+        {9, 16} //UT_DATA_TYPE_TEMP_HUM_CO2 //TODO: проверить
+    };
+    static const uint8_t hum_positions[UT_DATA_TYPE_COUNT][2] = {
+        {0, 0}, //UT_DATA_TYPE_TEMP (not used)
+        {37, 38}, //UT_DATA_TYPE_TEMP_HUM
+        {0, 0}, //UT_DATA_TYPE_TEMP_PRESS (not used)
+        {37, 16}, //UT_DATA_TYPE_TEMP_HUM_PRESS
+        {0, 0} //UT_DATA_TYPE_TEMP_HUM_CO2 (not used)
+    };
+    SensorDataType data_type = sensor->type->data_type;
+
+    //Значения с нулевыми координатами не отрисовываются
+    _draw_temperature(
+        canvas,
+        sensor,
+        temp_unit,
+        temp_positions[data_type][0],
+        temp_positions[data_type][1],
+        ColorWhite);
+    _draw_humidity(
+        canvas,
+        sensor,
+        humidity_unit,
+        temp_unit,
+        hum_positions[data_type][0],
+        hum_positions[data_type][1]);
+}
+
 static void single_sensor_draw_callback(Canvas* canvas, void* model) {
     SingleSensorViewModel* view_model = model;
-    Sensor* sensor = unitemp_sensors_get()[0];
-    _draw_temperature(canvas, sensor, view_model->unit, 37, 22, ColorWhite);
+    Sensor* sensor = unitemp_sensors_get()[view_model->sensor_index];
+    single_sensor_draw_sensor(canvas, sensor, view_model->temp_unit, view_model->humidity_unit);
 }
 
 static bool single_sensor_input_callback(InputEvent* event, void* context) {
@@ -123,13 +222,18 @@ SingleSensor* single_sensor_alloc(void* context) {
     single_sensor->context = app;
     view_allocate_model(single_sensor->view, ViewModelTypeLockFree, sizeof(SingleSensorViewModel));
 
+    //todo: это всё делать в энтере сцены
     with_view_model(
         single_sensor->view,
         SingleSensorViewModel * model,
         {
             model->sensor_index = 0;
             model->context = app;
-            model->unit = app->settings->temp_unit;
+            model->temp_unit =
+                app->settings->temp_unit; //TODO: подтягивать прямо из настроек и не ебать кастрюлю
+            model->humidity_unit =
+                app->settings
+                    ->humidity_unit; //TODO: подтягивать прямо из настроек и не ебать кастрюлю
         },
         false);
 

@@ -21,21 +21,15 @@
 #include <furi.h>
 #include <furi_hal.h>
 
-//TODO: Воспользоваться битовыи полями?
-//Bit masks to define return types
-#define UT_TEMPERATURE 0b00000001
-#define UT_HUMIDITY    0b00000010
-#define UT_PRESSURE    0b00000100
-#define UT_CO2         0b00001000
-#define UT_CALIBRATION 0b10000000
-
-//Sensor polling statuses
+// Values returned when polling the sensor
 typedef enum {
-    UT_DATA_TYPE_TEMP = UT_TEMPERATURE,
-    UT_DATA_TYPE_TEMP_HUM = UT_TEMPERATURE | UT_HUMIDITY,
-    UT_DATA_TYPE_TEMP_PRESS = UT_TEMPERATURE | UT_PRESSURE,
-    UT_DATA_TYPE_TEMP_HUM_PRESS = UT_TEMPERATURE | UT_HUMIDITY | UT_PRESSURE,
-    UT_DATA_TYPE_TEMP_HUM_CO2 = UT_TEMPERATURE | UT_HUMIDITY | UT_CO2,
+    UT_DATA_TYPE_TEMP,
+    UT_DATA_TYPE_TEMP_HUM,
+    UT_DATA_TYPE_TEMP_PRESS,
+    UT_DATA_TYPE_TEMP_HUM_PRESS,
+    UT_DATA_TYPE_TEMP_HUM_CO2,
+
+    UT_DATA_TYPE_COUNT
 } SensorDataType;
 
 //Return Types
@@ -98,11 +92,11 @@ typedef struct {
     //Full name with analogues
     const char* altname;
     //Return type
-    SensorDataType datatype;
+    SensorDataType data_type;
     //Connection interface
     const SensorConnectionInterface* interface;
     //Sensor polling interval (ms)
-    uint16_t pollingInterval;
+    uint16_t polling_interval;
     //Sensor memory allocation function
     SensorAllocator* allocator;
     //Sensor memory release function

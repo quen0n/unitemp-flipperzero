@@ -68,9 +68,6 @@ typedef enum {
     UnitempViewVariableList,
     UnitempViewNoSensors,
     UnitempViewSingleSensor,
-    // UnitempViewByteInput,
-    // UnitempViewTextInput,
-    // UnitempViewLoading,
 } UnitempView;
 
 //Temperature units
@@ -97,7 +94,7 @@ typedef enum {
     UT_HUMIDITY_DEWPOINT, // Dewpoint
 
     UT_HUMIDITY_COUNT // Number of humidity modes
-} HumidityUnit;
+} HumidityMeausureUnit;
 
 /* Declaration of structures */
 //Plugin settings
@@ -107,7 +104,7 @@ typedef struct {
     //Temperature unit
     TempMeasureUnit temp_unit;
     // Humidity units
-    HumidityUnit humidity_unit;
+    HumidityMeausureUnit humidity_unit;
     //Pressure unit
     PressureMeasureUnit pressure_unit;
     // Do calculate and show heat index

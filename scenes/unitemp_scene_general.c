@@ -47,6 +47,7 @@ void unitemp_scene_general_on_enter(void* context) {
         view_dispatcher_switch_to_view(app->view_dispatcher, UnitempViewNoSensors);
     } else {
         unitemp_scene_general_data->view_mode = SingleSensorViewMode;
+        //TODO: добавить обновление данных модели при каждом входе в сцену, чтобы отображались актуальные единицы измерения
         view_dispatcher_switch_to_view(app->view_dispatcher, UnitempViewSingleSensor);
     }
 }

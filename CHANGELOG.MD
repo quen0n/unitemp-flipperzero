@@ -8,6 +8,7 @@
 - Saving the config is done only when it is initially created or subsequently modified
 - The backlight glows indefinitely only when displaying sensor values. In the menu, the backlight will off according to the system settings
 
+TODO: автоматическое включение питание сделать настраиваемым
 TODO: исправить необновление экрана при запуске из избранного
 TODO: запускать и останавливать тред с датчиками при входе и выходе из general scene
 TODO: мигратор с старого конфига на новый
