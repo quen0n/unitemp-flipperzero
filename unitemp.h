@@ -102,7 +102,7 @@ typedef struct {
     //Endless backlight operation
     bool infinity_backlight;
     //Temperature unit
-    TempMeasureUnit temp_unit;
+    TempMeasureUnit temperature_unit;
     // Humidity units
     HumidityMeausureUnit humidity_unit;
     //Pressure unit

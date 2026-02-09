@@ -57,10 +57,10 @@ bool unitemp_settings_load(void* context) {
     LocaleMeasurementUnits lmu = locale_get_measurement_unit();
     //Установка единиц измерения температуры в соответствии с системными настройками
     if(lmu == LocaleMeasurementUnitsImperial) {
-        app->settings->temp_unit = UT_TEMP_FAHRENHEIT;
+        app->settings->temperature_unit = UT_TEMP_FAHRENHEIT;
         app->settings->pressure_unit = UT_PRESSURE_IN_HG;
     } else {
-        app->settings->temp_unit = UT_TEMP_CELSIUS;
+        app->settings->temperature_unit = UT_TEMP_CELSIUS;
         app->settings->pressure_unit = UT_PRESSURE_MM_HG;
     }
     app->settings->humidity_unit = UT_HUMIDITY_RELATIVE;
@@ -79,8 +79,8 @@ bool unitemp_settings_load(void* context) {
         // Reading settings from a file. If any key is not read, the default value will be used
         flipper_format_read_uint32(file, "infinity_backlight", &uint32_value, 1);
         app->settings->infinity_backlight = uint32_value;
-        flipper_format_read_uint32(file, "temp_unit", &uint32_value, 1);
-        app->settings->temp_unit = uint32_value;
+        flipper_format_read_uint32(file, "temperature_unit", &uint32_value, 1);
+        app->settings->temperature_unit = uint32_value;
         flipper_format_read_uint32(file, "humidity_unit", &uint32_value, 1);
         app->settings->humidity_unit = uint32_value;
         flipper_format_read_uint32(file, "pressure_unit", &uint32_value, 1);
@@ -112,8 +112,8 @@ bool unitemp_settings_save(void* context) {
             break;
         uint32_t buff = app->settings->infinity_backlight;
         if(!flipper_format_write_uint32(file, "infinity_backlight", &buff, 1)) break;
-        buff = app->settings->temp_unit;
-        if(!flipper_format_write_uint32(file, "temp_unit", &buff, 1)) break;
+        buff = app->settings->temperature_unit;
+        if(!flipper_format_write_uint32(file, "temperature_unit", &buff, 1)) break;
         buff = app->settings->humidity_unit;
         if(!flipper_format_write_uint32(file, "humidity_unit", &buff, 1)) break;
         buff = app->settings->pressure_unit;
@@ -311,8 +311,8 @@ int32_t unitemp_app() {
             // Read the parameter value
             int p = 0;
             sscanf(((char*)(file_buf + line_end)), "\nTEMP_UNIT %d", &p);
-            app->settings->temp_unit = p;
-            UNITEMP_DEBUG("TEMP_UNIT %d", app->settings->temp_unit);
+            app->settings->temperature_unit = p;
+            UNITEMP_DEBUG("TEMP_UNIT %d", app->settings->temperature_unit);
         } else if(!strcmp(buff, "HUMIDITY_UNIT")) {
             int p = 9;
             sscanf(((char*)(file_buf + line_end)), "\nHUMIDITY_UNIT %d", &p);

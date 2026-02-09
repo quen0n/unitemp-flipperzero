@@ -4,8 +4,6 @@
 #include "sensors/DHTxx.h"
 #include "sensors/AM2320.h"
 
-#include <locale/locale.h>
-
 #define UPDATE_PERIOD_MS 250UL
 
 //TODO: Перенести всё что относится к GPIO в другой файл
@@ -107,6 +105,35 @@ float unitemp_calculate_dew_point(float temperature_in_celsius, float humidity_i
     float dew_point = (b * alpha) / (a - alpha);
 
     return dew_point;
+}
+
+float unitemp_calculate_heat_index(float temperature_in_fahrenheit, float humidity_in_percent) {
+    if(humidity_in_percent <= 0.0f || humidity_in_percent > 100.0f ||
+       temperature_in_fahrenheit < 80.0f) {
+        return temperature_in_fahrenheit;
+    }
+
+    float temp_f = temperature_in_fahrenheit;
+    float rh = humidity_in_percent;
+
+    // Rothfusz regression coefficients
+    const float c1 = -42.379f;
+    const float c2 = 2.04901523f;
+    const float c3 = 10.14333127f;
+    const float c4 = -0.22475541f;
+    const float c5 = -0.00683783f;
+    const float c6 = -0.05481717f;
+    const float c7 = 0.00122874f;
+    const float c8 = 0.00085282f;
+    const float c9 = -0.00000199f;
+
+    float t2 = temp_f * temp_f;
+    float rh2 = rh * rh;
+
+    float hi_f = c1 + c2 * temp_f + c3 * rh + c4 * temp_f * rh + c5 * t2 + c6 * rh2 +
+                 c7 * t2 * rh + c8 * temp_f * rh2 + c9 * t2 * rh2;
+
+    return hi_f;
 }
 
 /* Periodically requests measurements and reads temperature. This function runs in a separare thread. */
@@ -326,15 +353,5 @@ SensorStatus unitemp_sensor_update(Sensor* sensor, void* ctx) {
     if(sensor->status == UT_SENSORSTATUS_OK) {
         sensor->temperature += sensor->temperature_offset / 10.f;
     }
-    if(app->settings->humidity_unit == UT_HUMIDITY_DEW_POINT) {
-        sensor->humidity = unitemp_calculate_dew_point(sensor->temperature, sensor->humidity);
-    }
-    if(app->settings->temp_unit == UT_TEMP_FAHRENHEIT) {
-        sensor->temperature = locale_celsius_to_fahrenheit(sensor->temperature);
-        if(app->settings->humidity_unit == UT_HUMIDITY_DEW_POINT) {
-            sensor->humidity = locale_celsius_to_fahrenheit(sensor->humidity);
-        }
-    }
-
     return sensor->status;
 }

@@ -21,6 +21,7 @@
 
 #include <stdlib.h>
 #include <gui/elements.h>
+#include <locale/locale.h>
 
 #include "unitemp_icons.h"
 
@@ -46,89 +47,89 @@ typedef struct {
 #define UT_DATA_POS_DOWN_RIGHT  65, 38
 #define UT_DATA_POS_NONE        255, 255
 
-// Координаты рисования значений
-// Первый индекс согласуется с SensorDataType. Второй индекс - координаты X и Y соответственно
-static const uint8_t temp_positions[UT_DATA_TYPE_COUNT][2] = {
-    {UT_DATA_POS_CENTER}, //UT_DATA_TYPE_TEMP
-    {UT_DATA_POS_UP_MIDDLE}, //UT_DATA_TYPE_TEMP_HUM
-    {UT_DATA_POS_CENTER}, //UT_DATA_TYPE_TEMP_PRESS
-    {UT_DATA_POS_UP_LEFT}, //UT_DATA_TYPE_TEMP_HUM_PRESS
-    {UT_DATA_POS_UP_LEFT} //UT_DATA_TYPE_TEMP_HUM_CO2
+//Массив содержит в себе сколько элементов в себе содержит то или иное отображение UT_DATA_TYPE
+static const uint8_t data_types_values_count[UT_DATA_TYPE_COUNT] = {
+    1, //UT_DATA_TYPE_TEMP
+    2, //UT_DATA_TYPE_TEMP_HUM
+    2, //UT_DATA_TYPE_TEMP_PRESS
+    3, //UT_DATA_TYPE_TEMP_HUM_PRESS
+    3, //UT_DATA_TYPE_TEMP_HUM_CO2
 };
-static const uint8_t hum_positions[UT_DATA_TYPE_COUNT][2] = {
-    {UT_DATA_POS_NONE}, //UT_DATA_TYPE_TEMP (not used)
-    {UT_DATA_POS_DOWN_MIDDLE}, //UT_DATA_TYPE_TEMP_HUM
-    {UT_DATA_POS_NONE}, //UT_DATA_TYPE_TEMP_PRESS (not used)
-    {UT_DATA_POS_UP_RIGHT}, //UT_DATA_TYPE_TEMP_HUM_PRESS
-    {UT_DATA_POS_NONE} //UT_DATA_TYPE_TEMP_HUM_CO2 (not used)
+//Массив содержит координаты для отображения одного, двух и более элементов
+static const uint8_t values_positions[4][4][2] = {
+    {{UT_DATA_POS_CENTER}},
+    {{UT_DATA_POS_UP_MIDDLE}, {UT_DATA_POS_DOWN_MIDDLE}},
+    {{UT_DATA_POS_UP_LEFT}, {UT_DATA_POS_UP_RIGHT}, {UT_DATA_POS_DOWN_MIDDLE}},
+    {{UT_DATA_POS_UP_LEFT},
+     {UT_DATA_POS_UP_RIGHT},
+     {UT_DATA_POS_DOWN_LEFT},
+     {UT_DATA_POS_DOWN_RIGHT}},
 };
 
 //TODO: убрать цвет из параметров функции
 static void _draw_temperature(
     Canvas* canvas,
     Sensor* sensor,
-    TempMeasureUnit unit,
+    TempMeasureUnit temperature_unit,
     uint8_t x,
-    uint8_t y,
-    Color color) {
+    uint8_t y) {
     //Не рисовать, если координаты равны UT_DATA_POS_NONE
     if(x == 255 && y == 255) return;
     //Drawing a frame
     canvas_draw_rframe(canvas, x, y, 54, 20, 3);
+    canvas_draw_rframe(canvas, x, y, 54, 19, 3);
 
-    if(color == ColorBlack) {
-        canvas_draw_rbox(canvas, x, y, 54, 19, 3);
-        canvas_invert_color(canvas);
-    } else {
-        canvas_draw_rframe(canvas, x, y, 54, 19, 3);
+    float temperature = sensor->temperature;
+    if(temperature_unit == UT_TEMP_FAHRENHEIT) {
+        temperature = locale_celsius_to_fahrenheit(temperature);
     }
-
-    int8_t temp_dec = abs((int16_t)(sensor->temperature * 10) % 10);
+    int8_t temp_dec = abs((int16_t)(temperature * 10) % 10);
 
     //Drawing icon
     canvas_draw_icon(
-        canvas, x + 3, y + 3, (unit == UT_TEMP_CELSIUS ? &I_temp_C_11x14 : &I_temp_F_11x14));
+        canvas,
+        x + 3,
+        y + 3,
+        (temperature_unit == UT_TEMP_CELSIUS ? &I_temp_C_11x14 : &I_temp_F_11x14));
 
-    if((int16_t)sensor->temperature == -128 || sensor->status == UT_SENSORSTATUS_TIMEOUT) {
+    if((int16_t)temperature == -128 || sensor->status == UT_SENSORSTATUS_TIMEOUT) {
         canvas_set_font(canvas, FontBigNumbers);
         canvas_draw_str_aligned(canvas, x + 27, y + 10, AlignCenter, AlignCenter, "--");
         canvas_set_font(canvas, FontPrimary);
         canvas_draw_str_aligned(canvas, x + 50, y + 10 + 3, AlignRight, AlignCenter, ". -");
-        if(color == ColorBlack) canvas_invert_color(canvas);
         return;
     }
 
     //Whole part of temperature
     //A crutch for displaying the sign of a number less than 0
     uint8_t offset = 0;
-    if(sensor->temperature < 0 && sensor->temperature > -1) {
+    if(temperature < 0 && temperature > -1) {
         temp_str[0] = '-';
         offset = 1;
     }
-    snprintf((char*)(temp_str + offset), TEMP_STR_SIZE, "%d", (int16_t)sensor->temperature);
+    snprintf((char*)(temp_str + offset), TEMP_STR_SIZE, "%d", (int16_t)temperature);
     canvas_set_font(canvas, FontBigNumbers);
     canvas_draw_str_aligned(
         canvas,
-        x + 27 + ((sensor->temperature <= -10 || sensor->temperature > 99) ? 5 : 0),
+        x + 27 + ((temperature <= -10 || temperature > 99) ? 5 : 0),
         y + 10,
         AlignCenter,
         AlignCenter,
         temp_str);
     //Printing the fractional part of the temperature in the range from -9 to 99 (when there are two digits in the number)
-    if(sensor->temperature > -10 && sensor->temperature <= 99) {
+    if(temperature > -10 && temperature <= 99) {
         uint8_t int_len = canvas_string_width(canvas, temp_str);
         snprintf(temp_str, TEMP_STR_SIZE, ".%d", temp_dec);
         canvas_set_font(canvas, FontPrimary);
         canvas_draw_str(canvas, x + 27 + int_len / 2 + 2, y + 10 + 7, temp_str);
     }
-    if(color == ColorBlack) canvas_invert_color(canvas);
 }
 
 static void _draw_humidity(
     Canvas* canvas,
     Sensor* sensor,
     HumidityMeausureUnit hum_unit,
-    TempMeasureUnit temp_unit,
+    TempMeasureUnit temperature_unit,
     uint8_t x,
     uint8_t y) {
     //Не рисовать, если координаты равны UT_DATA_POS_NONE
@@ -149,15 +150,18 @@ static void _draw_humidity(
         canvas_set_font(canvas, FontPrimary);
         canvas_draw_str(canvas, x + 27 + int_len / 2 + 4, y + 10 + 7, "%");
     } else if(hum_unit == UT_HUMIDITY_DEW_POINT) {
-        // Drawing the icon
-        canvas_draw_icon(
-            canvas,
-            x + 3,
-            y + 2,
-            temp_unit == UT_TEMP_CELSIUS ? &I_hum_dewpoint_c_9x15 : &I_hum_dewpoint_f_9x15);
+        float dew_point = unitemp_calculate_dew_point(sensor->temperature, sensor->humidity);
+
+        if(temperature_unit == UT_TEMP_CELSIUS) {
+            canvas_draw_icon(canvas, x + 3, y + 2, &I_hum_dewpoint_c_9x15);
+        } else {
+            canvas_draw_icon(canvas, x + 3, y + 2, &I_hum_dewpoint_f_9x15);
+            dew_point = locale_celsius_to_fahrenheit(dew_point);
+        }
+
         // Dewpoint with a decimal
-        int humidity_dec = abs((int16_t)(sensor->humidity * 10) % 10);
-        snprintf(temp_str, TEMP_STR_SIZE, "%d", (int16_t)sensor->humidity);
+        int humidity_dec = abs((int16_t)(dew_point * 10) % 10);
+        snprintf(temp_str, TEMP_STR_SIZE, "%d", (int16_t)dew_point);
         canvas_set_font(canvas, FontBigNumbers);
         canvas_draw_str_aligned(canvas, x + 27, y + 10, AlignCenter, AlignCenter, temp_str);
         uint8_t int_len = canvas_string_width(canvas, temp_str);
@@ -166,6 +170,48 @@ static void _draw_humidity(
         canvas_set_font(canvas, FontPrimary);
         canvas_draw_str(canvas, x + 27 + int_len / 2 + 2, y + 10 + 7, temp_str);
     }
+}
+
+static void _draw_heat_index(
+    Canvas* canvas,
+    Sensor* sensor,
+    TempMeasureUnit temperature_unit,
+    uint8_t x,
+    uint8_t y) {
+    canvas_draw_rframe(canvas, x, y, 54, 20, 3);
+    canvas_draw_rframe(canvas, x, y, 54, 19, 3);
+
+    canvas_draw_icon(canvas, x + 3, y + 3, &I_heat_index_11x14);
+
+    float temperature = sensor->temperature;
+    float heat_index;
+    if(temperature >= 26.67f) {
+        temperature = locale_celsius_to_fahrenheit(sensor->temperature);
+        heat_index = unitemp_calculate_heat_index(temperature, sensor->humidity);
+        if(temperature_unit == UT_TEMP_CELSIUS) {
+            heat_index = locale_fahrenheit_to_celsius(heat_index);
+        }
+    } else {
+        heat_index = temperature;
+    }
+
+    int16_t heat_index_int = heat_index;
+    int8_t heat_index_dec = abs((int16_t)(heat_index * 10) % 10);
+
+    snprintf(temp_str, TEMP_STR_SIZE, "%d", heat_index_int);
+    canvas_set_font(canvas, FontBigNumbers);
+    canvas_draw_str_aligned(
+        canvas,
+        x + 27 + ((heat_index <= -10 || heat_index > 99) ? 5 : 0),
+        y + 10,
+        AlignCenter,
+        AlignCenter,
+        temp_str);
+
+    uint8_t int_len = canvas_string_width(canvas, temp_str);
+    snprintf(temp_str, TEMP_STR_SIZE, ".%d", heat_index_dec);
+    canvas_set_font(canvas, FontPrimary);
+    canvas_draw_str(canvas, x + 27 + int_len / 2 + 2, y + 10 + 7, temp_str);
 }
 
 static void _draw_sensor_not_responding(Canvas* canvas, Sensor* sensor) {
@@ -197,11 +243,7 @@ static void _draw_sensor_not_responding(Canvas* canvas, Sensor* sensor) {
     // }
     canvas_draw_str_aligned(canvas, 65, 19, AlignCenter, AlignCenter, temp_str);
 }
-void single_sensor_draw_sensor(
-    Canvas* canvas,
-    Sensor* sensor,
-    TempMeasureUnit temp_unit,
-    HumidityMeausureUnit humidity_unit) {
+void single_sensor_draw_sensor(Canvas* canvas, Sensor* sensor, UnitempSettings* settings) {
     if(sensor == NULL) return;
 
     //Drawing a frame
@@ -218,20 +260,51 @@ void single_sensor_draw_sensor(
     SensorDataType data_type = sensor->model->data_type;
 
     if(sensor->status == UT_SENSORSTATUS_OK) {
-        _draw_temperature(
-            canvas,
-            sensor,
-            temp_unit,
-            temp_positions[data_type][0],
-            temp_positions[data_type][1],
-            ColorWhite);
-        _draw_humidity(
-            canvas,
-            sensor,
-            humidity_unit,
-            temp_unit,
-            hum_positions[data_type][0],
-            hum_positions[data_type][1]);
+        uint8_t values_count_index =
+            data_types_values_count[data_type] + (settings->heat_index ? 1 : 0) - 1;
+        switch(data_type) {
+        case UT_DATA_TYPE_TEMP:
+            _draw_temperature(
+                canvas,
+                sensor,
+                settings->temperature_unit,
+                values_positions[values_count_index][0][0],
+                values_positions[values_count_index][0][1]);
+            if(settings->heat_index) {
+                _draw_heat_index(
+                    canvas,
+                    sensor,
+                    settings->temperature_unit,
+                    values_positions[values_count_index][1][0],
+                    values_positions[values_count_index][1][1]);
+            }
+            break;
+        case UT_DATA_TYPE_TEMP_HUM:
+            _draw_temperature(
+                canvas,
+                sensor,
+                settings->temperature_unit,
+                values_positions[values_count_index][0][0],
+                values_positions[values_count_index][0][1]);
+            _draw_humidity(
+                canvas,
+                sensor,
+                settings->humidity_unit,
+                settings->temperature_unit,
+                values_positions[values_count_index][settings->heat_index ? 2 : 1][0],
+                values_positions[values_count_index][settings->heat_index ? 2 : 1][1]);
+            if(settings->heat_index) {
+                _draw_heat_index(
+                    canvas,
+                    sensor,
+                    settings->temperature_unit,
+                    values_positions[values_count_index][1][0],
+                    values_positions[values_count_index][1][1]);
+            }
+            break;
+        default:
+            FURI_LOG_E(APP_NAME, "Unknown data type %d", sensor->model->data_type);
+        }
     } else {
         _draw_sensor_not_responding(canvas, sensor);
     }
@@ -241,8 +314,7 @@ static void single_sensor_draw_callback(Canvas* canvas, void* model) {
     SingleSensorViewModel* view_model = model;
     UnitempApp* app = view_model->context;
     Sensor* sensor = unitemp_sensors_get()[view_model->sensor_index];
-    single_sensor_draw_sensor(
-        canvas, sensor, app->settings->temp_unit, app->settings->humidity_unit);
+    single_sensor_draw_sensor(canvas, sensor, app->settings);
 }
 
 static bool single_sensor_input_callback(InputEvent* event, void* context) {

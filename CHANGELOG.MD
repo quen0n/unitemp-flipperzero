@@ -7,8 +7,8 @@
 - On first application launch, measurement units will be automatically selected based on system localization settings
 - Saving the config is done only when it is initially created or subsequently modified
 - The backlight glows indefinitely only when displaying sensor values. In the menu, the backlight will off according to the system settings
+- The temperature index calculation has been corrected. It is now calculated only for temperatures above 26.67°C (80°F)
 
-TODO: отображение heat index
 TODO: конвертация единиц измерения - давление
 
 TODO: перелистывание датчиков в single sensor view
@@ -16,6 +16,7 @@ TODO: поддержка onewire датчиков
 TODO: запускать и останавливать тред с опросом датчиков при входе и выходе из general scene. Синхронизировать вход - при входе в сцену дождаться обновления датчиков
 TODO: автоматическое включение питание сделать настраиваемым
 TODO: мигратор с старого конфига на новый
+TODO: в хелпе описать что такое heat index, dew point
 TODO: в readme добавить краткий гайд по использованию и основным фичам
 TODO: в readme у изображений удалить фон, добавить уже поддерживаемые датчики
 ## Unitemp 1.8

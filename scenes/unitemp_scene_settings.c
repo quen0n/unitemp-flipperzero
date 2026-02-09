@@ -19,7 +19,7 @@
 #include "../unitemp.h"
 
 static const char unitemp_scene_settings_backlight_text[2][9] = {"System", "Infinity"};
-static const char unitemp_scene_settings_temp_units_text[UT_TEMP_COUNT][3] = {"*C", "*F"};
+static const char unitemp_scene_settings_temperature_units_text[UT_TEMP_COUNT][3] = {"*C", "*F"};
 static const char unitemp_scene_settings_humidity_units_text[UT_HUMIDITY_COUNT][9] = {
     "Relative",
     "Dewpoint"};
@@ -36,13 +36,15 @@ static void unitemp_scene_settings_backlight_change_callback(VariableItem* item)
     UNITEMP_DEBUG("Infinity backlight set to %s", unitemp_scene_settings_backlight_text[index]);
 }
 
-static void unitemp_scene_settings_temp_units_change_callback(VariableItem* item) {
+static void unitemp_scene_settings_temperature_units_change_callback(VariableItem* item) {
     UnitempApp* app = variable_item_get_context(item);
     const uint8_t index = variable_item_get_current_value_index(item);
 
-    variable_item_set_current_value_text(item, unitemp_scene_settings_temp_units_text[index]);
-    app->settings->temp_unit = index;
-    UNITEMP_DEBUG("Temperature unit set to %s", unitemp_scene_settings_temp_units_text[index]);
+    variable_item_set_current_value_text(
+        item, unitemp_scene_settings_temperature_units_text[index]);
+    app->settings->temperature_unit = index;
+    UNITEMP_DEBUG(
+        "Temperature unit set to %s", unitemp_scene_settings_temperature_units_text[index]);
 }
 
 static void unitemp_scene_settings_humidity_units_change_callback(VariableItem* item) {
@@ -91,13 +93,13 @@ void unitemp_scene_settings_on_enter(void* context) {
     item = variable_item_list_add(
         var_item_list,
         "Temp. unit",
-        COUNT_OF(unitemp_scene_settings_temp_units_text),
-        unitemp_scene_settings_temp_units_change_callback,
+        COUNT_OF(unitemp_scene_settings_temperature_units_text),
+        unitemp_scene_settings_temperature_units_change_callback,
         app);
-    value_index = app->settings->temp_unit;
+    value_index = app->settings->temperature_unit;
     variable_item_set_current_value_index(item, value_index);
     variable_item_set_current_value_text(
-        item, unitemp_scene_settings_temp_units_text[value_index]);
+        item, unitemp_scene_settings_temperature_units_text[value_index]);
 
     item = variable_item_list_add(
         var_item_list,

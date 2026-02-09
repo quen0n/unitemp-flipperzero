@@ -121,8 +121,6 @@ typedef struct Sensor {
     float pressure;
     //CO2 concentration
     float co2;
-    //Heat index
-    float heat_index;
     //Temperature offset (x10)
     int8_t temperature_offset;
     //Sensor type
@@ -227,14 +225,40 @@ int32_t unitemp_sensors_update_callback(void* ctx);
 /**
  * @brief Calculates the dew point temperature based on ambient temperature and humidity.
  *
+* Computes the dew point temperature using the provided ambient temperature
+ * and relative humidity values. The dew point is the temperature at which
+ * water vapor in the air condenses into liquid water.
+ * 
  * @param temperature_in_celsius The ambient air temperature in degrees Celsius.
  * @param humidity_in_percent The relative humidity in percent (0-100).
+ * 
  * @return The calculated dew point temperature in degrees Celsius.
+ * 
  * @note This function uses an empirical approximation and is suitable for
  *       temperatures in the range of -40°C to +50°C and humidity from 1% to 100%.
  *
  * @see https://en.wikipedia.org/wiki/Dew_point
  */
 float unitemp_calculate_dew_point(float temperature_in_celsius, float humidity_in_percent);
+
+/**
+ * @brief Calculates the heat index based on temperature and humidity.
+ * 
+ * The heat index is a measure of how hot it actually feels when relative humidity
+ * is factored in with the actual air temperature. This function uses the standard
+ * heat index formula to compute the apparent temperature.
+ * 
+ * @param temperature_in_fahrenheit The ambient air temperature in degrees Fahrenheit.
+ * @param humidity_in_percent The relative humidity as a percentage (0-100).
+ * 
+ * @return The calculated heat index value in degrees Fahrenheit.
+ * 
+ * @note The heat index is typically defined for temperatures above 80°F (26.7°C).
+ *       For lower temperatures, the function may still return a value but it should
+ *       not be relied upon for accuracy.
+ * 
+ * @see https://www.ncei.noaa.gov/products/heat-index for more information about heat index calculation.
+ */
+float unitemp_calculate_heat_index(float temperature_in_fahrenheit, float humidity_in_percent);
 
 #endif // UNITEMP_SENSORS
