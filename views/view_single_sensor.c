@@ -34,8 +34,6 @@ struct SingleSensor {
 
 typedef struct {
     uint8_t sensor_index;
-    TempMeasureUnit temp_unit;
-    HumidityMeausureUnit humidity_unit;
     void* context;
 } SingleSensorViewModel;
 
@@ -76,13 +74,13 @@ static void _draw_temperature(
         canvas_draw_rframe(canvas, x, y, 54, 19, 3);
     }
 
-    int8_t temp_dec = abs((int16_t)(sensor->temp * 10) % 10);
+    int8_t temp_dec = abs((int16_t)(sensor->temperature * 10) % 10);
 
     //Drawing icon
     canvas_draw_icon(
         canvas, x + 3, y + 3, (unit == UT_TEMP_CELSIUS ? &I_temp_C_11x14 : &I_temp_F_11x14));
 
-    if((int16_t)sensor->temp == -128 || sensor->status == UT_SENSORSTATUS_TIMEOUT) {
+    if((int16_t)sensor->temperature == -128 || sensor->status == UT_SENSORSTATUS_TIMEOUT) {
         canvas_set_font(canvas, FontBigNumbers);
         canvas_draw_str_aligned(canvas, x + 27, y + 10, AlignCenter, AlignCenter, "--");
         canvas_set_font(canvas, FontPrimary);
@@ -94,21 +92,21 @@ static void _draw_temperature(
     //Whole part of temperature
     //A crutch for displaying the sign of a number less than 0
     uint8_t offset = 0;
-    if(sensor->temp < 0 && sensor->temp > -1) {
+    if(sensor->temperature < 0 && sensor->temperature > -1) {
         temp_str[0] = '-';
         offset = 1;
     }
-    snprintf((char*)(temp_str + offset), TEMP_STR_SIZE, "%d", (int16_t)sensor->temp);
+    snprintf((char*)(temp_str + offset), TEMP_STR_SIZE, "%d", (int16_t)sensor->temperature);
     canvas_set_font(canvas, FontBigNumbers);
     canvas_draw_str_aligned(
         canvas,
-        x + 27 + ((sensor->temp <= -10 || sensor->temp > 99) ? 5 : 0),
+        x + 27 + ((sensor->temperature <= -10 || sensor->temperature > 99) ? 5 : 0),
         y + 10,
         AlignCenter,
         AlignCenter,
         temp_str);
     //Printing the fractional part of the temperature in the range from -9 to 99 (when there are two digits in the number)
-    if(sensor->temp > -10 && sensor->temp <= 99) {
+    if(sensor->temperature > -10 && sensor->temperature <= 99) {
         uint8_t int_len = canvas_string_width(canvas, temp_str);
         snprintf(temp_str, TEMP_STR_SIZE, ".%d", temp_dec);
         canvas_set_font(canvas, FontPrimary);
@@ -134,14 +132,14 @@ static void _draw_humidity(
         // Drawing the icon
         canvas_draw_icon(canvas, x + 3, y + 2, &I_hum_relative_9x15);
         // Relative humidity
-        snprintf(temp_str, TEMP_STR_SIZE, "%d", (uint8_t)sensor->hum);
+        snprintf(temp_str, TEMP_STR_SIZE, "%d", (uint8_t)sensor->humidity);
         canvas_set_font(canvas, FontBigNumbers);
         canvas_draw_str_aligned(canvas, x + 27, y + 10, AlignCenter, AlignCenter, temp_str);
         uint8_t int_len = canvas_string_width(canvas, temp_str);
         // Adding '%' for relative humidity
         canvas_set_font(canvas, FontPrimary);
         canvas_draw_str(canvas, x + 27 + int_len / 2 + 4, y + 10 + 7, "%");
-    } else if(hum_unit == UT_HUMIDITY_DEWPOINT) {
+    } else if(hum_unit == UT_HUMIDITY_DEW_POINT) {
         // Drawing the icon
         canvas_draw_icon(
             canvas,
@@ -149,8 +147,8 @@ static void _draw_humidity(
             y + 2,
             temp_unit == UT_TEMP_CELSIUS ? &I_hum_dewpoint_c_9x15 : &I_hum_dewpoint_f_9x15);
         // Dewpoint with a decimal
-        int humidity_dec = abs((int16_t)(sensor->hum * 10) % 10);
-        snprintf(temp_str, TEMP_STR_SIZE, "%d", (int16_t)sensor->hum);
+        int humidity_dec = abs((int16_t)(sensor->humidity * 10) % 10);
+        snprintf(temp_str, TEMP_STR_SIZE, "%d", (int16_t)sensor->humidity);
         canvas_set_font(canvas, FontBigNumbers);
         canvas_draw_str_aligned(canvas, x + 27, y + 10, AlignCenter, AlignCenter, temp_str);
         uint8_t int_len = canvas_string_width(canvas, temp_str);
@@ -233,8 +231,10 @@ void single_sensor_draw_sensor(
 
 static void single_sensor_draw_callback(Canvas* canvas, void* model) {
     SingleSensorViewModel* view_model = model;
+    UnitempApp* app = view_model->context;
     Sensor* sensor = unitemp_sensors_get()[view_model->sensor_index];
-    single_sensor_draw_sensor(canvas, sensor, view_model->temp_unit, view_model->humidity_unit);
+    single_sensor_draw_sensor(
+        canvas, sensor, app->settings->temp_unit, app->settings->humidity_unit);
 }
 
 static bool single_sensor_input_callback(InputEvent* event, void* context) {
@@ -259,18 +259,12 @@ SingleSensor* single_sensor_alloc(void* context) {
     single_sensor->context = app;
     view_allocate_model(single_sensor->view, ViewModelTypeLockFree, sizeof(SingleSensorViewModel));
 
-    //todo: это всё делать в энтере сцены
     with_view_model(
         single_sensor->view,
         SingleSensorViewModel * model,
         {
             model->sensor_index = 0;
             model->context = app;
-            model->temp_unit =
-                app->settings->temp_unit; //TODO: подтягивать прямо из настроек и не ебать кастрюлю
-            model->humidity_unit =
-                app->settings
-                    ->humidity_unit; //TODO: подтягивать прямо из настроек и не ебать кастрюлю
         },
         false);
 

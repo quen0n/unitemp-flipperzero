@@ -197,27 +197,27 @@ SensorStatus unitemp_singlewire_update(Sensor* sensor) {
     /* Convert data to explicit form */
     // DHT11 and DHT12
     if(sensor->type == &DHT11) {
-        sensor->hum = (float)data[0];
-        sensor->temp = (float)data[2];
+        sensor->humidity = (float)data[0];
+        sensor->temperature = (float)data[2];
 
         // Check if the temperature is negative
         if(data[3] != 0) {
             // Check the sign
             if(!(data[3] & (1 << 7))) {
                 // Add the positive fractional part
-                sensor->temp += data[3] * 0.1f;
+                sensor->temperature += data[3] * 0.1f;
             } else {
                 // Here we make the value negative
                 data[3] &= ~(1 << 7);
-                sensor->temp += data[3] * 0.1f;
-                sensor->temp *= -1;
+                sensor->temperature += data[3] * 0.1f;
+                sensor->temperature *= -1;
             }
         }
     }
 
     // DHT21, DHT22, AM2320
     if(sensor->type == &DHT21 || sensor->type == &DHT22 || sensor->type == &AM2320_SW) {
-        sensor->hum = (float)(((uint16_t)data[0] << 8) | data[1]) / 10;
+        sensor->humidity = (float)(((uint16_t)data[0] << 8) | data[1]) / 10;
 
         uint16_t raw = (((uint16_t)data[2] << 8) | data[3]);
         // Check if the temperature is negative
@@ -225,14 +225,14 @@ SensorStatus unitemp_singlewire_update(Sensor* sensor) {
             // Check the data encoding method
             if(READ_BIT(raw, 0x6000)) {
                 // Not original
-                sensor->temp = (float)((int16_t)raw) / 10;
+                sensor->temperature = (float)((int16_t)raw) / 10;
             } else {
                 // Original sensor
                 CLEAR_BIT(raw, 1 << 15);
-                sensor->temp = (float)(raw) / -10;
+                sensor->temperature = (float)(raw) / -10;
             }
         } else {
-            sensor->temp = (float)(raw) / 10;
+            sensor->temperature = (float)(raw) / 10;
         }
     }
     // Return the successful poll indicator

@@ -8,13 +8,12 @@
 - Saving the config is done only when it is initially created or subsequently modified
 - The backlight glows indefinitely only when displaying sensor values. In the menu, the backlight will off according to the system settings
 
-TODO: анимация при отсутствии датчика
-TODO: что там с temp. offset? он вообще используется?
-TODO: конвертация единиц измерения - температура, влажность, давление
-TODO: для отображение точки росы в иконке использовать значки с *С и *F
-TODO: поддержка onewire датчиков
+TODO: изменить способ позиционирования значений на экране
+TODO: конвертация единиц измерения - давление
+TODO: отображение heat index
 TODO: перелистывание датчиков в single sensor view
-TODO: запускать и останавливать тред с опросом датчиков при входе и выходе из general scene
+TODO: поддержка onewire датчиков
+TODO: запускать и останавливать тред с опросом датчиков при входе и выходе из general scene. Синхронизировать вход - при входе в сцену дождаться обновления датчиков
 TODO: автоматическое включение питание сделать настраиваемым
 TODO: мигратор с старого конфига на новый
 TODO: в readme добавить краткий гайд по использованию и основным фичам

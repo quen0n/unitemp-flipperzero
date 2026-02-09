@@ -4,7 +4,9 @@
 #include "sensors/DHTxx.h"
 #include "sensors/AM2320.h"
 
-#define UPDATE_PERIOD_MS 1000UL
+#include <locale/locale.h>
+
+#define UPDATE_PERIOD_MS 250UL
 
 //TODO: Перенести всё что относится к GPIO в другой файл
 //List of available GPIO pins with their numbers and names
@@ -92,6 +94,21 @@ void unitemp_gpio_unlock(const SensorGpioPin* gpio) {
     gpio_interfaces_list[i] = NULL;
 }
 
+float unitemp_calculate_dew_point(float temperature_in_celsius, float humidity_in_percent) {
+    if(humidity_in_percent <= 0.0f || humidity_in_percent > 100.0f ||
+       temperature_in_celsius < -40.0f) {
+        return -128.0f;
+    }
+
+    float a = 17.27f;
+    float b = 237.7f;
+    float alpha = ((a * temperature_in_celsius) / (b + temperature_in_celsius)) +
+                  logf(humidity_in_percent / 100.0f);
+    float dew_point = (b * alpha) / (a - alpha);
+
+    return dew_point;
+}
+
 /* Periodically requests measurements and reads temperature. This function runs in a separare thread. */
 int32_t unitemp_sensors_update_callback(void* ctx) {
     UnitempApp* app = ctx;
@@ -135,10 +152,10 @@ Sensor* unitemp_sensor_alloc(char* name, const SensorModel* type, char* args) {
     sensor->lastPollingTime =
         furi_get_tick() - 10000; //so that the first survey occurs as early as possible
 
-    sensor->temp = -128.0f;
-    sensor->hum = -128.0f;
+    sensor->temperature = -128.0f;
+    sensor->humidity = -128.0f;
     sensor->pressure = -128.0f;
-    sensor->temp_offset = 0;
+    sensor->temperature_offset = 0;
     //Memory allocation for a sensor instance depending on its interface
     status = sensor->type->interface->allocator(sensor, args);
 
@@ -212,7 +229,7 @@ bool unitemp_sensors_load(void) {
 
     Sensor* sensor = unitemp_sensor_alloc(name, unitemp_sensors_get_model_from_str(model), "7");
     if(sensor != NULL) {
-        sensor->temp_offset = temp_offset;
+        sensor->temperature_offset = temp_offset;
         unitemp_sensors_add(sensor);
     }
 
@@ -302,12 +319,21 @@ SensorStatus unitemp_sensor_update(Sensor* sensor, void* ctx) {
         UNITEMP_DEBUG(
             "Sensor %s successfully updated. Values: temp=%.2f, hum=%.2f",
             sensor->name,
-            (double)sensor->temp,
-            (double)sensor->hum);
+            (double)sensor->temperature,
+            (double)sensor->humidity);
     }
 
     if(sensor->status == UT_SENSORSTATUS_OK) {
-        sensor->temp += sensor->temp_offset / 10.f;
+        sensor->temperature += sensor->temperature_offset / 10.f;
+    }
+    if(app->settings->humidity_unit == UT_HUMIDITY_DEW_POINT) {
+        sensor->humidity = unitemp_calculate_dew_point(sensor->temperature, sensor->humidity);
+    }
+    if(app->settings->temp_unit == UT_TEMP_FAHRENHEIT) {
+        sensor->temperature = locale_celsius_to_fahrenheit(sensor->temperature);
+        if(app->settings->humidity_unit == UT_HUMIDITY_DEW_POINT) {
+            sensor->humidity = locale_celsius_to_fahrenheit(sensor->humidity);
+        }
     }
 
     return sensor->status;

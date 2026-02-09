@@ -114,23 +114,23 @@ typedef struct Sensor {
     //Sensor user name
     char* name;
     //Temperature
-    float temp;
-    //Heat index
-    float heat_index;
+    float temperature;
     //Relative humidity
-    float hum;
+    float humidity;
     //Atmospheric pressure
     float pressure;
     //CO2 concentration
     float co2;
+    //Heat index
+    float heat_index;
+    //Temperature offset (x10)
+    int8_t temperature_offset;
     //Sensor type
     const SensorModel* type;
     //Last sensor poll status
     SensorStatus status;
     //Time of the last sensor poll
     uint32_t lastPollingTime;
-    //Temperature offset (x10)
-    int8_t temp_offset;
     //Sensor instance
     void* instance;
 } Sensor;
@@ -223,5 +223,18 @@ const SensorModel** unitemp_sensors_models_get(void);
 uint8_t unitemp_sensors_models_get_count(void);
 
 int32_t unitemp_sensors_update_callback(void* ctx);
+
+/**
+ * @brief Calculates the dew point temperature based on ambient temperature and humidity.
+ *
+ * @param temperature_in_celsius The ambient air temperature in degrees Celsius.
+ * @param humidity_in_percent The relative humidity in percent (0-100).
+ * @return The calculated dew point temperature in degrees Celsius.
+ * @note This function uses an empirical approximation and is suitable for
+ *       temperatures in the range of -40°C to +50°C and humidity from 1% to 100%.
+ *
+ * @see https://en.wikipedia.org/wiki/Dew_point
+ */
+float unitemp_calculate_dew_point(float temperature_in_celsius, float humidity_in_percent);
 
 #endif // UNITEMP_SENSORS

@@ -91,7 +91,7 @@ typedef enum {
 // Humidity units
 typedef enum {
     UT_HUMIDITY_RELATIVE, // Relative humidity
-    UT_HUMIDITY_DEWPOINT, // Dewpoint
+    UT_HUMIDITY_DEW_POINT, // Dew point
 
     UT_HUMIDITY_COUNT // Number of humidity modes
 } HumidityMeausureUnit;
