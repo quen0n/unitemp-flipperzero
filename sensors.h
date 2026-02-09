@@ -126,7 +126,7 @@ typedef struct Sensor {
     //Temperature offset (x10)
     int8_t temperature_offset;
     //Sensor type
-    const SensorModel* type;
+    const SensorModel* model;
     //Last sensor poll status
     SensorStatus status;
     //Time of the last sensor poll

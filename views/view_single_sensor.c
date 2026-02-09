@@ -37,21 +37,30 @@ typedef struct {
     void* context;
 } SingleSensorViewModel;
 
+#define UT_DATA_POS_CENTER      37, 23
+#define UT_DATA_POS_UP_LEFT     9, 16
+#define UT_DATA_POS_UP_MIDDLE   37, 16
+#define UT_DATA_POS_UP_RIGHT    65, 16
+#define UT_DATA_POS_DOWN_LEFT   9, 38
+#define UT_DATA_POS_DOWN_MIDDLE 37, 38
+#define UT_DATA_POS_DOWN_RIGHT  65, 38
+#define UT_DATA_POS_NONE        255, 255
+
 // Координаты рисования значений
 // Первый индекс согласуется с SensorDataType. Второй индекс - координаты X и Y соответственно
 static const uint8_t temp_positions[UT_DATA_TYPE_COUNT][2] = {
-    {37, 23}, //UT_DATA_TYPE_TEMP
-    {37, 16}, //UT_DATA_TYPE_TEMP_HUM
-    {9, 16}, //UT_DATA_TYPE_TEMP_PRESS
-    {9, 16}, //UT_DATA_TYPE_TEMP_HUM_PRESS //TODO: проверить
-    {9, 16} //UT_DATA_TYPE_TEMP_HUM_CO2 //TODO: проверить
+    {UT_DATA_POS_CENTER}, //UT_DATA_TYPE_TEMP
+    {UT_DATA_POS_UP_MIDDLE}, //UT_DATA_TYPE_TEMP_HUM
+    {UT_DATA_POS_CENTER}, //UT_DATA_TYPE_TEMP_PRESS
+    {UT_DATA_POS_UP_LEFT}, //UT_DATA_TYPE_TEMP_HUM_PRESS
+    {UT_DATA_POS_UP_LEFT} //UT_DATA_TYPE_TEMP_HUM_CO2
 };
 static const uint8_t hum_positions[UT_DATA_TYPE_COUNT][2] = {
-    {0, 0}, //UT_DATA_TYPE_TEMP (not used)
-    {37, 38}, //UT_DATA_TYPE_TEMP_HUM
-    {0, 0}, //UT_DATA_TYPE_TEMP_PRESS (not used)
-    {37, 16}, //UT_DATA_TYPE_TEMP_HUM_PRESS
-    {0, 0} //UT_DATA_TYPE_TEMP_HUM_CO2 (not used)
+    {UT_DATA_POS_NONE}, //UT_DATA_TYPE_TEMP (not used)
+    {UT_DATA_POS_DOWN_MIDDLE}, //UT_DATA_TYPE_TEMP_HUM
+    {UT_DATA_POS_NONE}, //UT_DATA_TYPE_TEMP_PRESS (not used)
+    {UT_DATA_POS_UP_RIGHT}, //UT_DATA_TYPE_TEMP_HUM_PRESS
+    {UT_DATA_POS_NONE} //UT_DATA_TYPE_TEMP_HUM_CO2 (not used)
 };
 
 //TODO: убрать цвет из параметров функции
@@ -62,8 +71,8 @@ static void _draw_temperature(
     uint8_t x,
     uint8_t y,
     Color color) {
-    //Не рисовать, если координаты равны нулю
-    if(x == 0 && y == 0) return;
+    //Не рисовать, если координаты равны UT_DATA_POS_NONE
+    if(x == 255 && y == 255) return;
     //Drawing a frame
     canvas_draw_rframe(canvas, x, y, 54, 20, 3);
 
@@ -122,8 +131,8 @@ static void _draw_humidity(
     TempMeasureUnit temp_unit,
     uint8_t x,
     uint8_t y) {
-    //Не рисовать, если координаты равны нулю
-    if(x == 0 && y == 0) return;
+    //Не рисовать, если координаты равны UT_DATA_POS_NONE
+    if(x == 255 && y == 255) return;
     // Drawing the frame
     canvas_draw_rframe(canvas, x, y, 54, 20, 3);
     canvas_draw_rframe(canvas, x, y, 54, 19, 3);
@@ -166,24 +175,24 @@ static void _draw_sensor_not_responding(Canvas* canvas, Sensor* sensor) {
 
     canvas_set_font(canvas, FontSecondary);
 
-    if(sensor->type->interface == &SINGLEWIRE) {
+    if(sensor->model->interface == &SINGLEWIRE) {
         snprintf(
             temp_str,
             TEMP_STR_SIZE,
             "Sensor waiting on %s",
             ((SingleWireSensor*)sensor->instance)->gpio_pin->name);
     }
-    // if(sensor->type->interface == &ONE_WIRE) {
+    // if(sensor->model->interface == &ONE_WIRE) {
     //     snprintf(
     //         temp_str,
     //         TEMP_STR_SIZE,
     //         "Sensor waiting on %d",
     //         ((OneWireSensor*)sensor->instance)->bus->gpio->num);
     // }
-    // if(sensor->type->interface == &I2C) {
+    // if(sensor->model->interface == &I2C) {
     //     snprintf(temp_str, TEMP_STR_SIZE, "Waiting for module on I2C pins");
     // }
-    // if(sensor->type->interface == &SPI) {
+    // if(sensor->model->interface == &SPI) {
     //     snprintf(temp_str, TEMP_STR_SIZE, "Waiting for module on SPI pins");
     // }
     canvas_draw_str_aligned(canvas, 65, 19, AlignCenter, AlignCenter, temp_str);
@@ -206,10 +215,9 @@ void single_sensor_draw_sensor(
     uint8_t line_len = canvas_string_width(canvas, sensor->name) + 2;
     canvas_draw_line(canvas, 64 - line_len / 2, 12, 64 + line_len / 2, 12);
 
-    SensorDataType data_type = sensor->type->data_type;
+    SensorDataType data_type = sensor->model->data_type;
 
     if(sensor->status == UT_SENSORSTATUS_OK) {
-        //Значения с нулевыми координатами не отрисовываются
         _draw_temperature(
             canvas,
             sensor,

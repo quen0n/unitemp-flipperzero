@@ -8,9 +8,9 @@
 - Saving the config is done only when it is initially created or subsequently modified
 - The backlight glows indefinitely only when displaying sensor values. In the menu, the backlight will off according to the system settings
 
-TODO: изменить способ позиционирования значений на экране
-TODO: конвертация единиц измерения - давление
 TODO: отображение heat index
+TODO: конвертация единиц измерения - давление
+
 TODO: перелистывание датчиков в single sensor view
 TODO: поддержка onewire датчиков
 TODO: запускать и останавливать тред с опросом датчиков при входе и выходе из general scene. Синхронизировать вход - при входе в сцену дождаться обновления датчиков

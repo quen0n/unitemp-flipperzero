@@ -196,7 +196,7 @@ SensorStatus unitemp_singlewire_update(Sensor* sensor) {
 
     /* Convert data to explicit form */
     // DHT11 and DHT12
-    if(sensor->type == &DHT11) {
+    if(sensor->model == &DHT11) {
         sensor->humidity = (float)data[0];
         sensor->temperature = (float)data[2];
 
@@ -216,7 +216,7 @@ SensorStatus unitemp_singlewire_update(Sensor* sensor) {
     }
 
     // DHT21, DHT22, AM2320
-    if(sensor->type == &DHT21 || sensor->type == &DHT22 || sensor->type == &AM2320_SW) {
+    if(sensor->model == &DHT21 || sensor->model == &DHT22 || sensor->model == &AM2320_SW) {
         sensor->humidity = (float)(((uint16_t)data[0] << 8) | data[1]) / 10;
 
         uint16_t raw = (((uint16_t)data[2] << 8) | data[3]);

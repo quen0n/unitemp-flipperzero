@@ -145,7 +145,7 @@ Sensor* unitemp_sensor_alloc(char* name, const SensorModel* type, char* args) {
     //Recording the sensor name
     strcpy(sensor->name, name);
     //Sensor type
-    sensor->type = type;
+    sensor->model = type;
     //Status sensor by default - error
     sensor->status = UT_SENSORSTATUS_ERROR;
     //Time of last poll
@@ -157,7 +157,7 @@ Sensor* unitemp_sensor_alloc(char* name, const SensorModel* type, char* args) {
     sensor->pressure = -128.0f;
     sensor->temperature_offset = 0;
     //Memory allocation for a sensor instance depending on its interface
-    status = sensor->type->interface->allocator(sensor, args);
+    status = sensor->model->interface->allocator(sensor, args);
 
     //Exit if the sensor is successfully deployed
     if(status) {
@@ -176,17 +176,17 @@ void unitemp_sensor_free(Sensor* sensor) {
         FURI_LOG_E(APP_NAME, "Null pointer sensor releasing");
         return;
     }
-    if(sensor->type == NULL) {
+    if(sensor->model == NULL) {
         FURI_LOG_E(APP_NAME, "Sensor type is null");
         return;
     }
-    if(sensor->type->mem_releaser == NULL) {
+    if(sensor->model->mem_releaser == NULL) {
         FURI_LOG_E(APP_NAME, "Sensor releaser is null");
         return;
     }
     bool status = false;
     //Freeing up memory for an instance
-    status = sensor->type->interface->mem_releaser(sensor);
+    status = sensor->model->interface->mem_releaser(sensor);
 
     if(status) {
         UNITEMP_DEBUG("Sensor %s memory successfully released", sensor->name);
@@ -247,7 +247,7 @@ bool unitemp_sensors_init(void* ctx) {
         //Turning on 5V if there is none on port 1 FZ
         //May disappear when USB is disconnected
         power_enable_otg(app->power, true);
-        if(!(*sensors_list[i]->type->initializer)(sensors_list[i])) {
+        if(!(*sensors_list[i]->model->initializer)(sensors_list[i])) {
             FURI_LOG_E(
                 APP_NAME,
                 "An error occurred during sensor initialization %s",
@@ -269,7 +269,7 @@ bool unitemp_sensors_deinit(void* ctx) {
 
     //Searching through sensors from the list
     for(uint8_t i = 0; i < unitemp_sensors_get_count(); i++) {
-        if(!(*sensors_list[i]->type->deinitializer)(sensors_list[i])) {
+        if(!(*sensors_list[i]->model->deinitializer)(sensors_list[i])) {
             FURI_LOG_E(
                 APP_NAME,
                 "An error occurred during sensor deinitialization %s",
@@ -298,7 +298,7 @@ SensorStatus unitemp_sensor_update(Sensor* sensor, void* ctx) {
     }
 
     //Checking the validity of the sensor polling
-    if(furi_get_tick() - sensor->lastPollingTime < sensor->type->polling_interval) {
+    if(furi_get_tick() - sensor->lastPollingTime < sensor->model->polling_interval) {
         //Return an error if the last sensor poll was unsuccessful
         if(sensor->status == UT_SENSORSTATUS_TIMEOUT) {
             return UT_SENSORSTATUS_TIMEOUT;
@@ -311,7 +311,7 @@ SensorStatus unitemp_sensor_update(Sensor* sensor, void* ctx) {
     //todo не включать питание если подключено USB
     power_enable_otg(app->power, true);
 
-    sensor->status = sensor->type->interface->updater(sensor);
+    sensor->status = sensor->model->interface->updater(sensor);
 
     if(sensor->status != UT_SENSORSTATUS_OK && sensor->status != UT_SENSORSTATUS_POLLING) {
         FURI_LOG_W(APP_NAME, "Sensor %s update status %d", sensor->name, sensor->status);
