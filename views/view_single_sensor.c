@@ -42,9 +42,9 @@ typedef struct {
 #define UT_DATA_POS_UP_LEFT     9, 16
 #define UT_DATA_POS_UP_MIDDLE   37, 16
 #define UT_DATA_POS_UP_RIGHT    65, 16
-#define UT_DATA_POS_DOWN_LEFT   9, 38
-#define UT_DATA_POS_DOWN_MIDDLE 37, 38
-#define UT_DATA_POS_DOWN_RIGHT  65, 38
+#define UT_DATA_POS_DOWN_LEFT   9, 39
+#define UT_DATA_POS_DOWN_MIDDLE 37, 39
+#define UT_DATA_POS_DOWN_RIGHT  65, 39
 #define UT_DATA_POS_NONE        255, 255
 
 //Массив содержит в себе сколько элементов в себе содержит то или иное отображение UT_DATA_TYPE
@@ -66,7 +66,6 @@ static const uint8_t values_positions[4][4][2] = {
      {UT_DATA_POS_DOWN_RIGHT}},
 };
 
-//TODO: убрать цвет из параметров функции
 static void _draw_temperature(
     Canvas* canvas,
     Sensor* sensor,
@@ -171,6 +170,52 @@ static void _draw_humidity(
         canvas_draw_str(canvas, x + 27 + int_len / 2 + 2, y + 10 + 7, temp_str);
     }
 }
+static void _draw_pressure(
+    Canvas* canvas,
+    Sensor* sensor,
+    PressureMeasureUnit pressure_unit,
+    uint8_t x,
+    uint8_t y,
+    bool mini) {
+    //Drawing a frame
+    canvas_draw_rframe(canvas, x, y, mini ? 54 : 76, 20, 3);
+    canvas_draw_rframe(canvas, x, y, mini ? 54 : 76, 19, 3);
+
+    //Drawing icon
+    canvas_draw_icon(canvas, x + 3, y + 4, &I_pressure_7x13);
+
+    UNUSED(sensor);
+    float pressure = sensor->pressure;
+
+    int16_t press_int = pressure;
+    int8_t press_dec = (int16_t)(pressure * 10) % 10;
+
+    //Whole part of the pressure
+    snprintf(temp_str, TEMP_STR_SIZE, "%d", press_int);
+    canvas_set_font(canvas, FontBigNumbers);
+    canvas_draw_str_aligned(
+        canvas, x + 28 + ((press_int > 99) ? 5 : 0), y + 10, AlignCenter, AlignCenter, temp_str);
+    //Printing the fractional part of the pressure in the range from 0 to 99 (when there are two digits in the number)
+    if(press_int <= 99) {
+        uint8_t int_len = canvas_string_width(canvas, temp_str);
+        snprintf(temp_str, TEMP_STR_SIZE, ".%d", press_dec);
+        canvas_set_font(canvas, FontPrimary);
+        canvas_draw_str(canvas, x + 27 + int_len / 2 + 2, y + 10 + 7, temp_str);
+    }
+    if(!mini) {
+        canvas_set_font(canvas, FontSecondary);
+        //A unit of measurement
+        if(pressure_unit == UT_PRESSURE_MM_HG) {
+            canvas_draw_icon(canvas, x + 56, y + 2, &I_mm_hg_15x15);
+        } else if(pressure_unit == UT_PRESSURE_IN_HG) {
+            canvas_draw_icon(canvas, x + 56, y + 2, &I_in_hg_15x15);
+        } else if(pressure_unit == UT_PRESSURE_KPA) {
+            canvas_draw_str(canvas, x + 57, y + 13, "kPa");
+        } else if(pressure_unit == UT_PRESSURE_HPA) {
+            canvas_draw_str(canvas, x + 58, y + 13, "hPa");
+        }
+    }
+}
 
 static void _draw_heat_index(
     Canvas* canvas,
@@ -260,8 +305,7 @@ void single_sensor_draw_sensor(Canvas* canvas, Sensor* sensor, UnitempSettings* 
     SensorDataType data_type = sensor->model->data_type;
 
     if(sensor->status == UT_SENSORSTATUS_OK) {
-        uint8_t values_count_index =
-            data_types_values_count[data_type] + (settings->heat_index ? 1 : 0) - 1;
+        uint8_t values_count_index = data_types_values_count[data_type] - 1;
         switch(data_type) {
         case UT_DATA_TYPE_TEMP:
             _draw_temperature(
@@ -270,16 +314,9 @@ void single_sensor_draw_sensor(Canvas* canvas, Sensor* sensor, UnitempSettings* 
                 settings->temperature_unit,
                 values_positions[values_count_index][0][0],
                 values_positions[values_count_index][0][1]);
-            if(settings->heat_index) {
-                _draw_heat_index(
-                    canvas,
-                    sensor,
-                    settings->temperature_unit,
-                    values_positions[values_count_index][1][0],
-                    values_positions[values_count_index][1][1]);
-            }
             break;
         case UT_DATA_TYPE_TEMP_HUM:
+            values_count_index += (settings->heat_index ? 1 : 0);
             _draw_temperature(
                 canvas,
                 sensor,
@@ -293,6 +330,63 @@ void single_sensor_draw_sensor(Canvas* canvas, Sensor* sensor, UnitempSettings* 
                 settings->temperature_unit,
                 values_positions[values_count_index][settings->heat_index ? 2 : 1][0],
                 values_positions[values_count_index][settings->heat_index ? 2 : 1][1]);
+            if(settings->heat_index) {
+                _draw_heat_index(
+                    canvas,
+                    sensor,
+                    settings->temperature_unit,
+                    values_positions[values_count_index][1][0],
+                    values_positions[values_count_index][1][1]);
+            }
+            break;
+        case UT_DATA_TYPE_TEMP_PRESS:
+            _draw_temperature(
+                canvas,
+                sensor,
+                settings->temperature_unit,
+                values_positions[values_count_index][0][0],
+                values_positions[values_count_index][0][1]);
+            _draw_pressure(
+                canvas,
+                sensor,
+                settings->pressure_unit,
+                values_positions[values_count_index][1][0] - 8,
+                values_positions[values_count_index][1][1],
+                false);
+            break;
+        case UT_DATA_TYPE_TEMP_HUM_PRESS:
+            values_count_index += (settings->heat_index ? 1 : 0);
+            _draw_temperature(
+                canvas,
+                sensor,
+                settings->temperature_unit,
+                values_positions[values_count_index][0][0],
+                values_positions[values_count_index][0][1]);
+            _draw_humidity(
+                canvas,
+                sensor,
+                settings->humidity_unit,
+                settings->temperature_unit,
+                values_positions[values_count_index][settings->heat_index ? 3 : 1][0],
+                values_positions[values_count_index][settings->heat_index ? 3 : 1][1]);
+            _draw_pressure(
+                canvas,
+                sensor,
+                settings->pressure_unit,
+                values_positions[values_count_index][2][0] - (settings->heat_index ? 0 : 8),
+                values_positions[values_count_index][2][1],
+                settings->heat_index);
+            if(settings->heat_index) {
+                _draw_heat_index(
+                    canvas,
+                    sensor,
+                    settings->temperature_unit,
+                    values_positions[values_count_index][1][0],
+                    values_positions[values_count_index][1][1]);
+            }
+            break;
+        case UT_DATA_TYPE_TEMP_HUM_CO2:
+            values_count_index += (settings->heat_index ? 1 : 0);
             if(settings->heat_index) {
                 _draw_heat_index(
                     canvas,
