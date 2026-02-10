@@ -187,13 +187,13 @@ static void _draw_pressure(
     float pressure = sensor->pressure;
 
     if(pressure_unit == UT_PRESSURE_MM_HG) {
-        pressure = unitemp_calculate_pa_to_mm_hg(pressure);
+        pressure = unitemp_convert_pa_to_mm_hg(pressure);
     } else if(pressure_unit == UT_PRESSURE_IN_HG) {
-        pressure = unitemp_calculate_pa_to_in_hg(pressure);
+        pressure = unitemp_convert_pa_to_in_hg(pressure);
     } else if(pressure_unit == UT_PRESSURE_KPA) {
-        pressure = unitemp_calculate_pa_to_kpa(pressure);
+        pressure = unitemp_convert_pa_to_kpa(pressure);
     } else if(pressure_unit == UT_PRESSURE_HPA) {
-        pressure = unitemp_calculate_pa_to_hpa(pressure);
+        pressure = unitemp_convert_pa_to_hpa(pressure);
     }
 
     int16_t press_int = pressure;

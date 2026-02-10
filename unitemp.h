@@ -192,27 +192,27 @@ float unitemp_calculate_heat_index(float temperature_in_fahrenheit, float humidi
  * @param pressure_in_pa Pressure value in Pascals
  * @return Pressure value in mmHg
  */
-float unitemp_calculate_pa_to_mm_hg(float pressure_in_pa);
+float unitemp_convert_pa_to_mm_hg(float pressure_in_pa);
 
 /**
  * @brief Convert pressure from Pascals to inches of mercury
  * @param pressure_in_pa Pressure value in Pascals
  * @return Pressure value in inHg
  */
-float unitemp_calculate_pa_to_in_hg(float pressure_in_pa);
+float unitemp_convert_pa_to_in_hg(float pressure_in_pa);
 
 /**
  * @brief Convert pressure from Pascals to kilopascals
  * @param pressure_in_pa Pressure value in Pascals
  * @return Pressure value in kPa
  */
-float unitemp_calculate_pa_to_kpa(float pressure_in_pa);
+float unitemp_convert_pa_to_kpa(float pressure_in_pa);
 
 /**
  * @brief Convert pressure from Pascals to hectopascals
  * @param pressure_in_pa Pressure value in Pascals
  * @return Pressure value in hPa
  */
-float unitemp_calculate_pa_to_hpa(float pressure_in_pa);
+float unitemp_convert_pa_to_hpa(float pressure_in_pa);
 
 #endif //UNITEMP_H_

@@ -305,16 +305,16 @@ float unitemp_calculate_heat_index(float temperature_in_fahrenheit, float humidi
     return hi_f;
 }
 
-float unitemp_calculate_pa_to_mm_hg(float pressure_in_pa) {
+float unitemp_convert_pa_to_mm_hg(float pressure_in_pa) {
     return pressure_in_pa * 0.007500638f;
 }
-float unitemp_calculate_pa_to_in_hg(float pressure_in_pa) {
+float unitemp_convert_pa_to_in_hg(float pressure_in_pa) {
     return pressure_in_pa * 0.0002953007f;
 }
-float unitemp_calculate_pa_to_kpa(float pressure_in_pa) {
+float unitemp_convert_pa_to_kpa(float pressure_in_pa) {
     return pressure_in_pa / 1000.0f;
 }
-float unitemp_calculate_pa_to_hpa(float pressure_in_pa) {
+float unitemp_convert_pa_to_hpa(float pressure_in_pa) {
     return pressure_in_pa / 100.0f;
 }
 
