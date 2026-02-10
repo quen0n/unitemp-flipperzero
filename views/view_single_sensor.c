@@ -184,8 +184,17 @@ static void _draw_pressure(
     //Drawing icon
     canvas_draw_icon(canvas, x + 3, y + 4, &I_pressure_7x13);
 
-    UNUSED(sensor);
     float pressure = sensor->pressure;
+
+    if(pressure_unit == UT_PRESSURE_MM_HG) {
+        pressure = unitemp_calculate_pa_to_mm_hg(pressure);
+    } else if(pressure_unit == UT_PRESSURE_IN_HG) {
+        pressure = unitemp_calculate_pa_to_in_hg(pressure);
+    } else if(pressure_unit == UT_PRESSURE_KPA) {
+        pressure = unitemp_calculate_pa_to_kpa(pressure);
+    } else if(pressure_unit == UT_PRESSURE_HPA) {
+        pressure = unitemp_calculate_pa_to_hpa(pressure);
+    }
 
     int16_t press_int = pressure;
     int8_t press_dec = (int16_t)(pressure * 10) % 10;
@@ -194,7 +203,12 @@ static void _draw_pressure(
     snprintf(temp_str, TEMP_STR_SIZE, "%d", press_int);
     canvas_set_font(canvas, FontBigNumbers);
     canvas_draw_str_aligned(
-        canvas, x + 28 + ((press_int > 99) ? 5 : 0), y + 10, AlignCenter, AlignCenter, temp_str);
+        canvas,
+        x + 28 + ((press_int > 99) ? 5 : 0) - ((press_int > 999 && mini) ? 3 : 0),
+        y + 10,
+        AlignCenter,
+        AlignCenter,
+        temp_str);
     //Printing the fractional part of the pressure in the range from 0 to 99 (when there are two digits in the number)
     if(press_int <= 99) {
         uint8_t int_len = canvas_string_width(canvas, temp_str);
