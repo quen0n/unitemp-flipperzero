@@ -285,7 +285,7 @@ static void _draw_sensor_not_responding(Canvas* canvas, Sensor* sensor) {
             temp_str,
             TEMP_STR_SIZE,
             "Sensor waiting on %s",
-            ((SingleWireSensor*)sensor->instance)->gpio_pin->name);
+            ((SingleWireSensor*)sensor->instance)->data_pin->name);
     }
     // if(sensor->model->interface == &ONE_WIRE) {
     //     snprintf(

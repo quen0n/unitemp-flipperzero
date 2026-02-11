@@ -58,46 +58,51 @@ bool unitemp_singlewire_free(Sensor* sensor) {
     return true;
 }
 
-bool unitemp_singlewire_sensor_gpio_set(Sensor* sensor, const SensorGpioPin* gpio_pin) {
-    if(sensor == NULL || gpio_pin == NULL) return false;
+bool unitemp_singlewire_sensor_gpio_set(Sensor* sensor, const SensorGpioPin* data_pin) {
+    if(sensor == NULL || data_pin == NULL) return false;
 
     SingleWireSensor* instance = sensor->instance;
-    instance->gpio_pin = gpio_pin;
+    instance->data_pin = data_pin;
     return true;
 }
 
 const SensorGpioPin* unitemp_singlewire_sensor_gpio_get(Sensor* sensor) {
     if(sensor == NULL) return NULL;
     SingleWireSensor* instance = sensor->instance;
-    return instance->gpio_pin;
+    return instance->data_pin;
 }
 
 bool unitemp_singlewire_init(Sensor* sensor) {
+    if(sensor == NULL) return false;
+
     SingleWireSensor* instance = ((Sensor*)sensor)->instance;
-    if(instance == NULL || instance->gpio_pin == NULL) {
+    if(instance == NULL || instance->data_pin == NULL) {
         FURI_LOG_E(APP_NAME, "Sensor pointer is null!");
         return false;
     }
-    unitemp_gpio_lock(instance->gpio_pin, &SINGLEWIRE);
+    unitemp_gpio_lock(instance->data_pin, &SINGLEWIRE);
     // High level by default
-    furi_hal_gpio_write(instance->gpio_pin->pin, true);
+    furi_hal_gpio_write(instance->data_pin->pin, true);
     // Operation mode - OpenDrain, pull-up enabled just in case
     furi_hal_gpio_init(
-        instance->gpio_pin->pin, // FZ port
+        instance->data_pin->pin, // FZ port
         GpioModeOutputOpenDrain, // Operation mode - open drain
         GpioPullUp, // Force pull-up of the data line to power
         GpioSpeedVeryHigh); // Operating speed - maximum
     return true;
 }
+
 bool unitemp_singlewire_deinit(Sensor* sensor) {
+    if(sensor == NULL) return false;
+
     SingleWireSensor* instance = ((Sensor*)sensor)->instance;
-    if(instance == NULL || instance->gpio_pin == NULL) return false;
-    unitemp_gpio_unlock(instance->gpio_pin);
+    if(instance == NULL || instance->data_pin == NULL) return false;
+    unitemp_gpio_unlock(instance->data_pin);
     // Low level by default
-    furi_hal_gpio_write(instance->gpio_pin->pin, false);
+    furi_hal_gpio_write(instance->data_pin->pin, false);
     // Mode - analog, pull-up disabled
     furi_hal_gpio_init(
-        instance->gpio_pin->pin, // FZ port
+        instance->data_pin->pin, // FZ port
         GpioModeAnalog, // Operation mode - analog
         GpioPullNo, // Pull-up disabled
         GpioSpeedLow); // Operating speed - minimum
@@ -105,6 +110,7 @@ bool unitemp_singlewire_deinit(Sensor* sensor) {
 }
 
 SensorStatus unitemp_singlewire_update(Sensor* sensor) {
+    if(sensor == NULL) return UT_SENSORSTATUS_ERROR;
     SingleWireSensor* instance = sensor->instance;
 
     // Array for receiving data
@@ -112,20 +118,20 @@ SensorStatus unitemp_singlewire_update(Sensor* sensor) {
 
     /* Request */
     // Pull the line low
-    furi_hal_gpio_write(instance->gpio_pin->pin, false);
+    furi_hal_gpio_write(instance->data_pin->pin, false);
     // Wait more than 18 ms
     furi_delay_ms(19);
     // Disable interrupts to ensure accurate timing
     FURI_CRITICAL_ENTER();
     // Raise the line
-    furi_hal_gpio_write(instance->gpio_pin->pin, true);
+    furi_hal_gpio_write(instance->data_pin->pin, true);
 
     /* Sensor response */
     // Counter variable
     uint16_t timeout = 0;
 
     // Wait for the line to go high
-    while(!furi_hal_gpio_read(instance->gpio_pin->pin)) {
+    while(!furi_hal_gpio_read(instance->data_pin->pin)) {
         timeout++;
         if(timeout > POLLING_TIMEOUT_TICKS) {
             // Enable interrupts
@@ -137,7 +143,7 @@ SensorStatus unitemp_singlewire_update(Sensor* sensor) {
     timeout = 0;
 
     // Wait for the line to go low
-    while(furi_hal_gpio_read(instance->gpio_pin->pin)) {
+    while(furi_hal_gpio_read(instance->data_pin->pin)) {
         timeout++;
         if(timeout > POLLING_TIMEOUT_TICKS) {
             // Enable interrupts
@@ -148,7 +154,7 @@ SensorStatus unitemp_singlewire_update(Sensor* sensor) {
     }
 
     // Wait for the line to go high
-    while(!furi_hal_gpio_read(instance->gpio_pin->pin)) {
+    while(!furi_hal_gpio_read(instance->data_pin->pin)) {
         timeout++;
         if(timeout > POLLING_TIMEOUT_TICKS) {
             // Enable interrupts
@@ -160,7 +166,7 @@ SensorStatus unitemp_singlewire_update(Sensor* sensor) {
     timeout = 0;
 
     // Wait for the line to go low
-    while(furi_hal_gpio_read(instance->gpio_pin->pin)) {
+    while(furi_hal_gpio_read(instance->data_pin->pin)) {
         timeout++;
         if(timeout > POLLING_TIMEOUT_TICKS) {
             // Enable interrupts
@@ -176,10 +182,10 @@ SensorStatus unitemp_singlewire_update(Sensor* sensor) {
         for(uint8_t b = 7; b != 255; b--) {
             uint16_t hT = 0, lT = 0;
             // While the line is low, increment the lT variable
-            while(!furi_hal_gpio_read(instance->gpio_pin->pin) && lT != 65535)
+            while(!furi_hal_gpio_read(instance->data_pin->pin) && lT != 65535)
                 lT++;
             // While the line is high, increment the hT variable
-            while(furi_hal_gpio_read(instance->gpio_pin->pin) && hT != 65535)
+            while(furi_hal_gpio_read(instance->data_pin->pin) && hT != 65535)
                 hT++;
             // If hT is greater than lT, a one was received
             if(hT > lT) data[a] |= (1 << b);

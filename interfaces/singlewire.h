@@ -24,7 +24,7 @@
 //Single Wire Interface stcructure
 typedef struct {
     //Sensor connection port
-    const SensorGpioPin* gpio_pin;
+    const SensorGpioPin* data_pin;
 } SingleWireSensor;
 
 extern const SensorConnectionInterface
@@ -75,10 +75,10 @@ SensorStatus unitemp_singlewire_update(Sensor* sensor);
  * @brief Set sensor port
  * 
  * @param sensor Pointer to sensor
- * @param gpio_pin Port to set
+ * @param data_pin Port to set
  * @return true if all ok
  */
-bool unitemp_singlewire_sensor_gpio_set(Sensor* sensor, const SensorGpioPin* gpio_pin);
+bool unitemp_singlewire_sensor_gpio_set(Sensor* sensor, const SensorGpioPin* data_pin);
 
 /**
  * @brief Get sensor port

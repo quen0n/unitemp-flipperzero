@@ -49,6 +49,8 @@ void unitemp_submenu_callback(void* context, uint32_t index) {
 }
 
 bool unitemp_settings_load(void* context) {
+    if(context == NULL) return false;
+
     UnitempApp* app = context;
     FURI_LOG_I(APP_NAME, "Loading settings...");
 
@@ -97,7 +99,9 @@ bool unitemp_settings_load(void* context) {
 
     return result;
 }
+
 bool unitemp_settings_save(void* context) {
+    if(context == NULL) return false;
     UnitempApp* app = context;
     FURI_LOG_I(APP_NAME, "Saving settings...");
 
@@ -189,6 +193,8 @@ static UnitempApp* unitemp_app_alloc(void) {
 }
 
 static void unitemp_app_free(UnitempApp* app) {
+    furi_check(app);
+
     unitemp_sensors_free();
 
     view_dispatcher_remove_view(app->view_dispatcher, UnitempViewSingleSensor);
@@ -222,6 +228,7 @@ static void unitemp_app_free(UnitempApp* app) {
 
 /* Starts the reader thread and handles the input */
 static void unitemp_run(UnitempApp* app) {
+    furi_check(app);
     if(!unitemp_settings_load(app)) {
         FURI_LOG_W(
             APP_NAME, "Settings file not found or corrupted. Using defaults and saving them");
@@ -235,7 +242,9 @@ static void unitemp_run(UnitempApp* app) {
     scene_manager_next_scene(app->scene_manager, UnitempSceneGeneral);
     view_dispatcher_run(app->view_dispatcher);
 }
+
 static void unitemp_stop(UnitempApp* app) {
+    furi_check(app);
     /* Signal the reader thread to cease operation and exit */
     furi_thread_flags_set(furi_thread_get_id(app->reader_thread), UnitempThreadFlagExit);
 
@@ -317,84 +326,3 @@ float unitemp_convert_pa_to_kpa(float pressure_in_pa) {
 float unitemp_convert_pa_to_hpa(float pressure_in_pa) {
     return pressure_in_pa / 100.0f;
 }
-
-/*bool open_result = storage_file_open(
-        app->file, APP_DATA_PATH(APP_SETTINGS_FILENAME), FSAM_READ, FSOM_OPEN_EXISTING);
-
-    if(!open_result) {
-        storage_file_close(app->file);
-        //Если файла нет, попытка миграции с версии 1.х
-        FURI_LOG_W(APP_NAME, "Settings file not found, trying to migrate from v1.x...");
-        open_result = storage_file_open(
-            app->file, "/ext/unitemp/settings.cfg", FSAM_READ, FSOM_OPEN_EXISTING);
-        if(!open_result) {
-            storage_file_close(app->file);
-            FURI_LOG_W(APP_NAME, "No old settings file found, using defaults");
-
-            return true;
-        }
-    }
-
-    uint32_t file_size = storage_file_size(app->file);
-    uint8_t* file_buf = malloc(file_size);
-    // Clear the file buffer
-    memset(file_buf, 0, file_size);
-    // Load the file
-    if(storage_file_read(app->file, file_buf, file_size) != file_size) {
-        // Exit on read error
-        FURI_LOG_E(APP_NAME, "Error reading settings file");
-        storage_file_close(app->file);
-        //Free memory
-        free(file_buf);
-        return false;
-    }
-    // Read the file line by line
-    // Pointer to the start of the line
-    FuriString* file = furi_string_alloc_set_str((char*)file_buf);
-    // How many bytes to the end of the line
-    size_t line_end = 0;
-
-    while(line_end != ((size_t)-1) && line_end != (size_t)(file_size - 1)) {
-        char buff[20] = {0};
-        sscanf(((char*)(file_buf + line_end)), "%s", buff);
-
-        if(!strcmp(buff, "INFINITY_BACKLIGHT")) {
-            // Read the parameter value
-            int p = 0;
-            sscanf(((char*)(file_buf + line_end)), "INFINITY_BACKLIGHT %d", &p);
-            app->settings->infinity_backlight = p;
-            UNITEMP_DEBUG("INFINITY_BACKLIGHT %d", app->settings->infinity_backlight);
-        } else if(!strcmp(buff, "TEMP_UNIT")) {
-            // Read the parameter value
-            int p = 0;
-            sscanf(((char*)(file_buf + line_end)), "\nTEMP_UNIT %d", &p);
-            app->settings->temperature_unit = p;
-            UNITEMP_DEBUG("TEMP_UNIT %d", app->settings->temperature_unit);
-        } else if(!strcmp(buff, "HUMIDITY_UNIT")) {
-            int p = 9;
-            sscanf(((char*)(file_buf + line_end)), "\nHUMIDITY_UNIT %d", &p);
-            app->settings->humidity_unit = p;
-            UNITEMP_DEBUG("HUMIDITY_UNIT %d", app->settings->humidity_unit);
-        } else if(!strcmp(buff, "PRESSURE_UNIT")) {
-            // Read the parameter value
-            int p = 0;
-            sscanf(((char*)(file_buf + line_end)), "\nPRESSURE_UNIT %d", &p);
-            app->settings->pressure_unit = p;
-            UNITEMP_DEBUG("PRESSURE_UNIT %d", app->settings->pressure_unit);
-        } else if(!strcmp(buff, "HEAT_INDEX")) {
-            // Read the parameter value
-            int p = 0;
-            sscanf(((char*)(file_buf + line_end)), "\nHEAT_INDEX %d", &p);
-            app->settings->heat_index = p;
-            UNITEMP_DEBUG("HEAT_INDEX %d", app->settings->heat_index);
-        } else {
-            FURI_LOG_W(APP_NAME, "Unknown settings parameter: %s", buff);
-        }
-
-        // Calculate the end of the line
-        line_end = furi_string_search_char(file, '\n', line_end + 1);
-    }
-    free(file_buf);
-    furi_string_free(file);
-
-    storage_file_close(app->file);*/

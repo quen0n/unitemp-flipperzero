@@ -21,6 +21,8 @@
 #include <furi.h>
 #include <furi_hal.h>
 
+#include "../interfaces/singlewire.h"
+
 // Values returned when polling the sensor
 typedef enum {
     UT_DATA_TYPE_TEMP,

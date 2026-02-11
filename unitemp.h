@@ -48,7 +48,7 @@
 #define UNITEMP_APP_VER "2.0.0-dev"
 
 //Settings file name
-#define APP_SETTINGS_FILENAME "settings.cfg"
+#define APP_SETTINGS_FILENAME "unitemp.settings"
 #define APP_SETTINGS_VERSION  (1)
 
 //Text buffer size

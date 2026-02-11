@@ -47,8 +47,8 @@ uint8_t unitemp_sensors_models_get_count(void) {
 }
 
 const SensorModel* unitemp_sensors_get_model_from_str(char* str) {
-    UNUSED(str);
     if(str == NULL) return NULL;
+
     for(uint8_t i = 0; i < SENSOR_TYPES_COUNT; i++) {
         if(!strcmp(str, sensor_model_list[i]->modelname)) {
             return sensor_model_list[i];
@@ -72,29 +72,38 @@ const SensorGpioPin* unitemp_gpio_get_from_int(uint8_t number) {
 
 uint8_t unitemp_gpio_to_index(const GpioPin* gpio) {
     if(gpio == NULL) return 255;
+
     for(uint8_t i = 0; i < GPIO_ITEMS; i++) {
         if(gpio_list[i].pin->pin == gpio->pin && gpio_list[i].pin->port == gpio->port) {
             return i;
         }
     }
+
     return 255;
 }
 
 void unitemp_gpio_lock(const SensorGpioPin* gpio, const SensorConnectionInterface* interface) {
+    furi_check(gpio);
+    furi_check(interface);
+
     uint8_t i = unitemp_gpio_to_index(gpio->pin);
     if(i == 255) return;
     gpio_interfaces_list[i] = interface;
 }
 
 void unitemp_gpio_unlock(const SensorGpioPin* gpio) {
+    furi_check(gpio);
+
     uint8_t i = unitemp_gpio_to_index(gpio->pin);
     if(i == 255) return;
     gpio_interfaces_list[i] = NULL;
 }
 
 /* Periodically requests measurements and reads temperature. This function runs in a separare thread. */
-int32_t unitemp_sensors_update_callback(void* ctx) {
-    UnitempApp* app = ctx;
+int32_t unitemp_sensors_update_callback(void* context) {
+    furi_check(context);
+
+    UnitempApp* app = context;
     for(;;) {
         for(uint8_t i = 0; i < unitemp_sensors_get_count(); i++) {
             unitemp_sensor_update((unitemp_sensors_get()[i]), app);
@@ -110,8 +119,10 @@ int32_t unitemp_sensors_update_callback(void* ctx) {
 }
 
 Sensor* unitemp_sensor_alloc(char* name, const SensorModel* type, char* args) {
-    if(name == NULL || type == NULL) return NULL;
+    if(name == NULL || type == NULL || args == NULL) return NULL;
+
     bool status = false;
+
     //Allocation of memory for the sensor
     Sensor* sensor = malloc(sizeof(Sensor));
     if(sensor == NULL) {
@@ -181,6 +192,8 @@ void unitemp_sensor_free(Sensor* sensor) {
 }
 
 void unitemp_sensors_add(Sensor* sensor) {
+    furi_check(sensor);
+
     sensors_list = (Sensor**)realloc(sensors_list, (sensors_count + 1) * sizeof(Sensor*));
     sensors_list[sensors_count] = sensor;
     sensors_count++;
@@ -220,10 +233,11 @@ bool unitemp_sensors_load(void) {
     return true;
 }
 
-bool unitemp_sensors_init(void* ctx) {
-    bool result = true;
+bool unitemp_sensors_init(void* context) {
+    if(context == NULL) return false;
+    UnitempApp* app = context;
 
-    UnitempApp* app = (UnitempApp*)ctx;
+    bool result = true;
 
     //Searching through sensors from the list
     for(uint8_t i = 0; i < unitemp_sensors_get_count(); i++) {
@@ -243,10 +257,12 @@ bool unitemp_sensors_init(void* ctx) {
     return result;
 }
 
-bool unitemp_sensors_deinit(void* ctx) {
+bool unitemp_sensors_deinit(void* context) {
+    if(context == NULL) return false;
+    UnitempApp* app = context;
+
     bool result = true;
 
-    UnitempApp* app = (UnitempApp*)ctx;
     //Turning off 5 V if it was not turned on before
     power_enable_otg(app->power, app->settings->last_otg_state);
 
@@ -270,15 +286,15 @@ Sensor** unitemp_sensors_get(void) {
     return sensors_list;
 }
 
-SensorStatus unitemp_sensor_update(Sensor* sensor, void* ctx) {
-    UnitempApp* app = (UnitempApp*)ctx;
+SensorStatus unitemp_sensor_update(Sensor* sensor, void* context) {
+    if(context == NULL) return UT_SENSORSTATUS_ERROR;
     if(sensor == NULL) {
         return UT_SENSORSTATUS_ERROR;
     }
-
     if(sensor->status == UT_SENSORSTATUS_INACTIVE) {
         return UT_SENSORSTATUS_INACTIVE;
     }
+    UnitempApp* app = context;
 
     //Checking the validity of the sensor polling
     if(furi_get_tick() - sensor->lastPollingTime < sensor->model->polling_interval) {

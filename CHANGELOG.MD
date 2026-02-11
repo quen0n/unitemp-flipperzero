@@ -9,7 +9,8 @@
 - The backlight glows indefinitely only when displaying sensor values. In the menu, the backlight will off according to the system settings
 - The temperature index calculation has been corrected. It is now calculated only for temperatures above 26.67°C (80°F)
 
-TODO: конвертация единиц измерения - давление
+TODO: загрузка и сохранение датчиков
+TODO: доделать добавление single wire датчиков
 
 TODO: перелистывание датчиков в single sensor view
 TODO: поддержка onewire датчиков
