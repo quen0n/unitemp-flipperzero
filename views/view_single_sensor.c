@@ -170,6 +170,7 @@ static void _draw_humidity(
         canvas_draw_str(canvas, x + 27 + int_len / 2 + 2, y + 10 + 7, temp_str);
     }
 }
+
 static void _draw_pressure(
     Canvas* canvas,
     Sensor* sensor,
@@ -243,6 +244,7 @@ static void _draw_heat_index(
     canvas_draw_icon(canvas, x + 3, y + 3, &I_heat_index_11x14);
 
     float temperature = sensor->temperature;
+
     float heat_index;
     if(temperature >= 26.67f) {
         temperature = locale_celsius_to_fahrenheit(sensor->temperature);
@@ -251,7 +253,11 @@ static void _draw_heat_index(
             heat_index = locale_fahrenheit_to_celsius(heat_index);
         }
     } else {
-        heat_index = temperature;
+        canvas_set_font(canvas, FontBigNumbers);
+        canvas_draw_str_aligned(canvas, x + 27, y + 10, AlignCenter, AlignCenter, "--");
+        canvas_set_font(canvas, FontPrimary);
+        canvas_draw_str_aligned(canvas, x + 50, y + 10 + 3, AlignRight, AlignCenter, ". -");
+        return;
     }
 
     int16_t heat_index_int = heat_index;
