@@ -20,6 +20,7 @@
 
 #include "../unitemp.h"
 #include "../sensors.h"
+#include "../helpers/unitemp_gpio.h"
 
 //Single Wire Interface stcructure
 typedef struct {

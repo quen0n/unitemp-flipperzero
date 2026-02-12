@@ -43,13 +43,6 @@ typedef enum {
     UT_SENSORSTATUS_INACTIVE, //The sensor is being edited or deleted
 } SensorStatus;
 
-//Unitemp GPIO Pin structure
-typedef struct SensorGpioPin {
-    const uint8_t num; //Pin number (2-7, 10, 12-17)
-    const char* name; //Pin name from Flipper Zero shell
-    const GpioPin* pin; //Pointer to GPIO pin structure from Furi HAL
-} SensorGpioPin;
-
 typedef struct Sensor Sensor;
 
 /**
@@ -132,25 +125,6 @@ typedef struct Sensor {
     //Sensor instance
     void* instance;
 } Sensor;
-
-/**
- * @brief Converting the port number on the FZ case to SensorGpioPin
- * @param name Port number on the FZ case
- * @return Pointer to SensorGpioPin on success, NULL on error
- */
-const SensorGpioPin* unitemp_gpio_get_from_int(uint8_t number);
-/**
- * @brief Locking GPIO by specified interface
- * @param gpio Pointer to port
- * @param interface Pointer to the interface on which the port will be occupied
- */
-void unitemp_gpio_lock(const SensorGpioPin* gpio, const SensorConnectionInterface* interface);
-
-/**
- * @brief Unlocking the port
- * @param gpio Pointer to port
- */
-void unitemp_gpio_unlock(const SensorGpioPin* gpio);
 
 /**
  * @brief Memory allocation for sensor

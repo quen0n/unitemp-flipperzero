@@ -16,6 +16,7 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 #include "unitemp_i2c.h"
+#include "../helpers/unitemp_gpio.h"
 
 const SensorConnectionInterface unitemp_i2c = {
     .name = "I2C",
@@ -43,7 +44,7 @@ uint8_t unitemp_i2c_read_reg(I2CSensor* i2c_sensor, uint8_t reg) {
     //Bus lock
     unitemp_i2c_acquire(i2c_sensor->i2c_handle);
     uint8_t buff[1] = {0};
-    //TODO: readreg8 etc?
+
     furi_hal_i2c_read_mem(
         i2c_sensor->i2c_handle, i2c_sensor->current_i2c_adress, reg, buff, 1, 10);
     furi_hal_i2c_release(i2c_sensor->i2c_handle);

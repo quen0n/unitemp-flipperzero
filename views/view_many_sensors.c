@@ -17,7 +17,7 @@
 */
 #include "view_many_sensors.h"
 #include "../unitemp.h"
-#include "../helpers/draw.h"
+#include "../helpers/unitemp_draw.h"
 
 #include <stdlib.h>
 #include <gui/elements.h>
