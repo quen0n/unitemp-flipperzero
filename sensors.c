@@ -73,7 +73,7 @@ int32_t unitemp_sensors_update_callback(void* context) {
         for(uint8_t i = 0; i < unitemp_sensors_get_count(); i++) {
             unitemp_sensor_update((unitemp_sensors_get()[i]), app);
         }
-        /* Wait for the measurement to finish. At the same time wait for an exit signal. */
+
         const uint32_t flags =
             furi_thread_flags_wait(UnitempThreadFlagExit, FuriFlagWaitAny, UPDATE_PERIOD_MS);
 

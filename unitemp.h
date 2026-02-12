@@ -69,7 +69,9 @@ typedef enum {
     UnitempViewVariableList,
     UnitempViewNoSensors,
     UnitempViewSingleSensor,
-    UnitempViewManySensors
+    UnitempViewManySensors,
+
+    UnitempViewsCount
 } UnitempView;
 
 //Temperature units

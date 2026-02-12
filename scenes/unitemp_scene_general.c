@@ -18,40 +18,26 @@
 
 #include "../unitemp.h"
 
-typedef enum {
-    NoSensorsViewMode,
-    SingleSensorViewMode,
-    ManySensorsViewMode,
-
-    ViewModesCount
-} GeneralViewMode;
-
-typedef struct {
-    GeneralViewMode view_mode;
-    void* context;
-} UnitempSceneGeneralStruct;
-
-UnitempSceneGeneralStruct* unitemp_scene_general_data;
+static UnitempView view_mode = UnitempViewsCount;
 
 void unitemp_scene_general_on_enter(void* context) {
     furi_assert(context);
     UnitempApp* app = context;
-    unitemp_scene_general_data = malloc(sizeof(UnitempSceneGeneralStruct));
 
     if(app->settings->infinity_backlight) {
         notification_message(app->notifications, &sequence_display_backlight_enforce_on);
     }
 
-    if(unitemp_sensors_get_count() == 0) {
-        unitemp_scene_general_data->view_mode = NoSensorsViewMode;
-        view_dispatcher_switch_to_view(app->view_dispatcher, UnitempViewNoSensors);
-    } else if(unitemp_sensors_get_count() == 1) {
-        unitemp_scene_general_data->view_mode = SingleSensorViewMode;
-        view_dispatcher_switch_to_view(app->view_dispatcher, UnitempViewSingleSensor);
-    } else {
-        unitemp_scene_general_data->view_mode = ManySensorsViewMode;
-        view_dispatcher_switch_to_view(app->view_dispatcher, UnitempViewManySensors);
+    if(view_mode == UnitempViewsCount) {
+        if(unitemp_sensors_get_count() == 0) {
+            view_mode = UnitempViewNoSensors;
+        } else if(unitemp_sensors_get_count() == 1) {
+            view_mode = UnitempViewSingleSensor;
+        } else {
+            view_mode = UnitempViewManySensors;
+        }
     }
+    view_dispatcher_switch_to_view(app->view_dispatcher, view_mode);
 }
 
 bool unitemp_scene_general_on_event(void* context, SceneManagerEvent event) {
@@ -60,21 +46,21 @@ bool unitemp_scene_general_on_event(void* context, SceneManagerEvent event) {
     bool consumed = false;
 
     if(event.type == SceneManagerEventTypeTick) {
-        if(unitemp_scene_general_data->view_mode == SingleSensorViewMode) {
+        if(view_mode == UnitempViewSingleSensor) {
             single_sensor_refresh_data(app->single_sensor);
         }
-        if(unitemp_scene_general_data->view_mode == ManySensorsViewMode) {
+        if(view_mode == UnitempViewManySensors) {
             many_sensors_refresh_data(app->many_sensors);
         }
         consumed = true;
     }
     if(event.type == SceneManagerEventTypeCustom) {
         if(event.event == CustomEventSwitchToSingleSensorView) {
-            unitemp_scene_general_data->view_mode = SingleSensorViewMode;
+            view_mode = UnitempViewSingleSensor;
             view_dispatcher_switch_to_view(app->view_dispatcher, UnitempViewSingleSensor);
             consumed = true;
         } else if(event.event == CustomEventSwitchToManySensorsView) {
-            unitemp_scene_general_data->view_mode = ManySensorsViewMode;
+            view_mode = UnitempViewManySensors;
             view_dispatcher_switch_to_view(app->view_dispatcher, UnitempViewManySensors);
             consumed = true;
         }
@@ -89,5 +75,4 @@ void unitemp_scene_general_on_exit(void* context) {
     if(app->settings->infinity_backlight) {
         notification_message(app->notifications, &sequence_display_backlight_enforce_auto);
     }
-    free(unitemp_scene_general_data);
 }
