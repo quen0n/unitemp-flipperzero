@@ -461,6 +461,9 @@ static bool single_sensor_input_callback(InputEvent* event, void* context) {
     if(event->key == InputKeyOk && event->type == InputTypeShort) {
         scene_manager_next_scene(app->scene_manager, UnitempSceneMenu);
         consumed = true;
+    } else if(event->key == InputKeyOk && event->type == InputTypeLong) {
+        if(++app->settings->temperature_unit >= UT_TEMP_COUNT) app->settings->temperature_unit = 0;
+        consumed = true;
     } else if(event->key == InputKeyLeft && event->type == InputTypeShort) {
         with_view_model(
             single_sensor->view,
