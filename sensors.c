@@ -3,6 +3,14 @@
 
 #include "sensors/DHTxx.h"
 #include "sensors/AM2320.h"
+#include "./sensors/LM75.h"
+//BMP280, BME280, BME680
+#include "./sensors/BMx280.h"
+#include "./sensors/BME680.h"
+#include "./sensors/SHT30.h"
+#include "./sensors/BMP180.h"
+#include "./sensors/HTU21x.h"
+#include "./sensors/HDC1080.h"
 
 #define UPDATE_PERIOD_MS 250UL
 
@@ -30,10 +38,20 @@ static uint8_t sensors_count = 0;
 
 //List of sensor models
 static const SensorModel* sensor_model_list[] = {
-    &DHT11,
+    &DHT11, //tested
     &DHT21,
     &DHT22,
     &AM2320_SW,
+    &AM2320_I2C,
+    &HDC1080,
+    &HTU21x, //tested
+    &SHT30,
+    &GXHT30,
+    &LM75,
+    &BMP180,
+    &BMP280,
+    &BME280,
+    &BME680, //tested
 };
 //Number of sensor models
 #define SENSOR_TYPES_COUNT (int)(sizeof(sensor_model_list) / sizeof(const SensorModel*))
@@ -118,8 +136,8 @@ int32_t unitemp_sensors_update_callback(void* context) {
     return 0;
 }
 
-Sensor* unitemp_sensor_alloc(char* name, const SensorModel* type, char* args) {
-    if(name == NULL || type == NULL || args == NULL) return NULL;
+Sensor* unitemp_sensor_alloc(char* name, const SensorModel* model, char* args) {
+    if(name == NULL || model == NULL || args == NULL) return NULL;
 
     bool status = false;
 
@@ -138,8 +156,8 @@ Sensor* unitemp_sensor_alloc(char* name, const SensorModel* type, char* args) {
     }
     //Recording the sensor name
     strcpy(sensor->name, name);
-    //Sensor type
-    sensor->model = type;
+    //Sensor model
+    sensor->model = model;
     //Status sensor by default - error
     sensor->status = UT_SENSORSTATUS_ERROR;
     //Time of last poll
@@ -161,7 +179,7 @@ Sensor* unitemp_sensor_alloc(char* name, const SensorModel* type, char* args) {
     //Exit with clearing if memory for the sensor has not been allocated
     free(sensor->name);
     free(sensor);
-    FURI_LOG_E(APP_NAME, "Sensor %s(%s) allocation error", name, type->modelname);
+    FURI_LOG_E(APP_NAME, "Sensor %s(%s) allocation error", name, model->modelname);
     return NULL;
 }
 
@@ -171,7 +189,7 @@ void unitemp_sensor_free(Sensor* sensor) {
         return;
     }
     if(sensor->model == NULL) {
-        FURI_LOG_E(APP_NAME, "Sensor type is null");
+        FURI_LOG_E(APP_NAME, "Sensor model is null");
         return;
     }
     if(sensor->model->mem_releaser == NULL) {
@@ -287,8 +305,7 @@ Sensor** unitemp_sensors_get(void) {
 }
 
 SensorStatus unitemp_sensor_update(Sensor* sensor, void* context) {
-    if(context == NULL) return UT_SENSORSTATUS_ERROR;
-    if(sensor == NULL) {
+    if(sensor == NULL || context == NULL) {
         return UT_SENSORSTATUS_ERROR;
     }
     if(sensor->status == UT_SENSORSTATUS_INACTIVE) {

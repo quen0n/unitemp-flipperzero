@@ -24,5 +24,44 @@
 extern const SensorModel DHT11;
 extern const SensorModel DHT21;
 extern const SensorModel DHT22;
+extern const SensorModel DHT20;
+extern const SensorModel AHT10;
 
+/**
+ * @brief Allocating memory and setting initial values ​​for the DHT20 sensor
+ *
+ * @param sensor Pointer to the sensor to create
+ * @return The truth about success
+ */
+bool unitemp_DHT20_I2C_alloc(Sensor* sensor, char* args);
+
+/**
+ * @brief Initializing the DHT20 sensor
+ *
+ * @param sensor Pointer to sensor
+ * @return True if initialization is successful
+ */
+bool unitemp_DHT20_init(Sensor* sensor);
+
+/**
+ * @brief Deinitializing the sensor
+ *
+ * @param sensor Pointer to sensor
+ */
+bool unitemp_DHT20_I2C_deinit(Sensor* sensor);
+
+/**
+ * @brief Updating values ​​from sensor
+ *
+ * @param sensor Pointer to sensor
+ * @return Update status
+ */
+SensorStatus unitemp_DHT20_I2C_update(Sensor* sensor);
+
+/**
+ * @brief Free up sensor memory
+ *
+ * @param sensor Pointer to sensor
+ */
+bool unitemp_DHT20_I2C_free(Sensor* sensor);
 #endif //DHTXX_H_

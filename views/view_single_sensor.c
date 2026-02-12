@@ -18,6 +18,7 @@
 #include "view_single_sensor.h"
 #include "../unitemp.h"
 #include "../interfaces/singlewire.h"
+#include "../interfaces/unitemp_i2c.h"
 
 #include <stdlib.h>
 #include <gui/elements.h>
@@ -293,6 +294,10 @@ static void _draw_sensor_not_responding(Canvas* canvas, Sensor* sensor) {
             "Sensor waiting on %s",
             ((SingleWireSensor*)sensor->instance)->data_pin->name);
     }
+
+    if(sensor->model->interface == &unitemp_i2c) {
+        snprintf(temp_str, TEMP_STR_SIZE, "Sensor waiting on SDA & SCL");
+    }
     // if(sensor->model->interface == &ONE_WIRE) {
     //     snprintf(
     //         temp_str,
@@ -300,9 +305,7 @@ static void _draw_sensor_not_responding(Canvas* canvas, Sensor* sensor) {
     //         "Sensor waiting on %d",
     //         ((OneWireSensor*)sensor->instance)->bus->gpio->num);
     // }
-    // if(sensor->model->interface == &I2C) {
-    //     snprintf(temp_str, TEMP_STR_SIZE, "Waiting for module on I2C pins");
-    // }
+
     // if(sensor->model->interface == &SPI) {
     //     snprintf(temp_str, TEMP_STR_SIZE, "Waiting for module on SPI pins");
     // }

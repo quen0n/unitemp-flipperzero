@@ -15,37 +15,34 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
+#ifndef UNITEMP_BMP180
+#define UNITEMP_BMP180
 
-#include "../sensors.h"
-
-#ifndef AM2320_H_
-#define AM2320_H_
-
-extern const SensorModel AM2320_SW;
-extern const SensorModel AM2320_I2C;
-
+#include "../unitemp.h"
+#include "../Sensors.h"
+extern const SensorModel BMP180;
 /**
- * @brief Allocating memory and setting initial values ​​for the AM2320 sensor
+ * @brief Allocating memory and setting initial values ​​for the BMP180 sensor
  *
  * @param sensor Pointer to the sensor to create
  * @return The truth about success
  */
-bool unitemp_AM2320_I2C_alloc(Sensor* sensor, char* args);
+bool unitemp_BMP180_I2C_alloc(Sensor* sensor, char* args);
 
 /**
- * @brief AM2320 sensor initialization
+ * @brief BMP180 sensor initialization
  *
  * @param sensor Pointer to sensor
  * @return True if initialization is successful
  */
-bool unitemp_AM2320_init(Sensor* sensor);
+bool unitemp_BMP180_init(Sensor* sensor);
 
 /**
  * @brief Deinitializing the sensor
  *
  * @param sensor Pointer to sensor
  */
-bool unitemp_AM2320_I2C_deinit(Sensor* sensor);
+bool unitemp_BMP180_I2C_deinit(Sensor* sensor);
 
 /**
  * @brief Updating values ​​from sensor
@@ -53,13 +50,13 @@ bool unitemp_AM2320_I2C_deinit(Sensor* sensor);
  * @param sensor Pointer to sensor
  * @return Update status
  */
-SensorStatus unitemp_AM2320_I2C_update(Sensor* sensor);
+SensorStatus unitemp_BMP180_I2C_update(Sensor* sensor);
 
 /**
  * @brief Free up sensor memory
  *
  * @param sensor Pointer to sensor
  */
-bool unitemp_AM2320_I2C_free(Sensor* sensor);
+bool unitemp_BMP180_I2C_free(Sensor* sensor);
 
-#endif //AM2320_H_
+#endif

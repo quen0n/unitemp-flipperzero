@@ -28,7 +28,12 @@ void unitemp_scene_sensors_list_on_enter(void* context) {
     const SensorModel** models = unitemp_sensors_models_get();
 
     for(uint8_t i = 0; i < (sensors_type_count); i++) {
-        submenu_add_item(submenu, models[i]->altname, i, unitemp_submenu_callback, app);
+        submenu_add_item(
+            submenu,
+            (models[i]->altname == NULL) ? models[i]->modelname : models[i]->altname,
+            i,
+            unitemp_submenu_callback,
+            app);
     }
 
     submenu_set_selected_item(

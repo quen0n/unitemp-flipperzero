@@ -15,37 +15,42 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
+#ifndef UNITEMP_SHT30
+#define UNITEMP_SHT30
 
-#include "../sensors.h"
-
-#ifndef AM2320_H_
-#define AM2320_H_
-
-extern const SensorModel AM2320_SW;
-extern const SensorModel AM2320_I2C;
-
+#include "../unitemp.h"
+#include "../Sensors.h"
+extern const SensorModel SHT30;
+extern const SensorModel GXHT30;
 /**
- * @brief Allocating memory and setting initial values ​​for the AM2320 sensor
+ * @brief Allocating memory and setting initial values ​​for the SHT30 sensor
  *
  * @param sensor Pointer to the sensor to create
  * @return The truth about success
  */
-bool unitemp_AM2320_I2C_alloc(Sensor* sensor, char* args);
+bool unitemp_SHT30_I2C_alloc(Sensor* sensor, char* args);
 
 /**
- * @brief AM2320 sensor initialization
+ * @brief SHT30 sensor initialization
  *
  * @param sensor Pointer to sensor
  * @return True if initialization is successful
  */
-bool unitemp_AM2320_init(Sensor* sensor);
+bool unitemp_SHT30_init(Sensor* sensor);
+/**
+ * @brief GXHT30 sensor initialization
+ *
+ * @param sensor Pointer to sensor
+ * @return True if initialization is successful
+ */
+bool unitemp_GXHT30_init(Sensor* sensor);
 
 /**
  * @brief Deinitializing the sensor
  *
  * @param sensor Pointer to sensor
  */
-bool unitemp_AM2320_I2C_deinit(Sensor* sensor);
+bool unitemp_SHT30_I2C_deinit(Sensor* sensor);
 
 /**
  * @brief Updating values ​​from sensor
@@ -53,13 +58,13 @@ bool unitemp_AM2320_I2C_deinit(Sensor* sensor);
  * @param sensor Pointer to sensor
  * @return Update status
  */
-SensorStatus unitemp_AM2320_I2C_update(Sensor* sensor);
+SensorStatus unitemp_SHT30_I2C_update(Sensor* sensor);
 
 /**
  * @brief Free up sensor memory
  *
  * @param sensor Pointer to sensor
  */
-bool unitemp_AM2320_I2C_free(Sensor* sensor);
+bool unitemp_SHT30_I2C_free(Sensor* sensor);
 
-#endif //AM2320_H_
+#endif

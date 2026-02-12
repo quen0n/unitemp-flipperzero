@@ -10,11 +10,10 @@
 - The temperature index calculation has been corrected. It is now calculated only for temperatures above 26.67°C (80°F)
 
 TODO: загрузка и сохранение датчиков
-TODO: доделать добавление single wire датчиков
+TODO: доделать добавление датчиков
 
 TODO: перелистывание датчиков в single sensor view
 TODO: поддержка onewire датчиков
-TODO: поддержка I2С датчиков
 TODO: поддержка SPI датчиков
 TODO: запускать и останавливать тред с опросом датчиков при входе и выходе из general scene. Синхронизировать вход - при входе в сцену дождаться обновления датчиков
 TODO: автоматическое включение питание сделать настраиваемым
