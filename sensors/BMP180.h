@@ -19,7 +19,7 @@
 #define UNITEMP_BMP180
 
 #include "../unitemp.h"
-#include "../Sensors.h"
+#include "../sensors.h"
 extern const SensorModel BMP180;
 /**
  * @brief Allocating memory and setting initial values ​​for the BMP180 sensor

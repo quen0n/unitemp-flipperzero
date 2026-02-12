@@ -19,7 +19,7 @@
 #define UNITEMP_LM75
 
 #include "../unitemp.h"
-#include "../Sensors.h"
+#include "../sensors.h"
 extern const SensorModel LM75;
 /**
  * @brief Allocating memory and setting initial values ​​for the LM75 sensor

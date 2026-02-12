@@ -19,7 +19,7 @@
 #define UNITEMP_HTU21x
 
 #include "../unitemp.h"
-#include "../Sensors.h"
+#include "../sensors.h"
 extern const SensorModel HTU21x;
 /**
  * @brief Allocating memory and setting initial values ​​for the HTU21x sensor

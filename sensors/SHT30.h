@@ -19,7 +19,7 @@
 #define UNITEMP_SHT30
 
 #include "../unitemp.h"
-#include "../Sensors.h"
+#include "../sensors.h"
 extern const SensorModel SHT30;
 extern const SensorModel GXHT30;
 /**

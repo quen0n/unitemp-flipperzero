@@ -19,7 +19,7 @@
 #define UNITEMP_BMx280
 
 #include "../unitemp.h"
-#include "../Sensors.h"
+#include "../sensors.h"
 #include "../interfaces/unitemp_i2c.h"
 
 typedef struct {

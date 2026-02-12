@@ -20,7 +20,7 @@
 #define UNITEMP_BME680
 
 #include "../unitemp.h"
-#include "../Sensors.h"
+#include "../sensors.h"
 #include "../interfaces/unitemp_i2c.h"
 
 typedef struct {
