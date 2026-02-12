@@ -26,6 +26,9 @@
 
 #include "unitemp_icons.h"
 
+extern const Icon I_ButtonRight_4x7;
+extern const Icon I_ButtonLeft_4x7;
+
 #define TEMP_STR_SIZE 30
 static char temp_str[TEMP_STR_SIZE];
 
@@ -287,7 +290,7 @@ static void _draw_sensor_not_responding(Canvas* canvas, Sensor* sensor) {
 
     canvas_set_font(canvas, FontSecondary);
 
-    if(sensor->model->interface == &SINGLEWIRE) {
+    if(sensor->model->interface == &singlewire) {
         snprintf(
             temp_str,
             TEMP_STR_SIZE,
@@ -311,12 +314,25 @@ static void _draw_sensor_not_responding(Canvas* canvas, Sensor* sensor) {
     // }
     canvas_draw_str_aligned(canvas, 65, 19, AlignCenter, AlignCenter, temp_str);
 }
-void single_sensor_draw_sensor(Canvas* canvas, Sensor* sensor, UnitempSettings* settings) {
+
+void single_sensor_draw_sensor(Canvas* canvas, Sensor* sensor, SingleSensorViewModel* view_model) {
+    UnitempSettings* settings = ((UnitempApp*)(view_model->context))->settings;
+
     if(sensor == NULL) return;
 
     //Drawing a frame
     canvas_draw_rframe(canvas, 0, 0, 128, 63, 7);
     canvas_draw_rframe(canvas, 0, 0, 128, 64, 7);
+
+    //Right arrow
+    if(unitemp_sensors_get_count() > 0 &&
+       view_model->sensor_index < unitemp_sensors_get_count() - 1) {
+        canvas_draw_icon(canvas, 122, 29, &I_ButtonRight_4x7);
+    }
+    //Left arrow
+    if(view_model->sensor_index > 0) {
+        canvas_draw_icon(canvas, 2, 29, &I_ButtonLeft_4x7);
+    }
 
     //Name stamp
     canvas_set_font(canvas, FontPrimary);
@@ -429,9 +445,8 @@ void single_sensor_draw_sensor(Canvas* canvas, Sensor* sensor, UnitempSettings* 
 
 static void single_sensor_draw_callback(Canvas* canvas, void* model) {
     SingleSensorViewModel* view_model = model;
-    UnitempApp* app = view_model->context;
     Sensor* sensor = unitemp_sensors_get()[view_model->sensor_index];
-    single_sensor_draw_sensor(canvas, sensor, app->settings);
+    single_sensor_draw_sensor(canvas, sensor, view_model);
 }
 
 static bool single_sensor_input_callback(InputEvent* event, void* context) {
@@ -442,6 +457,28 @@ static bool single_sensor_input_callback(InputEvent* event, void* context) {
 
     if(event->key == InputKeyOk && event->type == InputTypeShort) {
         scene_manager_next_scene(app->scene_manager, UnitempSceneMenu);
+        consumed = true;
+    } else if(event->key == InputKeyLeft && event->type == InputTypeShort) {
+        with_view_model(
+            single_sensor->view,
+            SingleSensorViewModel * model,
+            {
+                if(--model->sensor_index >= unitemp_sensors_get_count()) {
+                    model->sensor_index = unitemp_sensors_get_count() - 1;
+                }
+            },
+            true);
+        consumed = true;
+    } else if(event->key == InputKeyRight && event->type == InputTypeShort) {
+        with_view_model(
+            single_sensor->view,
+            SingleSensorViewModel * model,
+            {
+                if(++model->sensor_index >= unitemp_sensors_get_count()) {
+                    model->sensor_index = 0;
+                }
+            },
+            true);
         consumed = true;
     }
 

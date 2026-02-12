@@ -15,8 +15,8 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
-#ifndef SINGLEWIRE_H_
-#define SINGLEWIRE_H_
+#ifndef singlewire_H_
+#define singlewire_H_
 
 #include "../unitemp.h"
 #include "../sensors.h"
@@ -28,7 +28,7 @@ typedef struct {
 } SingleWireSensor;
 
 extern const SensorConnectionInterface
-    SINGLEWIRE; //Proprietary single-wire protocol for DHTXX and AM23XX sensors
+    singlewire; //Proprietary single-wire protocol for DHTXX and AM23XX sensors
 
 /**
  * @brief Memory allocation for a sensor on a One Wire line
@@ -88,4 +88,4 @@ bool unitemp_singlewire_sensor_gpio_set(Sensor* sensor, const SensorGpioPin* dat
  */
 const SensorGpioPin* unitemp_singlewire_sensor_gpio_get(Sensor* sensor);
 
-#endif // SINGLEWIRE_H_
+#endif // singlewire_H_

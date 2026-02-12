@@ -23,7 +23,7 @@
 // Maximum number of polling ticks while waiting for the sensor
 #define POLLING_TIMEOUT_TICKS 500
 
-const SensorConnectionInterface SINGLEWIRE = {
+const SensorConnectionInterface singlewire = {
     .name = "Single wire",
     .allocator = unitemp_singlewire_alloc,
     .mem_releaser = unitemp_singlewire_free,
@@ -80,7 +80,7 @@ bool unitemp_singlewire_init(Sensor* sensor) {
         FURI_LOG_E(APP_NAME, "Sensor pointer is null!");
         return false;
     }
-    unitemp_gpio_lock(instance->data_pin, &SINGLEWIRE);
+    unitemp_gpio_lock(instance->data_pin, &singlewire);
     // High level by default
     furi_hal_gpio_write(instance->data_pin->pin, true);
     // Operation mode - OpenDrain, pull-up enabled just in case

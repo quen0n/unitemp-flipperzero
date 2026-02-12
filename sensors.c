@@ -38,20 +38,23 @@ static uint8_t sensors_count = 0;
 
 //List of sensor models
 static const SensorModel* sensor_model_list[] = {
-    &DHT11, //tested
-    &DHT21,
-    &DHT22,
+    &AHT10,
     &AM2320_SW,
     &AM2320_I2C,
-    &HDC1080,
-    &HTU21x, //tested
-    &SHT30,
-    &GXHT30,
-    &LM75,
     &BMP180,
     &BMP280,
     &BME280,
     &BME680, //tested
+    &DHT11, //tested
+    &DHT20,
+    &DHT21,
+    &DHT22,
+    &GXHT30,
+    &HDC1080,
+    &HTU21x, //tested
+    &LM75,
+    &SHT30,
+
 };
 //Number of sensor models
 #define SENSOR_TYPES_COUNT (int)(sizeof(sensor_model_list) / sizeof(const SensorModel*))
@@ -232,16 +235,25 @@ uint8_t unitemp_sensors_get_count(void) {
 
 bool unitemp_sensors_load(void) {
     UNITEMP_DEBUG("Loading sensors...");
-    //Sensor name
-    char name[11] = "DHT11 test";
-    //Sensor model
-    char model[11] = "DHT11";
     //Temperature offset
     int temp_offset = 0;
-    //Name length limit
-    name[10] = '\0';
 
-    Sensor* sensor = unitemp_sensor_alloc(name, unitemp_sensors_get_model_from_str(model), "7");
+    Sensor* sensor =
+        unitemp_sensor_alloc("DHT11 test", unitemp_sensors_get_model_from_str("DHT11"), "7");
+    if(sensor != NULL) {
+        sensor->temperature_offset = temp_offset;
+        unitemp_sensors_add(sensor);
+    }
+
+    sensor =
+        unitemp_sensor_alloc("HTU21 test", unitemp_sensors_get_model_from_str("HTU21x"), "80");
+    if(sensor != NULL) {
+        sensor->temperature_offset = temp_offset;
+        unitemp_sensors_add(sensor);
+    }
+
+    sensor =
+        unitemp_sensor_alloc("BME680 tst", unitemp_sensors_get_model_from_str("BME680"), "EE");
     if(sensor != NULL) {
         sensor->temperature_offset = temp_offset;
         unitemp_sensors_add(sensor);
