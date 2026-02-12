@@ -19,6 +19,7 @@
 #include "../unitemp.h"
 #include "../interfaces/singlewire.h"
 #include "../interfaces/unitemp_i2c.h"
+#include "../interfaces/unitemp_spi.h"
 
 #include <stdlib.h>
 #include <gui/elements.h>
@@ -29,7 +30,7 @@
 extern const Icon I_ButtonRight_4x7;
 extern const Icon I_ButtonLeft_4x7;
 
-#define TEMP_STR_SIZE 30
+#define TEMP_STR_SIZE 32
 static char temp_str[TEMP_STR_SIZE];
 
 struct SingleSensor {
@@ -301,6 +302,11 @@ static void _draw_sensor_not_responding(Canvas* canvas, Sensor* sensor) {
     if(sensor->model->interface == &unitemp_i2c) {
         snprintf(temp_str, TEMP_STR_SIZE, "Sensor waiting on SDA & SCL");
     }
+
+    if(sensor->model->interface == &unitemp_spi) {
+        snprintf(temp_str, TEMP_STR_SIZE, "Sensor waiting on SPI pins");
+    }
+
     // if(sensor->model->interface == &ONE_WIRE) {
     //     snprintf(
     //         temp_str,
@@ -309,9 +315,6 @@ static void _draw_sensor_not_responding(Canvas* canvas, Sensor* sensor) {
     //         ((OneWireSensor*)sensor->instance)->bus->gpio->num);
     // }
 
-    // if(sensor->model->interface == &SPI) {
-    //     snprintf(temp_str, TEMP_STR_SIZE, "Waiting for module on SPI pins");
-    // }
     canvas_draw_str_aligned(canvas, 65, 19, AlignCenter, AlignCenter, temp_str);
 }
 

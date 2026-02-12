@@ -88,7 +88,9 @@ SensorStatus unitemp_HTU21x_update(Sensor* sensor) {
             data[0] = 0xF5;
             if(!unitemp_i2c_write_array(i2c_sensor, 1, data)) return UT_SENSORSTATUS_TIMEOUT;
         }
+        req_read = !req_read;
     } else {
+        req_read = !req_read;
         if(!unitemp_i2c_read_array(i2c_sensor, 3, data)) return UT_SENSORSTATUS_TIMEOUT;
 
         uint16_t raw = ((uint16_t)data[0] << 8) | data[1];
@@ -101,7 +103,6 @@ SensorStatus unitemp_HTU21x_update(Sensor* sensor) {
         }
         temp_hum = !temp_hum;
     }
-    req_read = !req_read;
     if(sensor->temperature == -128.0f || sensor->humidity == -128.0f) {
         return UT_SENSORSTATUS_POLLING;
     }

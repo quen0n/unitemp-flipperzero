@@ -11,12 +11,14 @@
 #include "./sensors/BMP180.h"
 #include "./sensors/HTU21x.h"
 #include "./sensors/HDC1080.h"
+#include "./sensors/MAX31855.h"
+#include "./sensors/MAX6675.h"
 
 #define UPDATE_PERIOD_MS 250UL
 
 //TODO: Перенести всё что относится к GPIO в другой файл
 //List of available GPIO pins with their numbers and names
-#define GPIO_ITEMS 13U
+#define SENSOR_PINS_COUNT (int)(sizeof(gpio_list) / sizeof(const SensorGpioPin))
 static const SensorGpioPin gpio_list[] = {
     {2, "2 (A7)", &gpio_ext_pa7},
     {3, "3 (A6)", &gpio_ext_pa6},
@@ -47,30 +49,32 @@ static const SensorModel* sensor_model_list[] = {
     &BME680, //tested
     &DHT11, //tested
     &DHT20,
-    &DHT21,
+    &DHT21, //tested
     &DHT22,
     &GXHT30,
     &HDC1080,
     &HTU21x, //tested
     &LM75,
+    &MAX6675,
+    &MAX31855,
     &SHT30,
 
 };
 //Number of sensor models
-#define SENSOR_TYPES_COUNT (int)(sizeof(sensor_model_list) / sizeof(const SensorModel*))
+#define SENSOR_MODELS_COUNT (int)(sizeof(sensor_model_list) / sizeof(const SensorModel*))
 
 const SensorModel** unitemp_sensors_models_get(void) {
     return sensor_model_list;
 }
 
 uint8_t unitemp_sensors_models_get_count(void) {
-    return SENSOR_TYPES_COUNT;
+    return SENSOR_MODELS_COUNT;
 }
 
 const SensorModel* unitemp_sensors_get_model_from_str(char* str) {
     if(str == NULL) return NULL;
 
-    for(uint8_t i = 0; i < SENSOR_TYPES_COUNT; i++) {
+    for(uint8_t i = 0; i < SENSOR_MODELS_COUNT; i++) {
         if(!strcmp(str, sensor_model_list[i]->modelname)) {
             return sensor_model_list[i];
         }
@@ -80,10 +84,10 @@ const SensorModel* unitemp_sensors_get_model_from_str(char* str) {
 
 //List of interfaces that are attached to GPIO (defined by index)
 //NULL - port is free, pointer to interface - port is occupied by this interface
-static const SensorConnectionInterface* gpio_interfaces_list[GPIO_ITEMS] = {0};
+static const SensorConnectionInterface* gpio_interfaces_list[SENSOR_PINS_COUNT] = {0};
 
 const SensorGpioPin* unitemp_gpio_get_from_int(uint8_t number) {
-    for(uint8_t i = 0; i < GPIO_ITEMS; i++) {
+    for(uint8_t i = 0; i < SENSOR_PINS_COUNT; i++) {
         if(gpio_list[i].num == number) {
             return &gpio_list[i];
         }
@@ -94,7 +98,7 @@ const SensorGpioPin* unitemp_gpio_get_from_int(uint8_t number) {
 uint8_t unitemp_gpio_to_index(const GpioPin* gpio) {
     if(gpio == NULL) return 255;
 
-    for(uint8_t i = 0; i < GPIO_ITEMS; i++) {
+    for(uint8_t i = 0; i < SENSOR_PINS_COUNT; i++) {
         if(gpio_list[i].pin->pin == gpio->pin && gpio_list[i].pin->port == gpio->port) {
             return i;
         }
@@ -237,9 +241,9 @@ bool unitemp_sensors_load(void) {
     UNITEMP_DEBUG("Loading sensors...");
     //Temperature offset
     int temp_offset = 0;
+    Sensor* sensor;
 
-    Sensor* sensor =
-        unitemp_sensor_alloc("DHT11 test", unitemp_sensors_get_model_from_str("DHT11"), "7");
+    sensor = unitemp_sensor_alloc("DHT11 test", unitemp_sensors_get_model_from_str("DHT11"), "7");
     if(sensor != NULL) {
         sensor->temperature_offset = temp_offset;
         unitemp_sensors_add(sensor);
@@ -254,6 +258,16 @@ bool unitemp_sensors_load(void) {
 
     sensor =
         unitemp_sensor_alloc("BME680 tst", unitemp_sensors_get_model_from_str("BME680"), "EE");
+    if(sensor != NULL) {
+        sensor->temperature_offset = temp_offset;
+        unitemp_sensors_add(sensor);
+    }
+    sensor = unitemp_sensor_alloc("MAX6675", unitemp_sensors_get_model_from_str("MAX6675"), "6");
+    if(sensor != NULL) {
+        sensor->temperature_offset = temp_offset;
+        unitemp_sensors_add(sensor);
+    }
+    sensor = unitemp_sensor_alloc("MAX31855", unitemp_sensors_get_model_from_str("MAX31855"), "4");
     if(sensor != NULL) {
         sensor->temperature_offset = temp_offset;
         unitemp_sensors_add(sensor);
