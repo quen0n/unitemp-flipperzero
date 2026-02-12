@@ -31,6 +31,7 @@
 
 #include "views/view_no_sensors.h"
 #include "views/view_single_sensor.h"
+#include "views/view_many_sensors.h"
 
 #include <power/power_service/power.h>
 
@@ -68,6 +69,7 @@ typedef enum {
     UnitempViewVariableList,
     UnitempViewNoSensors,
     UnitempViewSingleSensor,
+    UnitempViewManySensors
 } UnitempView;
 
 //Temperature units
@@ -96,6 +98,11 @@ typedef enum {
     UT_HUMIDITY_COUNT // Number of humidity modes
 } HumidityMeausureUnit;
 
+typedef enum {
+    CustomEventSwitchToSingleSensorView,
+    CustomEventSwitchToManySensorsView,
+} UnitempCustomEventEnum;
+
 /* Declaration of structures */
 //Plugin settings
 typedef struct {
@@ -122,6 +129,7 @@ typedef struct {
     VariableItemList* var_item_list;
     NoSensors* no_sensors;
     SingleSensor* single_sensor;
+    ManySensors* many_sensors;
     Gui* gui;
 
     Sensor** sensors_list;

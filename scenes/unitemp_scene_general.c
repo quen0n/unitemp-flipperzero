@@ -21,7 +21,7 @@
 typedef enum {
     NoSensorsViewMode,
     SingleSensorViewMode,
-    ListSensorViewMode,
+    ManySensorsViewMode,
 
     ViewModesCount
 } GeneralViewMode;
@@ -45,9 +45,12 @@ void unitemp_scene_general_on_enter(void* context) {
     if(unitemp_sensors_get_count() == 0) {
         unitemp_scene_general_data->view_mode = NoSensorsViewMode;
         view_dispatcher_switch_to_view(app->view_dispatcher, UnitempViewNoSensors);
-    } else {
+    } else if(unitemp_sensors_get_count() == 1) {
         unitemp_scene_general_data->view_mode = SingleSensorViewMode;
         view_dispatcher_switch_to_view(app->view_dispatcher, UnitempViewSingleSensor);
+    } else {
+        unitemp_scene_general_data->view_mode = ManySensorsViewMode;
+        view_dispatcher_switch_to_view(app->view_dispatcher, UnitempViewManySensors);
     }
 }
 
@@ -60,7 +63,21 @@ bool unitemp_scene_general_on_event(void* context, SceneManagerEvent event) {
         if(unitemp_scene_general_data->view_mode == SingleSensorViewMode) {
             single_sensor_refresh_data(app->single_sensor);
         }
+        if(unitemp_scene_general_data->view_mode == ManySensorsViewMode) {
+            many_sensors_refresh_data(app->many_sensors);
+        }
         consumed = true;
+    }
+    if(event.type == SceneManagerEventTypeCustom) {
+        if(event.event == CustomEventSwitchToSingleSensorView) {
+            unitemp_scene_general_data->view_mode = SingleSensorViewMode;
+            view_dispatcher_switch_to_view(app->view_dispatcher, UnitempViewSingleSensor);
+            consumed = true;
+        } else if(event.event == CustomEventSwitchToManySensorsView) {
+            unitemp_scene_general_data->view_mode = ManySensorsViewMode;
+            view_dispatcher_switch_to_view(app->view_dispatcher, UnitempViewManySensors);
+            consumed = true;
+        }
     }
 
     return consumed;

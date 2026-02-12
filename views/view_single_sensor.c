@@ -17,6 +17,7 @@
 */
 #include "view_single_sensor.h"
 #include "../unitemp.h"
+#include "../helpers/draw.h"
 #include "../interfaces/singlewire.h"
 #include "../interfaces/unitemp_i2c.h"
 #include "../interfaces/unitemp_spi.h"
@@ -70,64 +71,6 @@ static const uint8_t values_positions[4][4][2] = {
      {UT_DATA_POS_DOWN_LEFT},
      {UT_DATA_POS_DOWN_RIGHT}},
 };
-
-static void _draw_temperature(
-    Canvas* canvas,
-    Sensor* sensor,
-    TempMeasureUnit temperature_unit,
-    uint8_t x,
-    uint8_t y) {
-    //Не рисовать, если координаты равны UT_DATA_POS_NONE
-    if(x == 255 && y == 255) return;
-    //Drawing a frame
-    canvas_draw_rframe(canvas, x, y, 54, 20, 3);
-    canvas_draw_rframe(canvas, x, y, 54, 19, 3);
-
-    float temperature = sensor->temperature;
-    if(temperature_unit == UT_TEMP_FAHRENHEIT) {
-        temperature = locale_celsius_to_fahrenheit(temperature);
-    }
-    int8_t temp_dec = abs((int16_t)(temperature * 10) % 10);
-
-    //Drawing icon
-    canvas_draw_icon(
-        canvas,
-        x + 3,
-        y + 3,
-        (temperature_unit == UT_TEMP_CELSIUS ? &I_temp_C_11x14 : &I_temp_F_11x14));
-
-    if((int16_t)temperature == -128 || sensor->status == UT_SENSORSTATUS_TIMEOUT) {
-        canvas_set_font(canvas, FontBigNumbers);
-        canvas_draw_str_aligned(canvas, x + 27, y + 10, AlignCenter, AlignCenter, "--");
-        canvas_set_font(canvas, FontPrimary);
-        canvas_draw_str_aligned(canvas, x + 50, y + 10 + 3, AlignRight, AlignCenter, ". -");
-        return;
-    }
-
-    //Whole part of temperature
-    //A crutch for displaying the sign of a number less than 0
-    uint8_t offset = 0;
-    if(temperature < 0 && temperature > -1) {
-        temp_str[0] = '-';
-        offset = 1;
-    }
-    snprintf((char*)(temp_str + offset), TEMP_STR_SIZE, "%d", (int16_t)temperature);
-    canvas_set_font(canvas, FontBigNumbers);
-    canvas_draw_str_aligned(
-        canvas,
-        x + 27 + ((temperature <= -10 || temperature > 99) ? 5 : 0),
-        y + 10,
-        AlignCenter,
-        AlignCenter,
-        temp_str);
-    //Printing the fractional part of the temperature in the range from -9 to 99 (when there are two digits in the number)
-    if(temperature > -10 && temperature <= 99) {
-        uint8_t int_len = canvas_string_width(canvas, temp_str);
-        snprintf(temp_str, TEMP_STR_SIZE, ".%d", temp_dec);
-        canvas_set_font(canvas, FontPrimary);
-        canvas_draw_str(canvas, x + 27 + int_len / 2 + 2, y + 10 + 7, temp_str);
-    }
-}
 
 static void _draw_humidity(
     Canvas* canvas,
@@ -350,7 +293,7 @@ void single_sensor_draw_sensor(Canvas* canvas, Sensor* sensor, SingleSensorViewM
         uint8_t values_count_index = data_types_values_count[data_type] - 1;
         switch(data_type) {
         case UT_DATA_TYPE_TEMP:
-            _draw_temperature(
+            unitemp_draw_temperature(
                 canvas,
                 sensor,
                 settings->temperature_unit,
@@ -359,7 +302,7 @@ void single_sensor_draw_sensor(Canvas* canvas, Sensor* sensor, SingleSensorViewM
             break;
         case UT_DATA_TYPE_TEMP_HUM:
             values_count_index += (settings->heat_index ? 1 : 0);
-            _draw_temperature(
+            unitemp_draw_temperature(
                 canvas,
                 sensor,
                 settings->temperature_unit,
@@ -382,7 +325,7 @@ void single_sensor_draw_sensor(Canvas* canvas, Sensor* sensor, SingleSensorViewM
             }
             break;
         case UT_DATA_TYPE_TEMP_PRESS:
-            _draw_temperature(
+            unitemp_draw_temperature(
                 canvas,
                 sensor,
                 settings->temperature_unit,
@@ -398,7 +341,7 @@ void single_sensor_draw_sensor(Canvas* canvas, Sensor* sensor, SingleSensorViewM
             break;
         case UT_DATA_TYPE_TEMP_HUM_PRESS:
             values_count_index += (settings->heat_index ? 1 : 0);
-            _draw_temperature(
+            unitemp_draw_temperature(
                 canvas,
                 sensor,
                 settings->temperature_unit,
@@ -485,6 +428,10 @@ static bool single_sensor_input_callback(InputEvent* event, void* context) {
                 }
             },
             true);
+        consumed = true;
+    } else if(event->key == InputKeyUp && event->type == InputTypeShort) {
+        view_dispatcher_send_custom_event(
+            app->view_dispatcher, CustomEventSwitchToManySensorsView);
         consumed = true;
     }
 

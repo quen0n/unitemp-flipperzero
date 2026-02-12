@@ -188,7 +188,9 @@ static UnitempApp* unitemp_app_alloc(void) {
     app->single_sensor = single_sensor_alloc(app);
     view_dispatcher_add_view(
         app->view_dispatcher, UnitempViewSingleSensor, single_sensor_get_view(app->single_sensor));
-
+    app->many_sensors = many_sensors_alloc(app);
+    view_dispatcher_add_view(
+        app->view_dispatcher, UnitempViewManySensors, many_sensors_get_view(app->many_sensors));
     return app;
 }
 
@@ -197,6 +199,8 @@ static void unitemp_app_free(UnitempApp* app) {
 
     unitemp_sensors_free();
 
+    view_dispatcher_remove_view(app->view_dispatcher, UnitempViewManySensors);
+    many_sensors_free(app->many_sensors);
     view_dispatcher_remove_view(app->view_dispatcher, UnitempViewSingleSensor);
     single_sensor_free(app->single_sensor);
     view_dispatcher_remove_view(app->view_dispatcher, UnitempViewNoSensors);
