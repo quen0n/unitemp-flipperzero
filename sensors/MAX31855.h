@@ -19,7 +19,7 @@
 #define UNITEMP_MAX31855
 
 #include "../unitemp.h"
-#include "../Sensors.h"
+#include "../sensors.h"
 #include "../interfaces/unitemp_spi.h"
 
 extern const SensorModel MAX31855;
