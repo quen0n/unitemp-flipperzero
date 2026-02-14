@@ -81,11 +81,11 @@ static void _draw_sensor_not_responding(Canvas* canvas, Sensor* sensor) {
     } else if(sensor->model->interface == &unitemp_spi) {
         snprintf(temp_str, TEMP_STR_SIZE, "Sensor waiting on SPI pins");
     } else if(sensor->model->interface == &onewire) {
-        // snprintf(
-        //     temp_str,
-        //     TEMP_STR_SIZE,
-        //     "Sensor waiting on %d",
-        //     ((OneWireSensor*)sensor->instance)->bus->gpio->num);
+        snprintf(
+            temp_str,
+            TEMP_STR_SIZE,
+            "Sensor waiting on %s",
+            ((OneWireSensor*)sensor->instance)->bus->bus_pin->name);
     }
 
     canvas_draw_str_aligned(canvas, 65, 19, AlignCenter, AlignCenter, temp_str);

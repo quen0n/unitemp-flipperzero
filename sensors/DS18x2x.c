@@ -34,6 +34,9 @@ const SensorModel Dallas = {
     .deinitializer = unitemp_ds18x2x_sensor_deinit,
     .updater = unitemp_ds18x2x_sensor_update};
 
+#define DS18B20_CMD_SKIP_ROM        0xCCU
+#define DS18B20_CMD_CONVERT         0x44U
+#define DS18B20_CMD_READ_SCRATCHPAD 0xBEU
 // static void _ds18x2x_request_temperature(ExampleThermoContext* context) {
 //     OneWireHost* onewire = context->onewire;
 
@@ -123,28 +126,34 @@ bool unitemp_ds18x2x_sensor_init(Sensor* sensor) {
     unitemp_onewire_bus_init(instance->bus);
     furi_delay_ms(1);
 
+    bool result = false;
     if(instance->familyCode == FC_DS18B20 || instance->familyCode == FC_DS1822) {
-        //Setting the bit depth to 10 bits
-        if(!unitemp_onewire_bus_start(instance->bus)) return false;
+        FURI_CRITICAL_ENTER();
+        for(;;) {
+            //Setting the bit depth to 10 bits
+            if(!unitemp_onewire_bus_start(instance->bus)) break;
 
-        unitemp_onewire_bus_select_device(instance->bus, instance->deviceID);
+            unitemp_onewire_bus_select_device(instance->bus, instance->deviceID);
 
-        unitemp_onewire_bus_write(instance->bus, 0x4E); //Memory recording
-        uint8_t buff[3];
-        //Alarm values
-        buff[0] = 0x4B; //Temperature lower limit value
-        buff[1] = 0x46; //Upper temperature limit value
-        //Configuration
-        buff[2] = 0b01111111; //12 bit bit conversion
-        unitemp_onewire_bus_write_bytes(instance->bus, buff, 3);
+            unitemp_onewire_bus_write(instance->bus, 0x4E); //Memory recording
+            uint8_t buff[3];
+            //Alarm values
+            buff[0] = 0x4B; //Temperature lower limit value
+            buff[1] = 0x46; //Upper temperature limit value
+            //Configuration
+            buff[2] = 0b01111111; //12 bit bit conversion
+            unitemp_onewire_bus_write_bytes(instance->bus, buff, 3);
 
-        //Stores values ​​in EEPROM for automatic recovery after power failures
-        if(!unitemp_onewire_bus_start(instance->bus)) return false;
-        unitemp_onewire_bus_select_device(instance->bus, instance->deviceID);
-        unitemp_onewire_bus_write(instance->bus, 0x48); //Write to EEPROM
+            //Stores values ​​in EEPROM for automatic recovery after power failures
+            if(!unitemp_onewire_bus_start(instance->bus)) break;
+            unitemp_onewire_bus_select_device(instance->bus, instance->deviceID);
+            unitemp_onewire_bus_write(instance->bus, 0x48); //Write to EEPROM
+            result = true;
+        }
+        FURI_CRITICAL_EXIT();
     }
 
-    return true;
+    return result;
 }
 
 bool unitemp_ds18x2x_sensor_deinit(Sensor* sensor) {
@@ -168,7 +177,8 @@ SensorStatus unitemp_ds18x2x_sensor_update(Sensor* sensor) {
         if(sensor->status == UT_SENSORSTATUS_TIMEOUT || sensor->status == UT_SENSORSTATUS_BADCRC) {
             if(!unitemp_onewire_bus_start(instance->bus)) return UT_SENSORSTATUS_TIMEOUT;
             unitemp_onewire_bus_select_device(instance->bus, instance->deviceID);
-            unitemp_onewire_bus_write(instance->bus, 0xBE); // Read Scratch-pad
+            unitemp_onewire_bus_write(
+                instance->bus, DS18B20_CMD_READ_SCRATCHPAD); // Read Scratch-pad
             unitemp_onewire_bus_read_bytes(instance->bus, buff, 9);
             if(!unitemp_onewire_CRC_check(buff, 9)) {
                 UNITEMP_DEBUG("Sensor %s is not found", sensor->name);
@@ -178,38 +188,26 @@ SensorStatus unitemp_ds18x2x_sensor_update(Sensor* sensor) {
 
         if(!unitemp_onewire_bus_start(instance->bus)) return UT_SENSORSTATUS_TIMEOUT;
         //Starting conversion on all sensors in passive power mode
-        if(instance->bus->powerMode == PWR_PASSIVE) {
-            unitemp_onewire_bus_write(instance->bus, 0xCC); // skip addr
-            //Setting a special status on all sensors of this bus so as not to start the conversion again
-            for(uint8_t i = 0; i < unitemp_sensors_get_count(); i++) {
-                if(unitemp_sensors_get(i)->model->interface == &onewire &&
-                   ((OneWireSensor*)unitemp_sensors_get(i)->instance)->bus == instance->bus) {
-                    unitemp_sensors_get(i)->status = UT_SENSORSTATUS_EARLYPOOL;
-                }
+        unitemp_onewire_bus_write(instance->bus, DS18B20_CMD_SKIP_ROM); // skip addr
+        //Setting a special status on all sensors of this bus so as not to start the conversion again
+        for(uint8_t i = 0; i < unitemp_sensors_get_count(); i++) {
+            if(unitemp_sensors_get(i)->model->interface == &onewire &&
+               ((OneWireSensor*)unitemp_sensors_get(i)->instance)->bus == instance->bus) {
+                unitemp_sensors_get(i)->status = UT_SENSORSTATUS_EARLYPOOL;
             }
-        } else {
-            unitemp_onewire_bus_select_device(instance->bus, instance->deviceID);
         }
 
-        unitemp_onewire_bus_write(instance->bus, 0x44); // convert t
-        if(instance->bus->powerMode == PWR_PASSIVE) {
-            furi_hal_gpio_write(instance->bus->bus_pin->pin, true);
-            furi_hal_gpio_init(
-                instance->bus->bus_pin->pin, GpioModeOutputPushPull, GpioPullUp, GpioSpeedVeryHigh);
-        }
+        unitemp_onewire_bus_write(instance->bus, DS18B20_CMD_CONVERT); // convert t
+
+        unitemp_onewire_bus_strong_mode(instance->bus, true);
+
         return UT_SENSORSTATUS_POLLING;
     } else {
-        if(instance->bus->powerMode == PWR_PASSIVE) {
-            furi_hal_gpio_write(instance->bus->bus_pin->pin, true);
-            furi_hal_gpio_init(
-                instance->bus->bus_pin->pin,
-                GpioModeOutputOpenDrain,
-                GpioPullUp,
-                GpioSpeedVeryHigh);
-        }
+        unitemp_onewire_bus_strong_mode(instance->bus, false);
+
         if(!unitemp_onewire_bus_start(instance->bus)) return UT_SENSORSTATUS_TIMEOUT;
         unitemp_onewire_bus_select_device(instance->bus, instance->deviceID);
-        unitemp_onewire_bus_write(instance->bus, 0xBE); // Read Scratch-pad
+        unitemp_onewire_bus_write(instance->bus, DS18B20_CMD_READ_SCRATCHPAD); // Read Scratch-pad
         unitemp_onewire_bus_read_bytes(instance->bus, buff, 9);
         if(!unitemp_onewire_CRC_check(buff, 9)) {
             UNITEMP_DEBUG("Failed CRC check: %s", sensor->name);

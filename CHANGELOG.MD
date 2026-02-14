@@ -10,7 +10,6 @@
 - The temperature index calculation has been corrected. It is now calculated only for temperatures above 26.67°C (80°F)
 - It is now possible to disable automatic 5V power supply to port 1 in the settings
 
-TODO: переделать драйвер onewire с использованием стоковых функций прошивки FZ
 TODO: загрузка и сохранение датчиков
 TODO: доделать добавление датчиков
 

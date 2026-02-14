@@ -47,7 +47,6 @@ UnitempOneWireBus* unitemp_onewire_bus_alloc(const SensorGpioPin* gpio_pin) {
     bus->bus_pin = gpio_pin;
     bus->host = onewire_host_alloc(gpio_pin->pin);
     bus->devices_count = 0;
-    bus->powerMode = PWR_PASSIVE;
     UNITEMP_DEBUG("one wire bus (port %d) allocated", gpio_pin->num);
 
     return bus;
@@ -116,6 +115,18 @@ void unitemp_onewire_bus_write_bytes(UnitempOneWireBus* bus, uint8_t* data, uint
 //ok
 void unitemp_onewire_bus_read_bytes(UnitempOneWireBus* bus, uint8_t* data, uint8_t len) {
     onewire_host_read_bytes(bus->host, data, len);
+}
+
+void unitemp_onewire_bus_strong_mode(UnitempOneWireBus* bus, bool state) {
+    if(state) {
+        furi_hal_gpio_write(bus->bus_pin->pin, true);
+        furi_hal_gpio_init(
+            bus->bus_pin->pin, GpioModeOutputPushPull, GpioPullUp, GpioSpeedVeryHigh);
+    } else {
+        furi_hal_gpio_write(bus->bus_pin->pin, true);
+        furi_hal_gpio_init(
+            bus->bus_pin->pin, GpioModeOutputOpenDrain, GpioPullUp, GpioSpeedVeryHigh);
+    }
 }
 //ok
 static uint8_t onewire_CRC_update(uint8_t crc, uint8_t b) {

@@ -205,7 +205,7 @@ bool unitemp_sensors_load(void) {
     //     unitemp_sensors_add(sensor);
     // }
     sensor = unitemp_sensor_alloc(
-        "Dallas", unitemp_sensors_get_model_from_str("Dallas"), "17 105D15B102080016");
+        "Dallas", unitemp_sensors_get_model_from_str("Dallas"), "10 105D15B102080016");
     if(sensor != NULL) {
         sensor->temperature_offset = temp_offset;
         unitemp_sensors_add(sensor);

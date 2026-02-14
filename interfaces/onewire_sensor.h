@@ -46,8 +46,6 @@ typedef struct {
     //Number of devices on the bus
     //Updated when manually adding a sensor to this bus
     int8_t devices_count;
-    //Power supply mode for sensors on the bus
-    PowerMode powerMode;
 } UnitempOneWireBus;
 
 //One wire sensor instance
@@ -119,6 +117,8 @@ void unitemp_onewire_bus_write(UnitempOneWireBus* bus, uint8_t data);
  * @param len Number of bytes
  */
 void unitemp_onewire_bus_write_bytes(UnitempOneWireBus* bus, uint8_t* data, uint8_t len);
+
+void unitemp_onewire_bus_strong_mode(UnitempOneWireBus* bus, bool state);
 
 /**
  * @brief Reading the identifier of a single sensor. 
