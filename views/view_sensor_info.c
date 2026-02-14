@@ -21,9 +21,9 @@
 #include <gui/elements.h>
 #include "view_single_sensor.h"
 
-#include "../interfaces/singlewire.h"
-#include "../interfaces/unitemp_i2c.h"
-#include "../interfaces/unitemp_spi.h"
+#include "../interfaces/singlewire_sensor.h"
+#include "../interfaces/i2c_sensor.h"
+#include "../interfaces/spi_sensor.h"
 
 extern const Icon I_ButtonRight_4x7;
 extern const Icon I_ButtonLeft_4x7;

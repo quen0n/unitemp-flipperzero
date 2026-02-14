@@ -13,6 +13,7 @@
 #include "./sensors/HDC1080.h"
 #include "./sensors/MAX31855.h"
 #include "./sensors/MAX6675.h"
+#include "./sensors/DS18x2x.h"
 
 #define UPDATE_PERIOD_MS 250UL
 
@@ -22,24 +23,15 @@ static uint8_t sensors_count = 0;
 
 //List of sensor models
 static const SensorModel* sensor_model_list[] = {
-    &AHT10,
-    &AM2320_SW,
-    &AM2320_I2C,
-    &BMP180,
-    &BMP280,
-    &BME280,
+    &AHT10,  &AM2320_SW, &AM2320_I2C, &BMP180, &BMP280, &BME280,
     &BME680, //tested
+    &Dallas,
     &DHT11, //tested
     &DHT20,
     &DHT21, //tested
-    &DHT22,
-    &GXHT30,
-    &HDC1080,
+    &DHT22,  &GXHT30,    &HDC1080,
     &HTU21x, //tested
-    &LM75,
-    &MAX6675,
-    &MAX31855,
-    &SHT30,
+    &LM75,   &MAX6675,   &MAX31855,   &SHT30,
 
 };
 //Number of sensor models
@@ -208,6 +200,12 @@ bool unitemp_sensors_load(void) {
         unitemp_sensors_add(sensor);
     }
     sensor = unitemp_sensor_alloc("MAX31855", unitemp_sensors_get_model_from_str("MAX31855"), "4");
+    if(sensor != NULL) {
+        sensor->temperature_offset = temp_offset;
+        unitemp_sensors_add(sensor);
+    }
+    sensor = unitemp_sensor_alloc(
+        "Dallas", unitemp_sensors_get_model_from_str("Dallas"), "17 105D15B102080016");
     if(sensor != NULL) {
         sensor->temperature_offset = temp_offset;
         unitemp_sensors_add(sensor);

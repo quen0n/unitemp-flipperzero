@@ -17,7 +17,7 @@
 */
 
 #include "AM2320.h"
-#include "interfaces/singlewire.h"
+#include "interfaces/singlewire_sensor.h"
 
 const SensorModel AM2320_SW = {
     .modelname = "AM2320",
@@ -49,7 +49,7 @@ const SensorModel AM2320_SW = {
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 #include "AM2320.h"
-#include "../interfaces/unitemp_i2c.h"
+#include "../interfaces/i2c_sensor.h"
 
 const SensorModel AM2320_I2C = {
     .modelname = "AM2320_I2C",

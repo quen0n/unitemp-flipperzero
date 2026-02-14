@@ -20,7 +20,7 @@
 
 #include "../unitemp.h"
 #include "../sensors.h"
-#include "../interfaces/unitemp_spi.h"
+#include "../interfaces/spi_sensor.h"
 
 extern const SensorModel MAX6675;
 

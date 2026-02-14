@@ -22,7 +22,6 @@
 #include <furi_hal_spi.h>
 #include "../helpers/unitemp_gpio.h"
 
-
 extern const SensorConnectionInterface unitemp_spi;
 
 //SPI sensor structure

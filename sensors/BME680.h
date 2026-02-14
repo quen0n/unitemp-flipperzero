@@ -21,7 +21,7 @@
 
 #include "../unitemp.h"
 #include "../sensors.h"
-#include "../interfaces/unitemp_i2c.h"
+#include "../interfaces/i2c_sensor.h"
 
 typedef struct {
     uint16_t dig_T1;

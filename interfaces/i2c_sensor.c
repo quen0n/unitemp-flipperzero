@@ -15,7 +15,7 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
-#include "unitemp_i2c.h"
+#include "i2c_sensor.h"
 #include "../helpers/unitemp_gpio.h"
 
 const SensorConnectionInterface unitemp_i2c = {

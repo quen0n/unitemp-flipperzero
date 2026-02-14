@@ -18,9 +18,10 @@
 #include "view_single_sensor.h"
 #include "../unitemp.h"
 #include "../helpers/unitemp_draw.h"
-#include "../interfaces/singlewire.h"
-#include "../interfaces/unitemp_i2c.h"
-#include "../interfaces/unitemp_spi.h"
+#include "../interfaces/singlewire_sensor.h"
+#include "../interfaces/i2c_sensor.h"
+#include "../interfaces/spi_sensor.h"
+#include "../interfaces/onewire_sensor.h"
 
 #include <stdlib.h>
 #include <gui/elements.h>
@@ -75,23 +76,17 @@ static void _draw_sensor_not_responding(Canvas* canvas, Sensor* sensor) {
             TEMP_STR_SIZE,
             "Sensor waiting on %s",
             ((SingleWireSensor*)sensor->instance)->data_pin->name);
-    }
-
-    if(sensor->model->interface == &unitemp_i2c) {
+    } else if(sensor->model->interface == &unitemp_i2c) {
         snprintf(temp_str, TEMP_STR_SIZE, "Sensor waiting on SDA & SCL");
-    }
-
-    if(sensor->model->interface == &unitemp_spi) {
+    } else if(sensor->model->interface == &unitemp_spi) {
         snprintf(temp_str, TEMP_STR_SIZE, "Sensor waiting on SPI pins");
+    } else if(sensor->model->interface == &onewire) {
+        // snprintf(
+        //     temp_str,
+        //     TEMP_STR_SIZE,
+        //     "Sensor waiting on %d",
+        //     ((OneWireSensor*)sensor->instance)->bus->gpio->num);
     }
-
-    // if(sensor->model->interface == &ONE_WIRE) {
-    //     snprintf(
-    //         temp_str,
-    //         TEMP_STR_SIZE,
-    //         "Sensor waiting on %d",
-    //         ((OneWireSensor*)sensor->instance)->bus->gpio->num);
-    // }
 
     canvas_draw_str_aligned(canvas, 65, 19, AlignCenter, AlignCenter, temp_str);
 }

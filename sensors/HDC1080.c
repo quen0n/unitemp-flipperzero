@@ -16,7 +16,7 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 #include "HDC1080.h"
-#include "../interfaces/unitemp_i2c.h"
+#include "../interfaces/i2c_sensor.h"
 
 const SensorModel HDC1080 = {
     .modelname = "HDC1080",

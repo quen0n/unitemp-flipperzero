@@ -17,8 +17,8 @@
 */
 
 #include "DHTxx.h"
-#include "interfaces/singlewire.h"
-#include "interfaces/unitemp_i2c.h"
+#include "interfaces/singlewire_sensor.h"
+#include "interfaces/i2c_sensor.h"
 
 const SensorModel DHT11 = {
     .modelname = "DHT11",

@@ -16,7 +16,7 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#include "singlewire.h"
+#include "singlewire_sensor.h"
 
 #include "../sensors/DHTxx.h"
 #include "../sensors/AM2320.h"

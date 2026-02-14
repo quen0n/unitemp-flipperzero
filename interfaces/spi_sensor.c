@@ -18,7 +18,7 @@
 
 #include <furi.h>
 #include <furi_hal.h>
-#include "unitemp_spi.h"
+#include "spi_sensor.h"
 
 const SensorConnectionInterface unitemp_spi = {
     .name = "SPI",
