@@ -62,6 +62,10 @@ bool unitemp_scene_monitor_on_event(void* context, SceneManagerEvent event) {
             view_mode = UnitempViewTempOverview;
             view_dispatcher_switch_to_view(app->view_dispatcher, UnitempViewTempOverview);
             consumed = true;
+        } else if(event.event == CustomEventSwitchToSensorInfoView) {
+            view_mode = UnitempViewSensorInfo;
+            view_dispatcher_switch_to_view(app->view_dispatcher, UnitempViewSensorInfo);
+            consumed = true;
         }
     }
 

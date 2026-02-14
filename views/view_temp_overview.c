@@ -162,6 +162,7 @@ TempOverview* temp_overview_alloc(void* context) {
 
 void temp_overview_free(TempOverview* temp_overview) {
     furi_assert(temp_overview);
+    view_free_model(temp_overview->view);
     view_free(temp_overview->view);
     free(temp_overview);
 }

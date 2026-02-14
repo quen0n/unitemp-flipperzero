@@ -34,16 +34,6 @@ extern const Icon I_ButtonLeft_4x7;
 #define TEMP_STR_SIZE 32
 static char temp_str[TEMP_STR_SIZE];
 
-struct SingleSensor {
-    View* view;
-    void* context;
-};
-
-typedef struct {
-    uint8_t sensor_index;
-    void* context;
-} SingleSensorViewModel;
-
 #define UT_DATA_POS_CENTER      37, 23
 #define UT_DATA_POS_UP_LEFT     9, 16
 #define UT_DATA_POS_UP_MIDDLE   37, 16
@@ -278,6 +268,9 @@ static bool single_sensor_input_callback(InputEvent* event, void* context) {
         view_dispatcher_send_custom_event(
             app->view_dispatcher, CustomEventSwitchToTempOverviewView);
         consumed = true;
+    } else if(event->key == InputKeyDown && event->type == InputTypeShort) {
+        view_dispatcher_send_custom_event(app->view_dispatcher, CustomEventSwitchToSensorInfoView);
+        consumed = true;
     }
 
     return consumed;
@@ -309,6 +302,7 @@ SingleSensor* single_sensor_alloc(void* context) {
 
 void single_sensor_free(SingleSensor* single_sensor) {
     furi_assert(single_sensor);
+    view_free_model(single_sensor->view);
     view_free(single_sensor->view);
     free(single_sensor);
 }

@@ -2,7 +2,15 @@
 
 #include <gui/view.h>
 
-typedef struct SingleSensor SingleSensor;
+typedef struct {
+    View* view;
+    void* context;
+} SingleSensor;
+
+typedef struct {
+    uint8_t sensor_index;
+    void* context;
+} SingleSensorViewModel;
 
 SingleSensor* single_sensor_alloc(void* context);
 

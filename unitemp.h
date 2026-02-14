@@ -32,6 +32,7 @@
 #include "views/view_no_sensors.h"
 #include "views/view_single_sensor.h"
 #include "views/view_temp_overview.h"
+#include "views/view_sensor_info.h"
 
 #include <power/power_service/power.h>
 
@@ -70,6 +71,7 @@ typedef enum {
     UnitempViewNoSensors,
     UnitempViewSingleSensor,
     UnitempViewTempOverview,
+    UnitempViewSensorInfo,
 
     UnitempViewsCount
 } UnitempView;
@@ -103,6 +105,7 @@ typedef enum {
 typedef enum {
     CustomEventSwitchToSingleSensorView,
     CustomEventSwitchToTempOverviewView,
+    CustomEventSwitchToSensorInfoView,
 } UnitempCustomEventEnum;
 
 /* Declaration of structures */
@@ -132,6 +135,7 @@ typedef struct {
     NoSensors* no_sensors;
     SingleSensor* single_sensor;
     TempOverview* temp_overview;
+    SensorInfo* sensor_info;
     Gui* gui;
 
     Sensor** sensors_list;
