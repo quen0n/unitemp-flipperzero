@@ -153,7 +153,8 @@ static UnitempApp* unitemp_app_alloc(void) {
     app->settings = malloc(sizeof(UnitempSettings));
 
     app->reader_thread = furi_thread_alloc();
-    furi_thread_set_name(app->reader_thread, "UnitempPoller");
+    furi_thread_set_priority(app->reader_thread, FuriThreadPriorityHigh);
+    furi_thread_set_name(app->reader_thread, "Sensors poller");
     furi_thread_set_stack_size(app->reader_thread, 1024U);
     furi_thread_set_context(app->reader_thread, app);
     furi_thread_set_callback(app->reader_thread, unitemp_sensors_update_callback);
