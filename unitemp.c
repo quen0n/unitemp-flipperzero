@@ -67,7 +67,8 @@ bool unitemp_settings_load(void* context) {
     }
     app->settings->humidity_unit = UT_HUMIDITY_RELATIVE;
     app->settings->heat_index = false;
-    app->settings->last_otg_state = power_is_otg_enabled(app->power);
+    app->settings->otg_auto_on = true;
+    app->settings->otg_latest_state = power_is_otg_enabled(app->power);
 
     bool result = false;
     FlipperFormat* file = flipper_format_file_alloc(app->storage);
@@ -80,7 +81,7 @@ bool unitemp_settings_load(void* context) {
 
         // Reading settings from a file. If any key is not read, the default value will be used
         flipper_format_read_uint32(file, "infinity_backlight", &uint32_value, 1);
-        app->settings->infinity_backlight = uint32_value;
+        app->settings->infinity_backlight = (bool)uint32_value;
         flipper_format_read_uint32(file, "temperature_unit", &uint32_value, 1);
         app->settings->temperature_unit = uint32_value;
         flipper_format_read_uint32(file, "humidity_unit", &uint32_value, 1);
@@ -88,7 +89,9 @@ bool unitemp_settings_load(void* context) {
         flipper_format_read_uint32(file, "pressure_unit", &uint32_value, 1);
         app->settings->pressure_unit = uint32_value;
         flipper_format_read_uint32(file, "heat_index", &uint32_value, 1);
-        app->settings->heat_index = uint32_value;
+        app->settings->heat_index = (bool)uint32_value;
+        flipper_format_read_uint32(file, "otg_auto_on", &uint32_value, 1);
+        app->settings->otg_auto_on = (bool)uint32_value;
 
         result = true;
     } while(0);
@@ -124,6 +127,8 @@ bool unitemp_settings_save(void* context) {
         if(!flipper_format_write_uint32(file, "pressure_unit", &buff, 1)) break;
         buff = app->settings->heat_index;
         if(!flipper_format_write_uint32(file, "heat_index", &buff, 1)) break;
+        buff = app->settings->otg_auto_on;
+        if(!flipper_format_write_uint32(file, "otg_auto_on", &buff, 1)) break;
 
         result = true;
     } while(0);

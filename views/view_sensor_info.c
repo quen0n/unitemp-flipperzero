@@ -73,7 +73,6 @@ static void sensor_info_draw_callback(Canvas* canvas, void* model) {
     canvas_draw_line(canvas, 64 - line_len / 2, 12, 64 + line_len / 2, 12);
 
     FuriString* temp_str = furi_string_alloc();
-    furi_string_printf(temp_str, "\e#\e! Unitemp %s \e!\n", UNITEMP_APP_VER);
 
     canvas_set_font(canvas, FontPrimary);
     canvas_draw_str(canvas, 10, 23, "Model:");
@@ -94,8 +93,8 @@ static void sensor_info_draw_callback(Canvas* canvas, void* model) {
         furi_string_printf(
             temp_str, "0x%02X", ((I2CSensor*)sensor->instance)->current_i2c_adress >> 1);
         canvas_draw_str(canvas, 76, 34, furi_string_get_cstr(temp_str));
-        canvas_draw_str(canvas, 56, 45, "15 (C1)");
-        canvas_draw_str(canvas, 55, 56, "16 (C0)");
+        canvas_draw_str(canvas, 56, 45, unitemp_gpio_get_from_int(15)->name);
+        canvas_draw_str(canvas, 55, 56, unitemp_gpio_get_from_int(16)->name);
     } else if(sensor->model->interface == &unitemp_spi) {
         canvas_set_font(canvas, FontPrimary);
         canvas_draw_str(canvas, 10, 34, "MISO pin:");

@@ -25,7 +25,7 @@ static const char unitemp_scene_settings_humidity_units_text[UT_HUMIDITY_COUNT][
     "Dewpoint"};
 static const char unitemp_scene_settings_pressure_units_text[UT_PRESSURE_COUNT][5] =
     {"mmHg", "inHg", "kPa", "hPa"};
-static const char unitemp_scene_settings_heat_index_text[2][4] = {"OFF", "ON"};
+static const char unitemp_scene_settings_off_on_text[2][4] = {"OFF", "ON"};
 
 static void unitemp_scene_settings_backlight_change_callback(VariableItem* item) {
     UnitempApp* app = variable_item_get_context(item);
@@ -69,11 +69,20 @@ static void unitemp_scene_settings_heat_index_change_callback(VariableItem* item
     UnitempApp* app = variable_item_get_context(item);
     const uint8_t index = variable_item_get_current_value_index(item);
 
-    variable_item_set_current_value_text(item, unitemp_scene_settings_heat_index_text[index]);
+    variable_item_set_current_value_text(item, unitemp_scene_settings_off_on_text[index]);
     app->settings->heat_index = (bool)index;
-    UNITEMP_DEBUG(
-        "Heat index calculation set to %s", unitemp_scene_settings_heat_index_text[index]);
+    UNITEMP_DEBUG("Heat index calculation set to %s", unitemp_scene_settings_off_on_text[index]);
 }
+
+static void unitemp_scene_settings_otg_auto_on_change_callback(VariableItem* item) {
+    UnitempApp* app = variable_item_get_context(item);
+    const uint8_t index = variable_item_get_current_value_index(item);
+
+    variable_item_set_current_value_text(item, unitemp_scene_settings_off_on_text[index]);
+    app->settings->otg_auto_on = (bool)index;
+    UNITEMP_DEBUG("5V auto on set to %s", unitemp_scene_settings_off_on_text[index]);
+}
+
 void unitemp_scene_settings_on_enter(void* context) {
     UnitempApp* app = context;
     VariableItemList* var_item_list = app->var_item_list;
@@ -126,13 +135,21 @@ void unitemp_scene_settings_on_enter(void* context) {
     item = variable_item_list_add(
         var_item_list,
         "Calc. heat index",
-        COUNT_OF(unitemp_scene_settings_heat_index_text),
+        COUNT_OF(unitemp_scene_settings_off_on_text),
         unitemp_scene_settings_heat_index_change_callback,
         app);
     value_index = app->settings->heat_index;
     variable_item_set_current_value_index(item, value_index);
-    variable_item_set_current_value_text(
-        item, unitemp_scene_settings_heat_index_text[value_index]);
+    variable_item_set_current_value_text(item, unitemp_scene_settings_off_on_text[value_index]);
+    item = variable_item_list_add(
+        var_item_list,
+        "Auto 5V on",
+        COUNT_OF(unitemp_scene_settings_off_on_text),
+        unitemp_scene_settings_otg_auto_on_change_callback,
+        app);
+    value_index = app->settings->otg_auto_on;
+    variable_item_set_current_value_index(item, value_index);
+    variable_item_set_current_value_text(item, unitemp_scene_settings_off_on_text[value_index]);
 
     view_dispatcher_switch_to_view(app->view_dispatcher, UnitempViewVariableList);
 }

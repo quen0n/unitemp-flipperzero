@@ -121,8 +121,10 @@ typedef struct {
     PressureMeasureUnit pressure_unit;
     // Do calculate and show heat index
     bool heat_index;
-    //Latest OTG status
-    bool last_otg_state;
+    // Automatic 5V power supply
+    bool otg_auto_on;
+    // Latest OTG status
+    bool otg_latest_state;
 } UnitempSettings;
 
 typedef struct {
@@ -138,7 +140,7 @@ typedef struct {
     SensorInfo* sensor_info;
     Gui* gui;
 
-    Sensor** sensors_list;
+    Sensor** sensors_list; //todo: перенести в sensors.c
 
     Storage* storage;
     File* file;

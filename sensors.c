@@ -227,7 +227,10 @@ bool unitemp_sensors_init(void* context) {
     for(uint8_t i = 0; i < unitemp_sensors_get_count(); i++) {
         //Turning on 5V if there is none on port 1 FZ
         //May disappear when USB is disconnected
-        power_enable_otg(app->power, true);
+        if(app->settings->otg_auto_on && !power_is_otg_enabled(app->power)) {
+            power_enable_otg(app->power, true);
+        }
+
         if(!(*sensors_list[i]->model->initializer)(sensors_list[i])) {
             FURI_LOG_E(
                 APP_NAME,
@@ -248,7 +251,7 @@ bool unitemp_sensors_deinit(void* context) {
     bool result = true;
 
     //Turning off 5 V if it was not turned on before
-    power_enable_otg(app->power, app->settings->last_otg_state);
+    power_enable_otg(app->power, app->settings->otg_latest_state);
 
     //Searching through sensors from the list
     for(uint8_t i = 0; i < unitemp_sensors_get_count(); i++) {
@@ -290,8 +293,9 @@ SensorStatus unitemp_sensor_update(Sensor* sensor, void* context) {
 
     sensor->lastPollingTime = furi_get_tick();
 
-    //todo не включать питание если подключено USB
-    power_enable_otg(app->power, true);
+    if(app->settings->otg_auto_on && !power_is_otg_enabled(app->power)) {
+        power_enable_otg(app->power, true);
+    }
 
     sensor->status = sensor->model->interface->updater(sensor);
 
