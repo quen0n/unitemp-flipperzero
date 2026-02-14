@@ -15,7 +15,7 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
-#include "view_many_sensors.h"
+#include "view_temp_overview.h"
 #include "../unitemp.h"
 #include "../helpers/unitemp_draw.h"
 
@@ -26,7 +26,7 @@
 extern const Icon I_ButtonRight_4x7;
 extern const Icon I_ButtonLeft_4x7;
 
-struct ManySensors {
+struct TempOverview {
     View* view;
     void* context;
 };
@@ -34,9 +34,9 @@ struct ManySensors {
 typedef struct {
     uint8_t sensors_page;
     void* context;
-} ManySensorsViewModel;
+} TempOverviewViewModel;
 
-void many_sensors_draw(Canvas* canvas, ManySensorsViewModel* view_model) {
+void temp_overview_draw(Canvas* canvas, TempOverviewViewModel* view_model) {
     if(view_model == NULL || canvas == NULL) return;
     UnitempSettings* settings = ((UnitempApp*)(view_model->context))->settings;
 
@@ -84,15 +84,15 @@ void many_sensors_draw(Canvas* canvas, ManySensorsViewModel* view_model) {
     }
 }
 
-static void many_sensors_draw_callback(Canvas* canvas, void* model) {
-    ManySensorsViewModel* view_model = model;
-    many_sensors_draw(canvas, view_model);
+static void temp_overview_draw_callback(Canvas* canvas, void* model) {
+    TempOverviewViewModel* view_model = model;
+    temp_overview_draw(canvas, view_model);
 }
 
-static bool many_sensors_input_callback(InputEvent* event, void* context) {
+static bool temp_overview_input_callback(InputEvent* event, void* context) {
     furi_assert(context);
-    ManySensors* many_sensors = context;
-    UnitempApp* app = many_sensors->context;
+    TempOverview* temp_overview = context;
+    UnitempApp* app = temp_overview->context;
     bool consumed = false;
 
     if(event->key == InputKeyOk && event->type == InputTypeShort) {
@@ -105,8 +105,8 @@ static bool many_sensors_input_callback(InputEvent* event, void* context) {
         uint8_t pages =
             unitemp_sensors_get_count() / 4 + (unitemp_sensors_get_count() % 4 ? 1 : 0);
         with_view_model(
-            many_sensors->view,
-            ManySensorsViewModel * model,
+            temp_overview->view,
+            TempOverviewViewModel * model,
             {
                 if(--model->sensors_page >= pages) {
                     model->sensors_page = pages - 1;
@@ -118,8 +118,8 @@ static bool many_sensors_input_callback(InputEvent* event, void* context) {
         uint8_t pages =
             unitemp_sensors_get_count() / 4 + (unitemp_sensors_get_count() % 4 ? 1 : 0);
         with_view_model(
-            many_sensors->view,
-            ManySensorsViewModel * model,
+            temp_overview->view,
+            TempOverviewViewModel * model,
             {
                 if(++model->sensors_page >= pages) {
                     model->sensors_page = 0;
@@ -136,44 +136,44 @@ static bool many_sensors_input_callback(InputEvent* event, void* context) {
     return consumed;
 }
 
-ManySensors* many_sensors_alloc(void* context) {
+TempOverview* temp_overview_alloc(void* context) {
     UnitempApp* app = context;
-    ManySensors* many_sensors = malloc(sizeof(ManySensors));
+    TempOverview* temp_overview = malloc(sizeof(TempOverview));
 
-    many_sensors->view = view_alloc();
-    many_sensors->context = app;
-    view_allocate_model(many_sensors->view, ViewModelTypeLockFree, sizeof(ManySensorsViewModel));
+    temp_overview->view = view_alloc();
+    temp_overview->context = app;
+    view_allocate_model(temp_overview->view, ViewModelTypeLockFree, sizeof(TempOverviewViewModel));
 
     with_view_model(
-        many_sensors->view,
-        ManySensorsViewModel * model,
+        temp_overview->view,
+        TempOverviewViewModel * model,
         {
             model->sensors_page = 0;
             model->context = app;
         },
         false);
 
-    view_set_context(many_sensors->view, many_sensors);
-    view_set_draw_callback(many_sensors->view, many_sensors_draw_callback);
-    view_set_input_callback(many_sensors->view, many_sensors_input_callback);
+    view_set_context(temp_overview->view, temp_overview);
+    view_set_draw_callback(temp_overview->view, temp_overview_draw_callback);
+    view_set_input_callback(temp_overview->view, temp_overview_input_callback);
 
-    return many_sensors;
+    return temp_overview;
 }
 
-void many_sensors_free(ManySensors* many_sensors) {
-    furi_assert(many_sensors);
-    view_free(many_sensors->view);
-    free(many_sensors);
+void temp_overview_free(TempOverview* temp_overview) {
+    furi_assert(temp_overview);
+    view_free(temp_overview->view);
+    free(temp_overview);
 }
 
-View* many_sensors_get_view(ManySensors* many_sensors) {
-    furi_assert(many_sensors);
-    return many_sensors->view;
+View* temp_overview_get_view(TempOverview* temp_overview) {
+    furi_assert(temp_overview);
+    return temp_overview->view;
 }
 
-void many_sensors_refresh_data(ManySensors* instance) {
+void temp_overview_refresh_data(TempOverview* instance) {
     furi_assert(instance);
 
     //Вызываем перерисовку вида псевдообновлением модели. Вызывается по таймеру каждую секнуду
-    with_view_model(instance->view, ManySensorsViewModel * model, { UNUSED(model); }, true);
+    with_view_model(instance->view, TempOverviewViewModel * model, { UNUSED(model); }, true);
 }

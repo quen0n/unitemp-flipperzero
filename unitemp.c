@@ -188,9 +188,9 @@ static UnitempApp* unitemp_app_alloc(void) {
     app->single_sensor = single_sensor_alloc(app);
     view_dispatcher_add_view(
         app->view_dispatcher, UnitempViewSingleSensor, single_sensor_get_view(app->single_sensor));
-    app->many_sensors = many_sensors_alloc(app);
+    app->temp_overview = temp_overview_alloc(app);
     view_dispatcher_add_view(
-        app->view_dispatcher, UnitempViewManySensors, many_sensors_get_view(app->many_sensors));
+        app->view_dispatcher, UnitempViewTempOverview, temp_overview_get_view(app->temp_overview));
     return app;
 }
 
@@ -199,8 +199,8 @@ static void unitemp_app_free(UnitempApp* app) {
 
     unitemp_sensors_free();
 
-    view_dispatcher_remove_view(app->view_dispatcher, UnitempViewManySensors);
-    many_sensors_free(app->many_sensors);
+    view_dispatcher_remove_view(app->view_dispatcher, UnitempViewTempOverview);
+    temp_overview_free(app->temp_overview);
     view_dispatcher_remove_view(app->view_dispatcher, UnitempViewSingleSensor);
     single_sensor_free(app->single_sensor);
     view_dispatcher_remove_view(app->view_dispatcher, UnitempViewNoSensors);
@@ -243,7 +243,7 @@ static void unitemp_run(UnitempApp* app) {
     /* Start the reader thread. It will talk to the thermometer in the background. */
     furi_thread_start(app->reader_thread);
 
-    scene_manager_next_scene(app->scene_manager, UnitempSceneGeneral);
+    scene_manager_next_scene(app->scene_manager, UnitempSceneMonitor);
     view_dispatcher_run(app->view_dispatcher);
 }
 

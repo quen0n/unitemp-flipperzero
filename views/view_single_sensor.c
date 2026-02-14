@@ -276,7 +276,7 @@ static bool single_sensor_input_callback(InputEvent* event, void* context) {
         consumed = true;
     } else if(event->key == InputKeyUp && event->type == InputTypeShort) {
         view_dispatcher_send_custom_event(
-            app->view_dispatcher, CustomEventSwitchToManySensorsView);
+            app->view_dispatcher, CustomEventSwitchToTempOverviewView);
         consumed = true;
     }
 

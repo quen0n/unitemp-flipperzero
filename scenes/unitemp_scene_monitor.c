@@ -20,7 +20,7 @@
 
 static UnitempView view_mode = UnitempViewsCount;
 
-void unitemp_scene_general_on_enter(void* context) {
+void unitemp_scene_monitor_on_enter(void* context) {
     furi_assert(context);
     UnitempApp* app = context;
 
@@ -34,13 +34,13 @@ void unitemp_scene_general_on_enter(void* context) {
         } else if(unitemp_sensors_get_count() == 1) {
             view_mode = UnitempViewSingleSensor;
         } else {
-            view_mode = UnitempViewManySensors;
+            view_mode = UnitempViewTempOverview;
         }
     }
     view_dispatcher_switch_to_view(app->view_dispatcher, view_mode);
 }
 
-bool unitemp_scene_general_on_event(void* context, SceneManagerEvent event) {
+bool unitemp_scene_monitor_on_event(void* context, SceneManagerEvent event) {
     furi_assert(context);
     UnitempApp* app = context;
     bool consumed = false;
@@ -48,9 +48,8 @@ bool unitemp_scene_general_on_event(void* context, SceneManagerEvent event) {
     if(event.type == SceneManagerEventTypeTick) {
         if(view_mode == UnitempViewSingleSensor) {
             single_sensor_refresh_data(app->single_sensor);
-        }
-        if(view_mode == UnitempViewManySensors) {
-            many_sensors_refresh_data(app->many_sensors);
+        } else if(view_mode == UnitempViewTempOverview) {
+            temp_overview_refresh_data(app->temp_overview);
         }
         consumed = true;
     }
@@ -59,9 +58,9 @@ bool unitemp_scene_general_on_event(void* context, SceneManagerEvent event) {
             view_mode = UnitempViewSingleSensor;
             view_dispatcher_switch_to_view(app->view_dispatcher, UnitempViewSingleSensor);
             consumed = true;
-        } else if(event.event == CustomEventSwitchToManySensorsView) {
-            view_mode = UnitempViewManySensors;
-            view_dispatcher_switch_to_view(app->view_dispatcher, UnitempViewManySensors);
+        } else if(event.event == CustomEventSwitchToTempOverviewView) {
+            view_mode = UnitempViewTempOverview;
+            view_dispatcher_switch_to_view(app->view_dispatcher, UnitempViewTempOverview);
             consumed = true;
         }
     }
@@ -69,7 +68,7 @@ bool unitemp_scene_general_on_event(void* context, SceneManagerEvent event) {
     return consumed;
 }
 
-void unitemp_scene_general_on_exit(void* context) {
+void unitemp_scene_monitor_on_exit(void* context) {
     furi_assert(context);
     UnitempApp* app = context;
     if(app->settings->infinity_backlight) {
