@@ -18,162 +18,106 @@
 //Code used by Dmitry Pogrebnyak: https://aterlux.ru/article/1wire
 
 #include "onewire_sensor.h"
+#include "./sensors/DS18x2x.h"
 #include <furi.h>
 #include <furi_hal.h>
-#include <one_wire/one_wire_host.h>
 
 const SensorConnectionInterface onewire = {
     .name = "1-wire",
-    .allocator = unitemp_onewire_sensor_alloc,
-    .mem_releaser = unitemp_onewire_sensor_free,
-    .updater = unitemp_onewire_sensor_update};
+    .allocator = unitemp_ds18x2x_sensor_alloc,
+    .mem_releaser = unitemp_ds18x2x_sensor_free,
+    .updater = unitemp_ds18x2x_sensor_update};
 
-//Variables for storing the intermediate result of a bus scan
-//found eight-byte address
-static uint8_t onewire_enum[8] = {0};
-//the last zero bit where there was ambiguity (numbering from one)
-static uint8_t onewire_enum_fork_bit = 65;
-
-OneWireBus* unitemp_onewire_bus_alloc(const SensorGpioPin* gpio) {
-    if(gpio == NULL) {
+//ok
+UnitempOneWireBus* unitemp_onewire_bus_alloc(const SensorGpioPin* gpio_pin) {
+    if(gpio_pin == NULL) {
         return NULL;
     }
 
     //Checking for bus presence on this port
     for(uint8_t i = 0; i < unitemp_sensors_get_count(); i++) {
         if(unitemp_sensors_get(i)->model->interface == &onewire &&
-           ((OneWireSensor*)unitemp_sensors_get(i)->instance)->bus->gpio->num == gpio->num) {
+           ((OneWireSensor*)unitemp_sensors_get(i)->instance)->bus->bus_pin == gpio_pin) {
             //If there is already a bus on this port, then return a pointer to the bus
             return ((OneWireSensor*)unitemp_sensors_get(i)->instance)->bus;
         }
     }
 
-    OneWireBus* bus = malloc(sizeof(OneWireBus));
-    bus->device_count = 0;
-    bus->gpio = gpio;
+    UnitempOneWireBus* bus = malloc(sizeof(UnitempOneWireBus));
+    bus->bus_pin = gpio_pin;
+    bus->host = onewire_host_alloc(gpio_pin->pin);
+    bus->devices_count = 0;
     bus->powerMode = PWR_PASSIVE;
-    UNITEMP_DEBUG("one wire bus (port %d) allocated", gpio->num);
+    UNITEMP_DEBUG("one wire bus (port %d) allocated", gpio_pin->num);
 
     return bus;
 }
+//ok
+void unitemp_onewire_bus_free(UnitempOneWireBus* unitemp_one_wire_bus) {
+    if(unitemp_one_wire_bus != NULL) {
+        if(unitemp_one_wire_bus->devices_count == 0) {
+            onewire_host_free(unitemp_one_wire_bus->host);
+            free(unitemp_one_wire_bus);
+        }
+    }
+}
 
-bool unitemp_onewire_bus_init(OneWireBus* bus) {
+//ok
+bool unitemp_onewire_bus_init(UnitempOneWireBus* bus) {
     if(bus == NULL) return false;
-    bus->device_count++;
+    bus->devices_count++;
     //Output if the bus has already been initialized
-    if(bus->device_count > 1) return true;
+    if(bus->devices_count > 1) return true;
 
-    unitemp_gpio_lock(bus->gpio, &onewire);
-    //High default level
-    furi_hal_gpio_write(bus->gpio->pin, true);
-    //Operating mode - OpenDrain, the lift is turned on just in case
-    furi_hal_gpio_init(
-        bus->gpio->pin, //Port FZ
-        GpioModeOutputOpenDrain, //Operating mode - open drain
-        GpioPullUp, //Forced pull-up of the data line to power
-        GpioSpeedVeryHigh); //Operating speed - maximum
+    unitemp_gpio_lock(bus->bus_pin, &onewire);
+
+    onewire_host_start(bus->host);
+
+    LL_GPIO_SetPinPull(bus->bus_pin->pin->port, bus->bus_pin->pin->pin, LL_GPIO_PULL_UP);
 
     return true;
 }
-bool unitemp_onewire_bus_deinit(OneWireBus* bus) {
-    UNITEMP_DEBUG("devices on wire %d: %d", bus->gpio->num, bus->device_count);
-    bus->device_count--;
-    if(bus->device_count <= 0) {
-        bus->device_count = 0;
-        unitemp_gpio_unlock(bus->gpio);
-        //Operating mode: analogue, lifting off
-        furi_hal_gpio_init(
-            bus->gpio->pin, //Port FZ
-            GpioModeAnalog, //Operating mode - analog
-            GpioPullNo, //Pull-up is turned off
-            GpioSpeedLow); //Operating speed - minimum
-        //Low level by default
-        furi_hal_gpio_write(bus->gpio->pin, false);
+
+//ok
+bool unitemp_onewire_bus_deinit(UnitempOneWireBus* bus) {
+    UNITEMP_DEBUG("devices on wire %d: %d", bus->bus_pin->num, bus->devices_count);
+    bus->devices_count--;
+    if(bus->devices_count <= 0) {
+        bus->devices_count = 0;
+        unitemp_gpio_unlock(bus->bus_pin);
+        onewire_host_stop(bus->host);
         return true;
     } else {
         return false;
     }
 }
-bool unitemp_onewire_bus_start(OneWireBus* bus) {
-    furi_hal_gpio_write(bus->gpio->pin, false);
-    furi_delay_us(500);
 
-    furi_hal_gpio_write(bus->gpio->pin, true);
-
-    //Waiting for the tire to rise
-    uint32_t t = furi_get_tick();
-    while(!furi_hal_gpio_read(bus->gpio->pin)) {
-        //Exit if the tire does not rise
-        if(furi_get_tick() - t > 10) return false;
-    }
-
-    furi_delay_us(100);
-    bool status = !furi_hal_gpio_read(bus->gpio->pin);
-    furi_delay_us(400);
-    return status;
+//ok
+bool unitemp_onewire_bus_start(UnitempOneWireBus* bus) {
+    return onewire_host_reset(bus->host);
 }
 
-void unitemp_onewire_bus_send_bit(OneWireBus* bus, bool state) {
-    //Necessary for stable operation with passive power supply
-    if(bus->powerMode == PWR_PASSIVE) furi_delay_us(100);
-
-    if(state) {
-        // write 1
-        furi_hal_gpio_write(bus->gpio->pin, false);
-        furi_delay_us(1);
-        furi_hal_gpio_write(bus->gpio->pin, true);
-        furi_delay_us(90);
-    } else {
-        furi_hal_gpio_write(bus->gpio->pin, false);
-        furi_delay_us(90);
-        furi_hal_gpio_write(bus->gpio->pin, true);
-        //Waiting for the tire to rise
-        uint32_t t = furi_get_tick();
-        while(!furi_hal_gpio_read(bus->gpio->pin)) {
-            //Exit if the tire does not rise
-            if(furi_get_tick() - t > 10) return;
-        }
-    }
+//ok
+void unitemp_onewire_bus_select_device(UnitempOneWireBus* bus, uint8_t* device_id) {
+    unitemp_onewire_bus_write(bus, 0x55);
+    unitemp_onewire_bus_write_bytes(bus, device_id, 8);
 }
 
-void unitemp_onewire_bus_send_byte(OneWireBus* bus, uint8_t data) {
-    for(int i = 0; i < 8; i++) {
-        unitemp_onewire_bus_send_bit(bus, (data & (1 << i)) != 0);
-    }
+//ok
+void unitemp_onewire_bus_write(UnitempOneWireBus* bus, uint8_t data) {
+    onewire_host_write(bus->host, data);
 }
 
-void unitemp_onewire_bus_send_byteArray(OneWireBus* bus, uint8_t* data, uint8_t len) {
-    for(uint8_t i = 0; i < len; i++) {
-        unitemp_onewire_bus_send_byte(bus, data[i]);
-    }
+//ok
+void unitemp_onewire_bus_write_bytes(UnitempOneWireBus* bus, uint8_t* data, uint8_t len) {
+    onewire_host_write_bytes(bus->host, data, len);
 }
 
-bool unitemp_onewire_bus_read_bit(OneWireBus* bus) {
-    furi_delay_ms(1);
-    furi_hal_gpio_write(bus->gpio->pin, false);
-    furi_delay_us(2); //Low level duration, minimum 1 µs
-    furi_hal_gpio_write(bus->gpio->pin, true);
-    furi_delay_us(8); //Pause until sampling, no more than 15 μs in total
-    bool r = furi_hal_gpio_read(bus->gpio->pin);
-    furi_delay_us(80); //Wait until next time slot, minimum 60 µs from start low
-    return r;
+//ok
+void unitemp_onewire_bus_read_bytes(UnitempOneWireBus* bus, uint8_t* data, uint8_t len) {
+    onewire_host_read_bytes(bus->host, data, len);
 }
-
-uint8_t unitemp_onewire_bus_read_byte(OneWireBus* bus) {
-    uint8_t r = 0;
-    for(uint8_t p = 8; p; p--) {
-        r >>= 1;
-        if(unitemp_onewire_bus_read_bit(bus)) r |= 0x80;
-    }
-    return r;
-}
-
-void unitemp_onewire_bus_read_byteArray(OneWireBus* bus, uint8_t* data, uint8_t len) {
-    for(uint8_t i = 0; i < len; i++) {
-        data[i] = unitemp_onewire_bus_read_byte(bus);
-    }
-}
-
+//ok
 static uint8_t onewire_CRC_update(uint8_t crc, uint8_t b) {
     for(uint8_t p = 8; p; p--) {
         crc = ((crc ^ b) & 1) ? (crc >> 1) ^ 0b10001100 : (crc >> 1);
@@ -182,6 +126,7 @@ static uint8_t onewire_CRC_update(uint8_t crc, uint8_t b) {
     return crc;
 }
 
+//ok
 bool unitemp_onewire_CRC_check(uint8_t* data, uint8_t len) {
     uint8_t crc = 0;
     for(uint8_t i = 0; i < len; i++) {
@@ -190,7 +135,29 @@ bool unitemp_onewire_CRC_check(uint8_t* data, uint8_t len) {
     return !crc;
 }
 
-char* unitemp_onewire_sensor_getModel(Sensor* sensor) {
+bool unitemp_onewire_sensor_read_id(OneWireSensor* instance) {
+    if(!unitemp_onewire_bus_start(instance->bus)) return false;
+    unitemp_onewire_bus_write(instance->bus, 0x33); //Reading ROM
+    unitemp_onewire_bus_read_bytes(instance->bus, instance->deviceID, 8);
+    if(!unitemp_onewire_CRC_check(instance->deviceID, 8)) {
+        memset(instance->deviceID, 0, 8);
+        return false;
+    }
+    instance->familyCode = instance->deviceID[0];
+    return true;
+}
+
+//ok
+bool unitemp_onewire_id_compare(uint8_t* id1, uint8_t* id2) {
+    if(id1 == NULL || id2 == NULL) return false;
+    for(uint8_t i = 0; i < 8; i++) {
+        if(id1[i] != id2[i]) return false;
+    }
+    return true;
+}
+
+//ok
+char* unitemp_onewire_sensor_get_fc_name(Sensor* sensor) {
     OneWireSensor* ow_sensor = sensor->instance;
     switch(ow_sensor->deviceID[0]) {
     case FC_DS18B20:
@@ -203,19 +170,11 @@ char* unitemp_onewire_sensor_getModel(Sensor* sensor) {
         return "unknown";
     }
 }
-
-bool unitemp_onewire_sensor_readID(OneWireSensor* instance) {
-    if(!unitemp_onewire_bus_start(instance->bus)) return false;
-    unitemp_onewire_bus_send_byte(instance->bus, 0x33); //Reading ROM
-    unitemp_onewire_bus_read_byteArray(instance->bus, instance->deviceID, 8);
-    if(!unitemp_onewire_CRC_check(instance->deviceID, 8)) {
-        memset(instance->deviceID, 0, 8);
-        return false;
-    }
-    instance->familyCode = instance->deviceID[0];
-    return true;
-}
-
+//Variables for storing the intermediate result of a bus scan
+//found eight-byte address
+static uint8_t onewire_enum[8] = {0};
+//the last zero bit where there was ambiguity (numbering from one)
+static uint8_t onewire_enum_fork_bit = 65;
 void unitemp_onewire_bus_enum_init(void) {
     for(uint8_t p = 0; p < 8; p++) {
         onewire_enum[p] = 0;
@@ -223,14 +182,14 @@ void unitemp_onewire_bus_enum_init(void) {
     onewire_enum_fork_bit = 65; //to the right of the right
 }
 
-uint8_t* unitemp_onewire_bus_enum_next(OneWireBus* bus) {
+uint8_t* unitemp_onewire_bus_enum_next(UnitempOneWireBus* bus) {
     furi_delay_ms(10);
     if(!onewire_enum_fork_bit) { //If there were no disagreements at the previous step
-        UNITEMP_DEBUG("All devices on wire %s is found", bus->gpio->name);
+        UNITEMP_DEBUG("All devices on wire %s is found", bus->bus_pin->name);
         return 0; //then we just leave without returning anything
     }
     if(!unitemp_onewire_bus_start(bus)) {
-        UNITEMP_DEBUG("Wire %s is empty", bus->gpio->name);
+        UNITEMP_DEBUG("Wire %s is empty", bus->bus_pin->name);
         return 0;
     }
     uint8_t bp = 8;
@@ -239,11 +198,11 @@ uint8_t* unitemp_onewire_bus_enum_next(OneWireBus* bus) {
     uint8_t next = 0;
 
     uint8_t p = 1;
-    unitemp_onewire_bus_send_byte(bus, 0xF0);
+    unitemp_onewire_bus_write(bus, 0xF0);
     uint8_t newfork = 0;
     for(;;) {
-        uint8_t not0 = unitemp_onewire_bus_read_bit(bus);
-        uint8_t not1 = unitemp_onewire_bus_read_bit(bus);
+        uint8_t not0 = onewire_host_read_bit(bus->host);
+        uint8_t not1 = onewire_host_read_bit(bus->host);
         if(!not0) { //If bit zero is present in the addresses
             if(!not1) { //But bit 1 (fork) is also present
                 if(p <
@@ -266,11 +225,11 @@ uint8_t* unitemp_onewire_bus_enum_next(OneWireBus* bus) {
                 next |= 0x80;
             } else { //There are no zeros or ones - an erroneous situation
 
-                UNITEMP_DEBUG("Wrong wire %s situation", bus->gpio->name);
+                UNITEMP_DEBUG("Wrong wire %s situation", bus->bus_pin->name);
                 return 0;
             }
         }
-        unitemp_onewire_bus_send_bit(bus, next & 0x80);
+        onewire_host_write_bit(bus->host, next & 0x80);
         bp--;
         if(!bp) {
             *pprev = next;
@@ -288,185 +247,4 @@ uint8_t* unitemp_onewire_bus_enum_next(OneWireBus* bus) {
     }
     onewire_enum_fork_bit = newfork;
     return &onewire_enum[0];
-}
-
-void unitemp_onewire_bus_select_sensor(OneWireSensor* instance) {
-    unitemp_onewire_bus_send_byte(instance->bus, 0x55);
-    unitemp_onewire_bus_send_byteArray(instance->bus, instance->deviceID, 8);
-}
-
-bool unitemp_onewire_id_compare(uint8_t* id1, uint8_t* id2) {
-    if(id1 == NULL || id2 == NULL) return false;
-    for(uint8_t i = 0; i < 8; i++) {
-        if(id1[i] != id2[i]) return false;
-    }
-    return true;
-}
-
-bool unitemp_onewire_sensor_alloc(Sensor* sensor, char* args) {
-    OneWireSensor* instance = malloc(sizeof(OneWireSensor));
-    if(instance == NULL) {
-        FURI_LOG_E(APP_NAME, "Sensor %s instance allocation error", sensor->name);
-        return false;
-    }
-    sensor->instance = instance;
-    //Address clearing
-    memset(instance->deviceID, 0, 8);
-
-    int gpio, addr_0, addr_1, addr_2, addr_3, addr_4, addr_5, addr_6, addr_7;
-    sscanf(
-        args,
-        "%d %2X%2X%2X%2X%2X%2X%2X%2X",
-        &gpio,
-        &addr_0,
-        &addr_1,
-        &addr_2,
-        &addr_3,
-        &addr_4,
-        &addr_5,
-        &addr_6,
-        &addr_7);
-    instance->deviceID[0] = addr_0;
-    instance->deviceID[1] = addr_1;
-    instance->deviceID[2] = addr_2;
-    instance->deviceID[3] = addr_3;
-    instance->deviceID[4] = addr_4;
-    instance->deviceID[5] = addr_5;
-    instance->deviceID[6] = addr_6;
-    instance->deviceID[7] = addr_7;
-
-    instance->familyCode = instance->deviceID[0];
-
-    instance->bus = unitemp_onewire_bus_alloc(unitemp_gpio_get_from_int(gpio));
-
-    if(instance != NULL) {
-        return true;
-    }
-    FURI_LOG_E(APP_NAME, "Sensor %s bus allocation error", sensor->name);
-    free(instance);
-    return false;
-}
-
-bool unitemp_onewire_sensor_free(Sensor* sensor) {
-    if(((OneWireSensor*)sensor->instance)->bus != NULL) {
-        if(((OneWireSensor*)sensor->instance)->bus->device_count == 0) {
-            free(((OneWireSensor*)sensor->instance)->bus);
-        }
-    }
-
-    free(sensor->instance);
-
-    return true;
-}
-
-bool unitemp_onewire_sensor_init(Sensor* sensor) {
-    OneWireSensor* instance = sensor->instance;
-    if(instance == NULL || instance->bus == NULL) {
-        FURI_LOG_E(APP_NAME, "Sensor pointer is null!");
-        return false;
-    }
-
-    unitemp_onewire_bus_init(instance->bus);
-    furi_delay_ms(1);
-
-    if(instance->familyCode == FC_DS18B20 || instance->familyCode == FC_DS1822) {
-        //Setting the bit depth to 10 bits
-        if(!unitemp_onewire_bus_start(instance->bus)) return false;
-        unitemp_onewire_bus_select_sensor(instance);
-        unitemp_onewire_bus_send_byte(instance->bus, 0x4E); //Memory recording
-        uint8_t buff[3];
-        //Alarm values
-        buff[0] = 0x4B; //Temperature lower limit value
-        buff[1] = 0x46; //Upper temperature limit value
-        //Configuration
-        buff[2] = 0b01111111; //12 bit bit conversion
-        unitemp_onewire_bus_send_byteArray(instance->bus, buff, 3);
-
-        //Stores values ​​in EEPROM for automatic recovery after power failures
-        if(!unitemp_onewire_bus_start(instance->bus)) return false;
-        unitemp_onewire_bus_select_sensor(instance);
-        unitemp_onewire_bus_send_byte(instance->bus, 0x48); //Write to EEPROM
-    }
-
-    return true;
-}
-
-bool unitemp_onewire_sensor_deinit(Sensor* sensor) {
-    OneWireSensor* instance = sensor->instance;
-    if(instance == NULL || instance->bus == NULL) return false;
-    unitemp_onewire_bus_deinit(instance->bus);
-
-    return true;
-}
-
-SensorStatus unitemp_onewire_sensor_update(Sensor* sensor) {
-    //Removing the special status from the sensor in passive power mode
-    if(sensor->status == UT_SENSORSTATUS_EARLYPOOL) {
-        return UT_SENSORSTATUS_POLLING;
-    }
-
-    OneWireSensor* instance = sensor->instance;
-    uint8_t buff[9] = {0};
-    if(sensor->status != UT_SENSORSTATUS_POLLING) {
-        //If the sensor did not respond last time, check its presence on the tire
-        if(sensor->status == UT_SENSORSTATUS_TIMEOUT || sensor->status == UT_SENSORSTATUS_BADCRC) {
-            if(!unitemp_onewire_bus_start(instance->bus)) return UT_SENSORSTATUS_TIMEOUT;
-            unitemp_onewire_bus_select_sensor(instance);
-            unitemp_onewire_bus_send_byte(instance->bus, 0xBE); // Read Scratch-pad
-            unitemp_onewire_bus_read_byteArray(instance->bus, buff, 9);
-            if(!unitemp_onewire_CRC_check(buff, 9)) {
-                UNITEMP_DEBUG("Sensor %s is not found", sensor->name);
-                return UT_SENSORSTATUS_TIMEOUT;
-            }
-        }
-
-        if(!unitemp_onewire_bus_start(instance->bus)) return UT_SENSORSTATUS_TIMEOUT;
-        //Starting conversion on all sensors in passive power mode
-        if(instance->bus->powerMode == PWR_PASSIVE) {
-            unitemp_onewire_bus_send_byte(instance->bus, 0xCC); // skip addr
-            //Setting a special status on all sensors of this bus so as not to start the conversion again
-            for(uint8_t i = 0; i < unitemp_sensors_get_count(); i++) {
-                if(unitemp_sensors_get(i)->model->interface == &onewire &&
-                   ((OneWireSensor*)unitemp_sensors_get(i)->instance)->bus == instance->bus) {
-                    unitemp_sensors_get(i)->status = UT_SENSORSTATUS_EARLYPOOL;
-                }
-            }
-
-        } else {
-            unitemp_onewire_bus_select_sensor(instance);
-        }
-
-        unitemp_onewire_bus_send_byte(instance->bus, 0x44); // convert t
-        if(instance->bus->powerMode == PWR_PASSIVE) {
-            furi_hal_gpio_write(instance->bus->gpio->pin, true);
-            furi_hal_gpio_init(
-                instance->bus->gpio->pin, GpioModeOutputPushPull, GpioPullUp, GpioSpeedVeryHigh);
-        }
-        return UT_SENSORSTATUS_POLLING;
-    } else {
-        if(instance->bus->powerMode == PWR_PASSIVE) {
-            furi_hal_gpio_write(instance->bus->gpio->pin, true);
-            furi_hal_gpio_init(
-                instance->bus->gpio->pin, GpioModeOutputOpenDrain, GpioPullUp, GpioSpeedVeryHigh);
-        }
-        if(!unitemp_onewire_bus_start(instance->bus)) return UT_SENSORSTATUS_TIMEOUT;
-        unitemp_onewire_bus_select_sensor(instance);
-        unitemp_onewire_bus_send_byte(instance->bus, 0xBE); // Read Scratch-pad
-        unitemp_onewire_bus_read_byteArray(instance->bus, buff, 9);
-        if(!unitemp_onewire_CRC_check(buff, 9)) {
-            UNITEMP_DEBUG("Failed CRC check: %s", sensor->name);
-            return UT_SENSORSTATUS_BADCRC;
-        }
-        int16_t raw = buff[0] | ((int16_t)buff[1] << 8);
-        if(instance->familyCode == FC_DS18S20) {
-            //Pseudo-12-bit.
-            //sensor->temperature = ((float)raw / 2.0f) - 0.25f + (16.0f - buff[6]) / 16.0f;
-            //Honest 9 bits
-            sensor->temperature = ((float)raw / 2.0f);
-        } else {
-            sensor->temperature = (float)raw / 16.0f;
-        }
-    }
-
-    return UT_SENSORSTATUS_OK;
 }
