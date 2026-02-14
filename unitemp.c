@@ -145,17 +145,18 @@ bool unitemp_settings_save(void* context) {
 static UnitempApp* unitemp_app_alloc(void) {
     UnitempApp* app = malloc(sizeof(UnitempApp));
 
-    app->settings = malloc(sizeof(UnitempSettings));
     app->storage = furi_record_open(RECORD_STORAGE);
     app->file = storage_file_alloc(app->storage);
+    app->power = furi_record_open(RECORD_POWER);
+    app->notifications = furi_record_open(RECORD_NOTIFICATION);
+
+    app->settings = malloc(sizeof(UnitempSettings));
 
     app->reader_thread = furi_thread_alloc();
+    furi_thread_set_name(app->reader_thread, "UnitempPoller");
     furi_thread_set_stack_size(app->reader_thread, 1024U);
     furi_thread_set_context(app->reader_thread, app);
     furi_thread_set_callback(app->reader_thread, unitemp_sensors_update_callback);
-
-    app->power = furi_record_open(RECORD_POWER);
-    app->notifications = furi_record_open(RECORD_NOTIFICATION);
 
     //GUI allocations
     app->gui = furi_record_open(RECORD_GUI);
@@ -250,8 +251,6 @@ static void unitemp_run(UnitempApp* app) {
     }
     unitemp_sensors_load();
     unitemp_sensors_init(app);
-    /* Start the reader thread. It will talk to the thermometer in the background. */
-    furi_thread_start(app->reader_thread);
 
     scene_manager_next_scene(app->scene_manager, UnitempSceneMonitor);
     view_dispatcher_run(app->view_dispatcher);
@@ -259,11 +258,6 @@ static void unitemp_run(UnitempApp* app) {
 
 static void unitemp_stop(UnitempApp* app) {
     furi_check(app);
-    /* Signal the reader thread to cease operation and exit */
-    furi_thread_flags_set(furi_thread_get_id(app->reader_thread), UnitempThreadFlagExit);
-
-    /* Wait for the reader thread to finish */
-    furi_thread_join(app->reader_thread);
 
     unitemp_sensors_deinit(app);
 }
