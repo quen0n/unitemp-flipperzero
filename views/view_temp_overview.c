@@ -77,7 +77,7 @@ void temp_overview_draw(Canvas* canvas, TempOverviewViewModel* view_model) {
     for(uint8_t i = 0; i < page_sensors_count; i++) {
         unitemp_draw_sensor_single(
             canvas,
-            unitemp_sensors_get()[view_model->sensors_page * 4 + i],
+            unitemp_sensors_get(view_model->sensors_page * 4 + i),
             settings->temperature_unit,
             value_positions[page_sensors_count - 1][i][0],
             value_positions[page_sensors_count - 1][i][1]);

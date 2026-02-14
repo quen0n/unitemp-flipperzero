@@ -51,7 +51,7 @@ static void sensor_info_draw_callback(Canvas* canvas, void* model) {
         SingleSensorViewModel * m,
         { sensor_index = m->sensor_index; },
         false);
-    sensor = unitemp_sensors_get()[sensor_index];
+    sensor = unitemp_sensors_get(sensor_index);
 
     //Drawing a frame
     canvas_draw_rframe(canvas, 0, 0, 128, 63, 7);

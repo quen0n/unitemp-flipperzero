@@ -140,8 +140,6 @@ typedef struct {
     SensorInfo* sensor_info;
     Gui* gui;
 
-    Sensor** sensors_list; //todo: перенести в sensors.c
-
     Storage* storage;
     File* file;
     NotificationApp* notifications;

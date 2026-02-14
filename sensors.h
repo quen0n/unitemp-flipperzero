@@ -185,7 +185,13 @@ bool unitemp_sensors_deinit(void* ctx);
  */
 SensorStatus unitemp_sensor_update(Sensor* sensor, void* ctx);
 
-Sensor** unitemp_sensors_get(void);
+/**
+ * @brief Retrieves a sensor instance by its index.
+ * 
+ * @param index The index of the sensor to retrieve.
+ * @return Pointer to the Sensor structure at the specified index, or NULL if index is out of bounds.
+ */
+Sensor* unitemp_sensors_get(uint8_t index);
 
 /**
 * @brief Get a list of available sensor types

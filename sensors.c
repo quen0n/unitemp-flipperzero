@@ -71,7 +71,7 @@ int32_t unitemp_sensors_update_callback(void* context) {
     UnitempApp* app = context;
     for(;;) {
         for(uint8_t i = 0; i < unitemp_sensors_get_count(); i++) {
-            unitemp_sensor_update((unitemp_sensors_get()[i]), app);
+            unitemp_sensor_update((unitemp_sensors_get(i)), app);
         }
 
         const uint32_t flags =
@@ -269,8 +269,8 @@ bool unitemp_sensors_deinit(void* context) {
     return result;
 }
 
-Sensor** unitemp_sensors_get(void) {
-    return sensors_list;
+Sensor* unitemp_sensors_get(uint8_t index) {
+    return sensors_list[index];
 }
 
 SensorStatus unitemp_sensor_update(Sensor* sensor, void* context) {
