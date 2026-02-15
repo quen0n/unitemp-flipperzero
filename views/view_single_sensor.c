@@ -261,8 +261,11 @@ static bool single_sensor_input_callback(InputEvent* event, void* context) {
             true);
         consumed = true;
     } else if(event->key == InputKeyUp && event->type == InputTypeShort) {
-        view_dispatcher_send_custom_event(
-            app->view_dispatcher, CustomEventSwitchToTempOverviewView);
+        if(unitemp_sensors_get_count() > 1) {
+            view_dispatcher_send_custom_event(
+                app->view_dispatcher, CustomEventSwitchToTempOverviewView);
+        }
+
         consumed = true;
     } else if(event->key == InputKeyDown && event->type == InputTypeShort) {
         view_dispatcher_send_custom_event(app->view_dispatcher, CustomEventSwitchToSensorInfoView);
