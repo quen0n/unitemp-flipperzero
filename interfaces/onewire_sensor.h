@@ -22,7 +22,7 @@
 #include "../helpers/unitemp_gpio.h"
 #include <one_wire/one_wire_host.h>
 
-extern const SensorConnectionInterface onewire;
+extern const SensorConnectionInterface unitemp_1w;
 
 //Device family codes
 typedef enum DallasFamilyCode {

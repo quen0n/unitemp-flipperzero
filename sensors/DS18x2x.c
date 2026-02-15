@@ -25,7 +25,7 @@
 const SensorModel Dallas = {
     .modelname = "Dallas",
     .altname = "Dallas (DS18x2x)",
-    .interface = &onewire,
+    .interface = &unitemp_1w,
     .data_type = UT_DATA_TYPE_TEMP,
     .polling_interval = 750,
     .allocator = unitemp_ds18x2x_sensor_alloc,
@@ -165,7 +165,7 @@ SensorStatus unitemp_ds18x2x_sensor_update(Sensor* sensor) {
         unitemp_onewire_bus_write(instance->bus, DS18B20_CMD_SKIP_ROM); // skip addr
         //Setting a special status on all sensors of this bus so as not to start the conversion again
         for(uint8_t i = 0; i < unitemp_sensors_get_count(); i++) {
-            if(unitemp_sensors_get(i)->model->interface == &onewire &&
+            if(unitemp_sensors_get(i)->model->interface == &unitemp_1w &&
                ((OneWireSensor*)unitemp_sensors_get(i)->instance)->bus == instance->bus) {
                 unitemp_sensors_get(i)->status = UT_SENSORSTATUS_EARLYPOOL;
             }

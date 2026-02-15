@@ -80,7 +80,7 @@ static void _draw_sensor_not_responding(Canvas* canvas, Sensor* sensor) {
         snprintf(temp_str, TEMP_STR_SIZE, "Sensor waiting on SDA & SCL");
     } else if(sensor->model->interface == &unitemp_spi) {
         snprintf(temp_str, TEMP_STR_SIZE, "Sensor waiting on SPI pins");
-    } else if(sensor->model->interface == &onewire) {
+    } else if(sensor->model->interface == &unitemp_1w) {
         snprintf(
             temp_str,
             TEMP_STR_SIZE,

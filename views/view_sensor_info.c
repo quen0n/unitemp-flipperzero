@@ -24,6 +24,7 @@
 #include "../interfaces/singlewire_sensor.h"
 #include "../interfaces/i2c_sensor.h"
 #include "../interfaces/spi_sensor.h"
+#include "../interfaces/onewire_sensor.h"
 
 extern const Icon I_ButtonRight_4x7;
 extern const Icon I_ButtonLeft_4x7;
@@ -80,22 +81,24 @@ static void sensor_info_draw_callback(Canvas* canvas, void* model) {
     canvas_draw_str(canvas, 48, 23, sensor->model->modelname);
     canvas_set_font(canvas, FontPrimary);
     if(sensor->model->interface == &singlewire) {
+        SingleWireSensor* s = sensor->instance;
         canvas_draw_str(canvas, 10, 34, "Data pin: ");
 
         canvas_set_font(canvas, FontSecondary);
-        canvas_draw_str(canvas, 57, 34, ((SingleWireSensor*)sensor->instance)->data_pin->name);
+        canvas_draw_str(canvas, 57, 34, s->data_pin->name);
     } else if(sensor->model->interface == &unitemp_i2c) {
+        I2CSensor* s = sensor->instance;
         canvas_set_font(canvas, FontPrimary);
         canvas_draw_str(canvas, 10, 34, "I2C address:");
         canvas_draw_str(canvas, 10, 45, "SDA pin:");
         canvas_draw_str(canvas, 10, 56, "SCL pin:");
         canvas_set_font(canvas, FontSecondary);
-        furi_string_printf(
-            temp_str, "0x%02X", ((I2CSensor*)sensor->instance)->current_i2c_adress >> 1);
+        furi_string_printf(temp_str, "0x%02X", s->current_i2c_adress >> 1);
         canvas_draw_str(canvas, 76, 34, furi_string_get_cstr(temp_str));
         canvas_draw_str(canvas, 56, 45, unitemp_gpio_get_from_int(15)->name);
         canvas_draw_str(canvas, 55, 56, unitemp_gpio_get_from_int(16)->name);
     } else if(sensor->model->interface == &unitemp_spi) {
+        SPISensor* s = sensor->instance;
         canvas_set_font(canvas, FontPrimary);
         canvas_draw_str(canvas, 10, 34, "MISO pin:");
         canvas_draw_str(canvas, 10, 45, "SCK pin:");
@@ -104,7 +107,28 @@ static void sensor_info_draw_callback(Canvas* canvas, void* model) {
         canvas_set_font(canvas, FontSecondary);
         canvas_draw_str(canvas, 62, 34, unitemp_gpio_get_from_int(3)->name);
         canvas_draw_str(canvas, 56, 45, unitemp_gpio_get_from_int(5)->name);
-        canvas_draw_str(canvas, 49, 56, ((SPISensor*)sensor->instance)->cs_pin->name);
+        canvas_draw_str(canvas, 49, 56, s->cs_pin->name);
+    } else if(sensor->model->interface == &unitemp_1w) {
+        OneWireSensor* s = sensor->instance;
+        canvas_set_font(canvas, FontPrimary);
+        canvas_draw_str(canvas, 10, 34, "Bus pin:");
+        canvas_draw_str(canvas, 10, 45, "ID:");
+
+        canvas_set_font(canvas, FontSecondary);
+        canvas_draw_str(canvas, 53, 34, s->bus->bus_pin->name);
+        furi_string_printf(
+            temp_str,
+            "%02X%02X%02X%02X%02X%02X%02X%02X",
+            s->deviceID[0],
+            s->deviceID[1],
+            s->deviceID[2],
+            s->deviceID[3],
+            s->deviceID[4],
+            s->deviceID[5],
+            s->deviceID[6],
+            s->deviceID[7]);
+        canvas_draw_str(canvas, 26, 45, furi_string_get_cstr(temp_str));
+        canvas_draw_str(canvas, 74, 23, unitemp_onewire_sensor_get_fc_name(sensor));
     }
     furi_string_free(temp_str);
 }

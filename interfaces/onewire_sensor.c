@@ -22,7 +22,7 @@
 #include <furi.h>
 #include <furi_hal.h>
 
-const SensorConnectionInterface onewire = {
+const SensorConnectionInterface unitemp_1w = {
     .name = "1-wire",
     .allocator = unitemp_ds18x2x_sensor_alloc,
     .mem_releaser = unitemp_ds18x2x_sensor_free,
@@ -36,7 +36,7 @@ UnitempOneWireBus* unitemp_onewire_bus_alloc(const SensorGpioPin* gpio_pin) {
 
     //Checking for bus presence on this port
     for(uint8_t i = 0; i < unitemp_sensors_get_count(); i++) {
-        if(unitemp_sensors_get(i)->model->interface == &onewire &&
+        if(unitemp_sensors_get(i)->model->interface == &unitemp_1w &&
            ((OneWireSensor*)unitemp_sensors_get(i)->instance)->bus->bus_pin == gpio_pin) {
             //If there is already a bus on this port, then return a pointer to the bus
             return ((OneWireSensor*)unitemp_sensors_get(i)->instance)->bus;
@@ -68,7 +68,7 @@ bool unitemp_onewire_bus_init(UnitempOneWireBus* bus) {
     //Output if the bus has already been initialized
     if(bus->devices_count > 1) return true;
 
-    unitemp_gpio_lock(bus->bus_pin, &onewire);
+    unitemp_gpio_lock(bus->bus_pin, &unitemp_1w);
 
     onewire_host_start(bus->host);
 
