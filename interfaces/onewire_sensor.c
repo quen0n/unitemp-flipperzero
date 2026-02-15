@@ -154,7 +154,7 @@ bool unitemp_onewire_sensor_read_id(OneWireSensor* instance) {
         memset(instance->deviceID, 0, 8);
         return false;
     }
-    instance->familyCode = instance->deviceID[0];
+    instance->family_code = instance->deviceID[0];
     return true;
 }
 

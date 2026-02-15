@@ -119,7 +119,8 @@ void single_sensor_draw_sensor(Canvas* canvas, Sensor* sensor, SingleSensorViewM
 
     SensorDataType data_type = sensor->model->data_type;
 
-    if(sensor->status == UT_SENSORSTATUS_OK) {
+    if(sensor->status == UT_SENSORSTATUS_OK ||
+       (sensor->status == UT_SENSORSTATUS_POLLING && sensor->temperature != -128.0f)) {
         uint8_t values_count_index = data_types_values_count[data_type] - 1;
         switch(data_type) {
         case UT_DATA_TYPE_TEMP:
@@ -310,6 +311,6 @@ View* single_sensor_get_view(SingleSensor* single_sensor) {
 void single_sensor_refresh_data(SingleSensor* instance) {
     furi_assert(instance);
 
-    //Вызываем перерисовку вида псевдообновлением модели. Вызывается по таймеру каждую секнуду
+    //Вызываем перерисовку вида псевдообновлением модели. Вызывается по таймеру
     with_view_model(instance->view, SingleSensorViewModel * model, { UNUSED(model); }, true);
 }

@@ -55,7 +55,7 @@ typedef struct OneWireSensor {
     //Current address of the device on the OneWire bus
     uint8_t deviceID[8];
     //Device family code
-    DallasFamilyCode familyCode;
+    DallasFamilyCode family_code;
 } OneWireSensor;
 
 /**

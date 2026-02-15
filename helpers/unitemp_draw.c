@@ -52,7 +52,8 @@ void unitemp_draw_temperature(
         y + 3,
         (temperature_unit == UT_TEMP_CELSIUS ? &I_temp_C_11x14 : &I_temp_F_11x14));
 
-    if(temperature == -128.0f || sensor->status != UT_SENSORSTATUS_OK) {
+    if(!(sensor->status == UT_SENSORSTATUS_OK ||
+         (sensor->status == UT_SENSORSTATUS_POLLING && sensor->temperature != -128.0f))) {
         canvas_set_font(canvas, FontBigNumbers);
         canvas_draw_str_aligned(canvas, x + 27, y + 10, AlignCenter, AlignCenter, "--");
         canvas_set_font(canvas, FontPrimary);

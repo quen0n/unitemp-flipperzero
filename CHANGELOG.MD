@@ -9,8 +9,11 @@
 - The backlight glows indefinitely only when displaying sensor values. In the menu, the backlight will off according to the system settings
 - The temperature index calculation has been corrected. It is now calculated only for temperatures above 26.67°C (80°F)
 - It is now possible to disable automatic 5V power supply to port 1 in the settings
+- The 1-wire driver has been rewritten using native Flipper Zero firmware features
 
 TODO: загрузка и сохранение датчиков
+TODO: сцена редактирования датчика
+TODO: сцена редактирования имени датчика
 TODO: доделать добавление датчиков
 
 TODO: мигратор с старого конфига на новый

@@ -37,33 +37,6 @@ const SensorModel Dallas = {
 #define DS18B20_CMD_SKIP_ROM        0xCCU
 #define DS18B20_CMD_CONVERT         0x44U
 #define DS18B20_CMD_READ_SCRATCHPAD 0xBEU
-// static void _ds18x2x_request_temperature(ExampleThermoContext* context) {
-//     OneWireHost* onewire = context->onewire;
-
-//     /* All 1-wire transactions must happen in a critical section, i.e
-//        not interrupted by other threads. */
-//     FURI_CRITICAL_ENTER();
-
-//     bool success = false;
-//     do {
-//         /* Each communication with a 1-wire device starts by a reset.
-//            The function will return true if a device responded with a presence pulse. */
-//         if(!onewire_host_reset(onewire)) break;
-//         /* After the reset, a ROM operation must follow.
-//            If there is only one device connected, the "Skip ROM" command is most appropriate
-//            (it can also be used to address all of the connected devices in some cases).*/
-//         onewire_host_write(onewire, DS18B20_CMD_SKIP_ROM);
-//         /* After the ROM operation, a device-specific command is issued.
-//            In this case, it's a request to start measuring the temperature. */
-//         onewire_host_write(onewire, DS18B20_CMD_CONVERT);
-
-//         success = true;
-//     } while(false);
-
-//     context->has_device = success;
-
-//     FURI_CRITICAL_EXIT();
-// }
 
 bool unitemp_ds18x2x_sensor_alloc(Sensor* sensor, char* args) {
     OneWireSensor* instance = malloc(sizeof(OneWireSensor));
@@ -97,7 +70,7 @@ bool unitemp_ds18x2x_sensor_alloc(Sensor* sensor, char* args) {
     instance->deviceID[6] = addr_6;
     instance->deviceID[7] = addr_7;
 
-    instance->familyCode = instance->deviceID[0];
+    instance->family_code = instance->deviceID[0];
 
     instance->bus = unitemp_onewire_bus_alloc(unitemp_gpio_get_from_int(gpio_pin));
 
@@ -127,9 +100,9 @@ bool unitemp_ds18x2x_sensor_init(Sensor* sensor) {
     furi_delay_ms(1);
 
     bool result = false;
-    if(instance->familyCode == FC_DS18B20 || instance->familyCode == FC_DS1822) {
-        FURI_CRITICAL_ENTER();
+    if(instance->family_code == FC_DS18B20 || instance->family_code == FC_DS1822) {
         for(;;) {
+            FURI_CRITICAL_ENTER();
             //Setting the bit depth to 10 bits
             if(!unitemp_onewire_bus_start(instance->bus)) break;
 
@@ -149,8 +122,9 @@ bool unitemp_ds18x2x_sensor_init(Sensor* sensor) {
             unitemp_onewire_bus_select_device(instance->bus, instance->deviceID);
             unitemp_onewire_bus_write(instance->bus, 0x48); //Write to EEPROM
             result = true;
+            FURI_CRITICAL_EXIT();
+            break;
         }
-        FURI_CRITICAL_EXIT();
     }
 
     return result;
@@ -214,7 +188,7 @@ SensorStatus unitemp_ds18x2x_sensor_update(Sensor* sensor) {
             return UT_SENSORSTATUS_BADCRC;
         }
         int16_t raw = buff[0] | ((int16_t)buff[1] << 8);
-        if(instance->familyCode == FC_DS18S20) {
+        if(instance->family_code == FC_DS18S20) {
             //Pseudo-12-bit.
             //sensor->temperature = ((float)raw / 2.0f) - 0.25f + (16.0f - buff[6]) / 16.0f;
             //Honest 9 bits
