@@ -1,3 +1,3 @@
 # Unitemp assets
 
-Created by [@Svaarich](https://github.com/Svaarich) and Flipper Devices designers
+Created by [@Svaarich](https://github.com/Svaarich), [@divinebird](https://github.com/divinebird) and Flipper Devices designers

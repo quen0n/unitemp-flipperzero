@@ -11,6 +11,9 @@
 - It is now possible to disable automatic 5V power supply to port 1 in the settings
 - The 1-wire driver has been rewritten using native Flipper Zero firmware features
 
+TODO: SCD30
+TODO: отображение теплового индекса в SCD30
+TODO: индикатор состояния среды (светодиодная индикация, звуковая сигнализация)
 TODO: загрузка и сохранение датчиков
 TODO: сцена редактирования датчика
 TODO: сцена редактирования имени датчика

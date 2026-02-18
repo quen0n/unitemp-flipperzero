@@ -203,6 +203,20 @@ void single_sensor_draw_sensor(Canvas* canvas, Sensor* sensor, SingleSensorViewM
             break;
         case UT_DATA_TYPE_TEMP_HUM_CO2:
             values_count_index += (settings->heat_index ? 1 : 0);
+            unitemp_draw_temperature(
+                canvas,
+                sensor,
+                settings->temperature_unit,
+                values_positions[values_count_index][0][0],
+                values_positions[values_count_index][0][1]);
+            unitemp_draw_humidity(
+                canvas,
+                sensor,
+                settings->humidity_unit,
+                settings->temperature_unit,
+                values_positions[values_count_index][settings->heat_index ? 3 : 1][0],
+                values_positions[values_count_index][settings->heat_index ? 3 : 1][1]);
+            unitemp_draw_co2(canvas, sensor, (settings->heat_index ? 22 : 22), 39, ColorWhite);
             if(settings->heat_index) {
                 unitemp_draw_heat_index(
                     canvas,

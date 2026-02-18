@@ -20,6 +20,8 @@
 #include "unitemp_icons.h"
 
 #include <stdlib.h>
+#include <inttypes.h>
+
 #include <gui/elements.h>
 #include <locale/locale.h>
 #include "../helpers/unitemp_utils.h"
@@ -52,7 +54,7 @@ void unitemp_draw_temperature(
         y + 3,
         (temperature_unit == UT_TEMP_CELSIUS ? &I_temp_C_11x14 : &I_temp_F_11x14));
 
-    if(!(sensor->status == UT_SENSORSTATUS_OK ||
+    if(!((sensor->status == UT_SENSORSTATUS_OK && sensor->temperature != -128.0f) ||
          (sensor->status == UT_SENSORSTATUS_POLLING && sensor->temperature != -128.0f))) {
         canvas_set_font(canvas, FontBigNumbers);
         canvas_draw_str_aligned(canvas, x + 27, y + 10, AlignCenter, AlignCenter, "--");
@@ -111,6 +113,7 @@ void unitemp_draw_sensor_single(
     canvas_draw_str_aligned(canvas, x + 27, y + 3, AlignCenter, AlignCenter, sensor_name);
     unitemp_draw_temperature(canvas, sensor, temperature_unit, x, y + 8);
 }
+
 void unitemp_draw_humidity(
     Canvas* canvas,
     Sensor* sensor,
@@ -264,4 +267,33 @@ void unitemp_draw_heat_index(
     snprintf(temp_str, TEMP_STR_SIZE, ".%d", heat_index_dec);
     canvas_set_font(canvas, FontPrimary);
     canvas_draw_str(canvas, x + 27 + int_len / 2 + 2, y + 10 + 7, temp_str);
+}
+
+void unitemp_draw_co2(Canvas* canvas, Sensor* sensor, uint8_t x, uint8_t y, Color color) {
+    const uint8_t frame_w = 83;
+    //Drawing a frame
+    canvas_draw_rframe(canvas, x, y, frame_w, 20, 3);
+    if(color == ColorBlack) {
+        canvas_draw_rbox(canvas, x, y, frame_w, 19, 3);
+        canvas_invert_color(canvas);
+    } else {
+        canvas_draw_rframe(canvas, x, y, frame_w, 19, 3);
+    }
+
+    //Drawing icon
+    canvas_draw_icon(canvas, x + 3, y + 3, &I_co2_11x14);
+
+    uint32_t concentration_int = (uint32_t)sensor->co2;
+    //    int8_t concentration_dec = (int16_t)(sensor->co2 * 10) % 10;
+
+    //Whole part
+    if(concentration_int > 40000u) {
+        snprintf(temp_str, TEMP_STR_SIZE, "MAX  ");
+        canvas_set_font(canvas, FontBigNumbers);
+    } else {
+        snprintf(temp_str, TEMP_STR_SIZE, "%" PRIu32, concentration_int);
+        canvas_set_font(canvas, FontBigNumbers);
+    }
+
+    canvas_draw_str_aligned(canvas, x + frame_w - 5, y + 10, AlignRight, AlignCenter, temp_str);
 }

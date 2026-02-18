@@ -130,4 +130,6 @@ void unitemp_draw_heat_index(
     TempMeasureUnit temperature_unit,
     uint8_t x,
     uint8_t y);
+
+void unitemp_draw_co2(Canvas* canvas, Sensor* sensor, uint8_t x, uint8_t y, Color color);
 #endif //UNITEMP_DRAW_H_

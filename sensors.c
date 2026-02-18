@@ -14,6 +14,7 @@
 #include "./sensors/MAX31855.h"
 #include "./sensors/MAX6675.h"
 #include "./sensors/DS18x2x.h"
+#include "./sensors/SCD30.h"
 
 #define UPDATE_PERIOD_MS 250UL
 
@@ -40,6 +41,7 @@ static const SensorModel* sensor_model_list[] = {
     &LM75, //tested
     &MAX6675, //tested
     &MAX31855, //tested
+    &SCD30, //tested
     &SHT30, //tested
 
 };
@@ -184,56 +186,60 @@ bool unitemp_sensors_load(void) {
     //Temperature offset
     int temp_offset = 0;
     Sensor* sensor;
-
-    sensor = unitemp_sensor_alloc("DHT11 test", unitemp_sensors_get_model_from_str("DHT11"), "7");
+    sensor = unitemp_sensor_alloc("SCD30", unitemp_sensors_get_model_from_str("SCD30"), "С2");
     if(sensor != NULL) {
         sensor->temperature_offset = temp_offset;
         unitemp_sensors_add(sensor);
     }
-    sensor =
-        unitemp_sensor_alloc("HTU21 test", unitemp_sensors_get_model_from_str("HTU21x"), "80");
-    if(sensor != NULL) {
-        sensor->temperature_offset = temp_offset;
-        unitemp_sensors_add(sensor);
-    }
-    sensor = unitemp_sensor_alloc("AMH10 tst", unitemp_sensors_get_model_from_str("AHT10"), "72");
-    if(sensor != NULL) {
-        sensor->temperature_offset = temp_offset;
-        unitemp_sensors_add(sensor);
-    }
-    sensor =
-        unitemp_sensor_alloc("BMP180 tst", unitemp_sensors_get_model_from_str("BMP180"), "EE");
-    if(sensor != NULL) {
-        sensor->temperature_offset = temp_offset;
-        unitemp_sensors_add(sensor);
-    }
-    sensor =
-        unitemp_sensor_alloc("BME680 tst", unitemp_sensors_get_model_from_str("BME680"), "ED");
-    if(sensor != NULL) {
-        sensor->temperature_offset = temp_offset;
-        unitemp_sensors_add(sensor);
-    }
-    sensor = unitemp_sensor_alloc("MAX6675", unitemp_sensors_get_model_from_str("MAX6675"), "6");
-    if(sensor != NULL) {
-        sensor->temperature_offset = temp_offset;
-        unitemp_sensors_add(sensor);
-    }
-    sensor = unitemp_sensor_alloc("MAX31855", unitemp_sensors_get_model_from_str("MAX31855"), "4");
-    if(sensor != NULL) {
-        sensor->temperature_offset = temp_offset;
-        unitemp_sensors_add(sensor);
-    }
-    sensor = unitemp_sensor_alloc(
-        "Dallas", unitemp_sensors_get_model_from_str("Dallas"), "17 105D15B102080016");
-    if(sensor != NULL) {
-        sensor->temperature_offset = temp_offset;
-        unitemp_sensors_add(sensor);
-    }
-    sensor = unitemp_sensor_alloc("DHT20 test", unitemp_sensors_get_model_from_str("DHT20"), "7D");
-    if(sensor != NULL) {
-        sensor->temperature_offset = temp_offset;
-        unitemp_sensors_add(sensor);
-    }
+    // sensor = unitemp_sensor_alloc("DHT11 test", unitemp_sensors_get_model_from_str("DHT11"), "7");
+    // if(sensor != NULL) {
+    //     sensor->temperature_offset = temp_offset;
+    //     unitemp_sensors_add(sensor);
+    // }
+    // sensor =
+    //     unitemp_sensor_alloc("HTU21 test", unitemp_sensors_get_model_from_str("HTU21x"), "80");
+    // if(sensor != NULL) {
+    //     sensor->temperature_offset = temp_offset;
+    //     unitemp_sensors_add(sensor);
+    // }
+    // sensor = unitemp_sensor_alloc("AMH10 tst", unitemp_sensors_get_model_from_str("AHT10"), "72");
+    // if(sensor != NULL) {
+    //     sensor->temperature_offset = temp_offset;
+    //     unitemp_sensors_add(sensor);
+    // }
+    // sensor =
+    //     unitemp_sensor_alloc("BMP180 tst", unitemp_sensors_get_model_from_str("BMP180"), "EE");
+    // if(sensor != NULL) {
+    //     sensor->temperature_offset = temp_offset;
+    //     unitemp_sensors_add(sensor);
+    // }
+    // sensor =
+    //     unitemp_sensor_alloc("BME680 tst", unitemp_sensors_get_model_from_str("BME680"), "ED");
+    // if(sensor != NULL) {
+    //     sensor->temperature_offset = temp_offset;
+    //     unitemp_sensors_add(sensor);
+    // }
+    // sensor = unitemp_sensor_alloc("MAX6675", unitemp_sensors_get_model_from_str("MAX6675"), "6");
+    // if(sensor != NULL) {
+    //     sensor->temperature_offset = temp_offset;
+    //     unitemp_sensors_add(sensor);
+    // }
+    // sensor = unitemp_sensor_alloc("MAX31855", unitemp_sensors_get_model_from_str("MAX31855"), "4");
+    // if(sensor != NULL) {
+    //     sensor->temperature_offset = temp_offset;
+    //     unitemp_sensors_add(sensor);
+    // }
+    // sensor = unitemp_sensor_alloc(
+    //     "Dallas", unitemp_sensors_get_model_from_str("Dallas"), "17 105D15B102080016");
+    // if(sensor != NULL) {
+    //     sensor->temperature_offset = temp_offset;
+    //     unitemp_sensors_add(sensor);
+    // }
+    // sensor = unitemp_sensor_alloc("DHT20 test", unitemp_sensors_get_model_from_str("DHT20"), "7D");
+    // if(sensor != NULL) {
+    //     sensor->temperature_offset = temp_offset;
+    //     unitemp_sensors_add(sensor);
+    // }
     // sensor = unitemp_sensor_alloc("GXHT30", unitemp_sensors_get_model_from_str("GXHT30"), "88");
     // if(sensor != NULL) {
     //     sensor->temperature_offset = temp_offset;
