@@ -23,15 +23,24 @@ static uint8_t sensors_count = 0;
 
 //List of sensor models
 static const SensorModel* sensor_model_list[] = {
-    &AHT10,  &AM2320_SW, &AM2320_I2C, &BMP180, &BMP280, &BME280,
+    &AHT10, //tested
+    &AM2320_SW, //do not work :|
+    &AM2320_I2C, //tested
+    &BMP180, //tested
+    &BMP280,     &BME280,
     &BME680, //tested
-    &Dallas,
+    &Dallas, //tested
     &DHT11, //tested
-    &DHT20,
+    &DHT20, //tested
     &DHT21, //tested
-    &DHT22,  &GXHT30,    &HDC1080,
+    &DHT22,
+    &GXHT30, //tested
+    &HDC1080, //tested
     &HTU21x, //tested
-    &LM75,   &MAX6675,   &MAX31855,   &SHT30,
+    &LM75, //tested
+    &MAX6675, //tested
+    &MAX31855, //tested
+    &SHT30, //tested
 
 };
 //Number of sensor models
@@ -53,6 +62,7 @@ const SensorModel* unitemp_sensors_get_model_from_str(char* str) {
             return sensor_model_list[i];
         }
     }
+    UNITEMP_DEBUG("Unknown sensor model: %s", str);
     return NULL;
 }
 
@@ -180,16 +190,25 @@ bool unitemp_sensors_load(void) {
         sensor->temperature_offset = temp_offset;
         unitemp_sensors_add(sensor);
     }
-
     sensor =
         unitemp_sensor_alloc("HTU21 test", unitemp_sensors_get_model_from_str("HTU21x"), "80");
     if(sensor != NULL) {
         sensor->temperature_offset = temp_offset;
         unitemp_sensors_add(sensor);
     }
-
+    sensor = unitemp_sensor_alloc("AMH10 tst", unitemp_sensors_get_model_from_str("AHT10"), "72");
+    if(sensor != NULL) {
+        sensor->temperature_offset = temp_offset;
+        unitemp_sensors_add(sensor);
+    }
     sensor =
-        unitemp_sensor_alloc("BME680 tst", unitemp_sensors_get_model_from_str("BME680"), "EE");
+        unitemp_sensor_alloc("BMP180 tst", unitemp_sensors_get_model_from_str("BMP180"), "EE");
+    if(sensor != NULL) {
+        sensor->temperature_offset = temp_offset;
+        unitemp_sensors_add(sensor);
+    }
+    sensor =
+        unitemp_sensor_alloc("BME680 tst", unitemp_sensors_get_model_from_str("BME680"), "ED");
     if(sensor != NULL) {
         sensor->temperature_offset = temp_offset;
         unitemp_sensors_add(sensor);
@@ -210,6 +229,42 @@ bool unitemp_sensors_load(void) {
         sensor->temperature_offset = temp_offset;
         unitemp_sensors_add(sensor);
     }
+    sensor = unitemp_sensor_alloc("DHT20 test", unitemp_sensors_get_model_from_str("DHT20"), "7D");
+    if(sensor != NULL) {
+        sensor->temperature_offset = temp_offset;
+        unitemp_sensors_add(sensor);
+    }
+    // sensor = unitemp_sensor_alloc("GXHT30", unitemp_sensors_get_model_from_str("GXHT30"), "88");
+    // if(sensor != NULL) {
+    //     sensor->temperature_offset = temp_offset;
+    //     unitemp_sensors_add(sensor);
+    // }
+    // sensor = unitemp_sensor_alloc("HDC1080", unitemp_sensors_get_model_from_str("HDC1080"), "80");
+    // if(sensor != NULL) {
+    //     sensor->temperature_offset = temp_offset;
+    //     unitemp_sensors_add(sensor);
+    // }
+    // sensor = unitemp_sensor_alloc("SHT30", unitemp_sensors_get_model_from_str("SHT30"), "88");
+    // if(sensor != NULL) {
+    //     sensor->temperature_offset = temp_offset;
+    //     unitemp_sensors_add(sensor);
+    // }
+    // sensor = unitemp_sensor_alloc("LM75", unitemp_sensors_get_model_from_str("LM75"), "88");
+    // if(sensor != NULL) {
+    //     sensor->temperature_offset = temp_offset;
+    //     unitemp_sensors_add(sensor);
+    // }
+    // sensor =
+    //     unitemp_sensor_alloc("AM2320_I2C", unitemp_sensors_get_model_from_str("AM2320_I2C"), "B8");
+    // if(sensor != NULL) {
+    //     sensor->temperature_offset = temp_offset;
+    //     unitemp_sensors_add(sensor);
+    // }
+    // sensor = unitemp_sensor_alloc("AM2320_SW", unitemp_sensors_get_model_from_str("AM2320"), "14");
+    // if(sensor != NULL) {
+    //     sensor->temperature_offset = temp_offset;
+    //     unitemp_sensors_add(sensor);
+    // }
 
     FURI_LOG_I(APP_NAME, "Sensors loaded successfully. Total: %d", sensors_count);
     return true;

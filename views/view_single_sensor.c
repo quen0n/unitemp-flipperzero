@@ -166,7 +166,7 @@ void single_sensor_draw_sensor(Canvas* canvas, Sensor* sensor, SingleSensorViewM
                 canvas,
                 sensor,
                 settings->pressure_unit,
-                values_positions[values_count_index][1][0] - 8,
+                values_positions[values_count_index][1][0] - 11,
                 values_positions[values_count_index][1][1],
                 false);
             break;
@@ -189,7 +189,7 @@ void single_sensor_draw_sensor(Canvas* canvas, Sensor* sensor, SingleSensorViewM
                 canvas,
                 sensor,
                 settings->pressure_unit,
-                values_positions[values_count_index][2][0] - (settings->heat_index ? 0 : 8),
+                values_positions[values_count_index][2][0] - (settings->heat_index ? 0 : 11),
                 values_positions[values_count_index][2][1],
                 settings->heat_index);
             if(settings->heat_index) {
