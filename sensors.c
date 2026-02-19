@@ -16,7 +16,8 @@
 #include "./sensors/DS18x2x.h"
 #include "./sensors/SCD30.h"
 
-#define UPDATE_PERIOD_MS 250UL
+#define UPDATE_PERIOD_MS     250UL
+#define APP_SENSORS_FILENAME "sensors.list"
 
 static Sensor** sensors_list = NULL;
 //Number of loaded sensors
@@ -25,7 +26,7 @@ static uint8_t sensors_count = 0;
 //List of sensor models
 static const SensorModel* sensor_model_list[] = {
     &AHT10, //tested
-    &AM2320_SW, //do not work :|
+    &AM2320_SW, //TODO: do not work :|
     &AM2320_I2C, //tested
     &BMP180, //tested
     &BMP280,     &BME280,
@@ -181,99 +182,100 @@ uint8_t unitemp_sensors_get_count(void) {
     return sensors_count;
 }
 
-bool unitemp_sensors_load(void) {
+bool unitemp_sensors_load(void* context) {
+    if(context == NULL) return false;
+    UnitempApp* app = context;
     UNITEMP_DEBUG("Loading sensors...");
-    //Temperature offset
-    int temp_offset = 0;
-    Sensor* sensor;
-    sensor = unitemp_sensor_alloc("SCD30", unitemp_sensors_get_model_from_str("SCD30"), "С2");
-    if(sensor != NULL) {
-        sensor->temperature_offset = temp_offset;
-        unitemp_sensors_add(sensor);
-    }
-    // sensor = unitemp_sensor_alloc("DHT11 test", unitemp_sensors_get_model_from_str("DHT11"), "7");
-    // if(sensor != NULL) {
-    //     sensor->temperature_offset = temp_offset;
-    //     unitemp_sensors_add(sensor);
-    // }
-    // sensor =
-    //     unitemp_sensor_alloc("HTU21 test", unitemp_sensors_get_model_from_str("HTU21x"), "80");
-    // if(sensor != NULL) {
-    //     sensor->temperature_offset = temp_offset;
-    //     unitemp_sensors_add(sensor);
-    // }
-    // sensor = unitemp_sensor_alloc("AMH10 tst", unitemp_sensors_get_model_from_str("AHT10"), "72");
-    // if(sensor != NULL) {
-    //     sensor->temperature_offset = temp_offset;
-    //     unitemp_sensors_add(sensor);
-    // }
-    // sensor =
-    //     unitemp_sensor_alloc("BMP180 tst", unitemp_sensors_get_model_from_str("BMP180"), "EE");
-    // if(sensor != NULL) {
-    //     sensor->temperature_offset = temp_offset;
-    //     unitemp_sensors_add(sensor);
-    // }
-    // sensor =
-    //     unitemp_sensor_alloc("BME680 tst", unitemp_sensors_get_model_from_str("BME680"), "ED");
-    // if(sensor != NULL) {
-    //     sensor->temperature_offset = temp_offset;
-    //     unitemp_sensors_add(sensor);
-    // }
-    // sensor = unitemp_sensor_alloc("MAX6675", unitemp_sensors_get_model_from_str("MAX6675"), "6");
-    // if(sensor != NULL) {
-    //     sensor->temperature_offset = temp_offset;
-    //     unitemp_sensors_add(sensor);
-    // }
-    // sensor = unitemp_sensor_alloc("MAX31855", unitemp_sensors_get_model_from_str("MAX31855"), "4");
-    // if(sensor != NULL) {
-    //     sensor->temperature_offset = temp_offset;
-    //     unitemp_sensors_add(sensor);
-    // }
-    // sensor = unitemp_sensor_alloc(
-    //     "Dallas", unitemp_sensors_get_model_from_str("Dallas"), "17 105D15B102080016");
-    // if(sensor != NULL) {
-    //     sensor->temperature_offset = temp_offset;
-    //     unitemp_sensors_add(sensor);
-    // }
-    // sensor = unitemp_sensor_alloc("DHT20 test", unitemp_sensors_get_model_from_str("DHT20"), "7D");
-    // if(sensor != NULL) {
-    //     sensor->temperature_offset = temp_offset;
-    //     unitemp_sensors_add(sensor);
-    // }
-    // sensor = unitemp_sensor_alloc("GXHT30", unitemp_sensors_get_model_from_str("GXHT30"), "88");
-    // if(sensor != NULL) {
-    //     sensor->temperature_offset = temp_offset;
-    //     unitemp_sensors_add(sensor);
-    // }
-    // sensor = unitemp_sensor_alloc("HDC1080", unitemp_sensors_get_model_from_str("HDC1080"), "80");
-    // if(sensor != NULL) {
-    //     sensor->temperature_offset = temp_offset;
-    //     unitemp_sensors_add(sensor);
-    // }
-    // sensor = unitemp_sensor_alloc("SHT30", unitemp_sensors_get_model_from_str("SHT30"), "88");
-    // if(sensor != NULL) {
-    //     sensor->temperature_offset = temp_offset;
-    //     unitemp_sensors_add(sensor);
-    // }
-    // sensor = unitemp_sensor_alloc("LM75", unitemp_sensors_get_model_from_str("LM75"), "88");
-    // if(sensor != NULL) {
-    //     sensor->temperature_offset = temp_offset;
-    //     unitemp_sensors_add(sensor);
-    // }
-    // sensor =
-    //     unitemp_sensor_alloc("AM2320_I2C", unitemp_sensors_get_model_from_str("AM2320_I2C"), "B8");
-    // if(sensor != NULL) {
-    //     sensor->temperature_offset = temp_offset;
-    //     unitemp_sensors_add(sensor);
-    // }
-    // sensor = unitemp_sensor_alloc("AM2320_SW", unitemp_sensors_get_model_from_str("AM2320"), "14");
-    // if(sensor != NULL) {
-    //     sensor->temperature_offset = temp_offset;
-    //     unitemp_sensors_add(sensor);
-    // }
 
-    FURI_LOG_I(APP_NAME, "Sensors loaded successfully. Total: %d", sensors_count);
-    return true;
+    app->file_stream = file_stream_alloc(app->storage);
+
+    bool success = false;
+
+    do {
+        if(!file_stream_open(
+               app->file_stream,
+               APP_DATA_PATH(APP_SENSORS_FILENAME),
+               FSAM_READ_WRITE,
+               FSOM_OPEN_EXISTING)) {
+            if(file_stream_get_error(app->file_stream) == FSE_NOT_EXIST) {
+                FURI_LOG_W(APP_NAME, "Missing sensors file");
+                break;
+            } else {
+                FURI_LOG_E(
+                    APP_NAME,
+                    "An error occurred while loading the sensors file: %d",
+                    file_stream_get_error(app->file_stream));
+                break;
+            }
+        }
+
+        uint16_t file_size = stream_size(app->file_stream);
+        //If the file is empty, then:
+        if(file_size == (uint8_t)0) {
+            FURI_LOG_W(APP_NAME, "Sensors file is empty");
+            break;
+        }
+
+        FuriString* line = furi_string_alloc();
+
+        while(stream_read_line(app->file_stream, line)) {
+            furi_string_trim(line);
+            if(furi_string_empty(line)) continue;
+
+            char name[11] = {0};
+            char model[11] = {0};
+            int temp_offset = 0;
+            int str_offset;
+
+            const char* line_cstr = furi_string_get_cstr(line);
+            sscanf(line_cstr, "%s %s %d %n", name, model, &temp_offset, &str_offset);
+            char* args = ((char*)(line_cstr + str_offset));
+
+            //Replacement ?
+            for(uint8_t i = 0; i < 10; i++) {
+                if(name[i] == '?') name[i] = ' ';
+            }
+
+            UNITEMP_DEBUG(
+                "Name: %s, model: %s, offset: %d, args: %s", name, model, temp_offset, args);
+
+            const SensorModel* sensor_model = unitemp_sensors_get_model_from_str(model);
+
+            //Checking the sensor model
+            if(sensor_model != NULL && sizeof(name) > 0 && sizeof(name) <= 11) {
+                Sensor* sensor = unitemp_sensor_alloc(name, sensor_model, args);
+                if(sensor != NULL) {
+                    sensor->temperature_offset = temp_offset;
+                    unitemp_sensors_add(sensor);
+                } else {
+                    FURI_LOG_E(
+                        APP_NAME,
+                        "Failed sensor (%s:%s) mem allocation",
+                        name,
+                        sensor_model->modelname);
+                }
+            } else {
+                FURI_LOG_E(
+                    APP_NAME,
+                    "Unsupported sensor name (%s) or sensor model (%s)",
+                    name,
+                    sensor_model->modelname);
+            }
+        }
+        furi_string_free(line);
+        success = true;
+    } while(0);
+
+    file_stream_close(app->file_stream);
+    stream_free(app->file_stream);
+
+    if(success) {
+        FURI_LOG_I(APP_NAME, "Loaded %d sensors from file.", unitemp_sensors_get_count());
+    } else {
+        FURI_LOG_E(APP_NAME, "Failed to load sensors");
+    }
+
+    return success;
 }
 
 bool unitemp_sensors_init(void* context) {

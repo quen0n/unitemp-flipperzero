@@ -162,7 +162,7 @@ uint8_t unitemp_sensors_get_count(void);
  * @brief Loading sensors from SD card
  * @return true if the upload was successful
  */
-bool unitemp_sensors_load();
+bool unitemp_sensors_load(void* ctx);
 
 /**
  * @brief Initializing loaded sensors

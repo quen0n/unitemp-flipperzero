@@ -40,6 +40,7 @@
 
 #include <notification/notification.h>
 #include <notification/notification_messages.h>
+#include <toolbox/stream/file_stream.h>
 
 #include "sensors.h"
 
@@ -141,6 +142,7 @@ typedef struct {
     Gui* gui;
 
     Storage* storage;
+    Stream* file_stream;
     File* file;
     NotificationApp* notifications;
 

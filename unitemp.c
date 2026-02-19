@@ -250,7 +250,7 @@ static void unitemp_run(UnitempApp* app) {
             APP_NAME, "Settings file not found or corrupted. Using defaults and saving them");
         unitemp_settings_save(app);
     }
-    unitemp_sensors_load();
+    unitemp_sensors_load(app);
     unitemp_sensors_init(app);
 
     scene_manager_next_scene(app->scene_manager, UnitempSceneMonitor);
