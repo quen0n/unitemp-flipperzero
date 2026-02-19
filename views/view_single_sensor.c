@@ -216,7 +216,13 @@ void single_sensor_draw_sensor(Canvas* canvas, Sensor* sensor, SingleSensorViewM
                 settings->temperature_unit,
                 values_positions[values_count_index][settings->heat_index ? 3 : 1][0],
                 values_positions[values_count_index][settings->heat_index ? 3 : 1][1]);
-            unitemp_draw_co2(canvas, sensor, (settings->heat_index ? 22 : 22), 39, ColorWhite);
+            unitemp_draw_co2(
+                canvas,
+                sensor,
+                (settings->heat_index ? values_positions[values_count_index][2][0] : 22),
+                values_positions[values_count_index][2][1],
+                ColorWhite,
+                settings->heat_index);
             if(settings->heat_index) {
                 unitemp_draw_heat_index(
                     canvas,

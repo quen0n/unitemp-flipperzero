@@ -10,9 +10,9 @@
 - The temperature index calculation has been corrected. It is now calculated only for temperatures above 26.67°C (80°F)
 - It is now possible to disable automatic 5V power supply to port 1 in the settings
 - The 1-wire driver has been rewritten using native Flipper Zero firmware features
+- The display of CO2 concentration values ​​in the air has been improved. The ability to display the heat index along with the CO2 value has been added
 
-TODO: SCD30
-TODO: отображение теплового индекса в SCD30
+TODO: пока датчик не получил все значения, отображать счастливый флиппер и сообщение "Polling" или что-то подобное
 TODO: индикатор состояния среды (светодиодная индикация, звуковая сигнализация)
 TODO: загрузка и сохранение датчиков
 TODO: сцена редактирования датчика

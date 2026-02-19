@@ -269,8 +269,8 @@ void unitemp_draw_heat_index(
     canvas_draw_str(canvas, x + 27 + int_len / 2 + 2, y + 10 + 7, temp_str);
 }
 
-void unitemp_draw_co2(Canvas* canvas, Sensor* sensor, uint8_t x, uint8_t y, Color color) {
-    const uint8_t frame_w = 83;
+void unitemp_draw_co2(Canvas* canvas, Sensor* sensor, uint8_t x, uint8_t y, Color color, bool mini) {
+    const uint8_t frame_w = mini ? 54 : 83;
     //Drawing a frame
     canvas_draw_rframe(canvas, x, y, frame_w, 20, 3);
     if(color == ColorBlack) {
@@ -290,10 +290,39 @@ void unitemp_draw_co2(Canvas* canvas, Sensor* sensor, uint8_t x, uint8_t y, Colo
     if(concentration_int > 40000u) {
         snprintf(temp_str, TEMP_STR_SIZE, "MAX  ");
         canvas_set_font(canvas, FontBigNumbers);
+        canvas_draw_str_aligned(
+            canvas, x + frame_w - 5, y + 10, AlignRight, AlignCenter, temp_str);
     } else {
-        snprintf(temp_str, TEMP_STR_SIZE, "%" PRIu32, concentration_int);
-        canvas_set_font(canvas, FontBigNumbers);
+        if(mini) {
+            if(concentration_int <= 999) {
+                snprintf(temp_str, TEMP_STR_SIZE, "%ld", concentration_int);
+                canvas_set_font(canvas, FontBigNumbers);
+                canvas_draw_str_aligned(
+                    canvas, x + frame_w - 3, y + 10, AlignRight, AlignCenter, temp_str);
+            } else if(concentration_int > 999 && concentration_int <= 9999) {
+                snprintf(temp_str, TEMP_STR_SIZE, "%ld", concentration_int / 1000);
+                canvas_set_font(canvas, FontBigNumbers);
+                canvas_draw_str_aligned(
+                    canvas, x + frame_w - 22, y + 10, AlignRight, AlignCenter, temp_str);
+                uint8_t int_len = canvas_string_width(canvas, temp_str);
+                uint8_t a = concentration_int % 1000 / 100;
+                snprintf(temp_str, TEMP_STR_SIZE, ".%dk", a);
+                canvas_set_font(canvas, FontPrimary);
+                canvas_draw_str(canvas, x + 27 + int_len / 2 + 2, y + 10 + 7, temp_str);
+            } else {
+                snprintf(temp_str, TEMP_STR_SIZE, "%ld", concentration_int / 1000);
+                canvas_set_font(canvas, FontBigNumbers);
+                canvas_draw_str_aligned(
+                    canvas, x + frame_w - 14, y + 10, AlignRight, AlignCenter, temp_str);
+                uint8_t int_len = canvas_string_width(canvas, temp_str);
+                canvas_set_font(canvas, FontPrimary);
+                canvas_draw_str(canvas, x + 30 + int_len / 2 + 2, y + 10 + 7, "k");
+            }
+        } else {
+            snprintf(temp_str, TEMP_STR_SIZE, "%ld", concentration_int);
+            canvas_set_font(canvas, FontBigNumbers);
+            canvas_draw_str_aligned(
+                canvas, x + 7 + frame_w / 2, y + 10, AlignCenter, AlignCenter, temp_str);
+        }
     }
-
-    canvas_draw_str_aligned(canvas, x + frame_w - 5, y + 10, AlignRight, AlignCenter, temp_str);
 }

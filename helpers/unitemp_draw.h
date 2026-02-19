@@ -131,5 +131,5 @@ void unitemp_draw_heat_index(
     uint8_t x,
     uint8_t y);
 
-void unitemp_draw_co2(Canvas* canvas, Sensor* sensor, uint8_t x, uint8_t y, Color color);
+void unitemp_draw_co2(Canvas* canvas, Sensor* sensor, uint8_t x, uint8_t y, Color color, bool mini);
 #endif //UNITEMP_DRAW_H_
