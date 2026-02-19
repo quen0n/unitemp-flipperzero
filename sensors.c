@@ -1,6 +1,11 @@
 #include "sensors.h"
 #include "unitemp.h"
 
+#include "./interfaces/i2c_sensor.h"
+#include "./interfaces/onewire_sensor.h"
+#include "./interfaces/singlewire_sensor.h"
+#include "./interfaces/spi_sensor.h"
+
 #include "sensors/DHTxx.h"
 #include "sensors/AM2320.h"
 #include "./sensors/LM75.h"
@@ -195,7 +200,7 @@ bool unitemp_sensors_load(void* context) {
         if(!file_stream_open(
                app->file_stream,
                APP_DATA_PATH(APP_SENSORS_FILENAME),
-               FSAM_READ_WRITE,
+               FSAM_READ,
                FSOM_OPEN_EXISTING)) {
             if(file_stream_get_error(app->file_stream) == FSE_NOT_EXIST) {
                 FURI_LOG_W(APP_NAME, "Missing sensors file");
@@ -276,6 +281,80 @@ bool unitemp_sensors_load(void* context) {
     }
 
     return success;
+}
+bool unitemp_sensors_save(void* context) {
+    if(context == NULL) return false;
+    UnitempApp* app = context;
+    UNITEMP_DEBUG("Saving sensors...");
+
+    //Allocation of memory for a thread
+    app->file_stream = file_stream_alloc(app->storage);
+
+    //Creating a plugin folder
+    storage_common_mkdir(app->storage, APP_DATA_PATH());
+    //Opening a stream
+    if(!file_stream_open(
+           app->file_stream, APP_DATA_PATH(APP_SENSORS_FILENAME), FSAM_WRITE, FSOM_CREATE_ALWAYS)) {
+        FURI_LOG_E(
+            APP_NAME,
+            "An error occurred while saving the sensors file: %d",
+            file_stream_get_error(app->file_stream));
+        //Closing a stream and freeing memory
+        file_stream_close(app->file_stream);
+        stream_free(app->file_stream);
+        return false;
+    }
+
+    //Saving sensors
+    for(uint8_t i = 0; i < unitemp_sensors_get_count(); i++) {
+        Sensor* sensor = unitemp_sensors_get(i);
+        //Replacing a space with ?
+        for(uint8_t i = 0; i < 10; i++) {
+            if(sensor->name[i] == ' ') sensor->name[i] = '?';
+        }
+
+        stream_write_format(
+            app->file_stream,
+            "%s %s %d ",
+            sensor->name,
+            sensor->model->modelname,
+            sensor->temperature_offset);
+
+        if(sensor->model->interface == &singlewire) {
+            stream_write_format(
+                app->file_stream, "%d\n", unitemp_singlewire_sensor_gpio_get(sensor)->num);
+        }
+        if(sensor->model->interface == &unitemp_spi) {
+            uint8_t gpio_num = ((SPISensor*)sensor->instance)->cs_pin->num;
+            stream_write_format(app->file_stream, "%d\n", gpio_num);
+        }
+
+        if(sensor->model->interface == &unitemp_i2c) {
+            stream_write_format(
+                app->file_stream, "%X\n", ((I2CSensor*)sensor->instance)->current_i2c_adress);
+        }
+        if(sensor->model->interface == &unitemp_1w) {
+            stream_write_format(
+                app->file_stream,
+                "%d %02X%02X%02X%02X%02X%02X%02X%02X\n",
+                ((OneWireSensor*)sensor->instance)->bus->bus_pin->num,
+                ((OneWireSensor*)sensor->instance)->deviceID[0],
+                ((OneWireSensor*)sensor->instance)->deviceID[1],
+                ((OneWireSensor*)sensor->instance)->deviceID[2],
+                ((OneWireSensor*)sensor->instance)->deviceID[3],
+                ((OneWireSensor*)sensor->instance)->deviceID[4],
+                ((OneWireSensor*)sensor->instance)->deviceID[5],
+                ((OneWireSensor*)sensor->instance)->deviceID[6],
+                ((OneWireSensor*)sensor->instance)->deviceID[7]);
+        }
+    }
+
+    //Closing a stream and freeing memory
+    file_stream_close(app->file_stream);
+    stream_free(app->file_stream);
+
+    FURI_LOG_I(APP_NAME, "Sensors have been successfully saved");
+    return true;
 }
 
 bool unitemp_sensors_init(void* context) {
