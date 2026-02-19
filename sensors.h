@@ -165,6 +165,12 @@ uint8_t unitemp_sensors_get_count(void);
 bool unitemp_sensors_load(void* ctx);
 
 /**
+ * @brief Saving sensors to SD card
+ * @return True if save was successful
+ */
+bool unitemp_sensors_save(void* ctx);
+
+/**
  * @brief Initializing loaded sensors
  * @param ctx Pointer to application context
  * @return true if everything went well

@@ -195,6 +195,7 @@ bool unitemp_sensors_load(void* context) {
     app->file_stream = file_stream_alloc(app->storage);
 
     bool success = false;
+    bool migration = false;
 
     do {
         if(!file_stream_open(
@@ -203,8 +204,19 @@ bool unitemp_sensors_load(void* context) {
                FSAM_READ,
                FSOM_OPEN_EXISTING)) {
             if(file_stream_get_error(app->file_stream) == FSE_NOT_EXIST) {
-                FURI_LOG_W(APP_NAME, "Missing sensors file");
-                break;
+                file_stream_close(app->file_stream);
+                FURI_LOG_W(
+                    APP_NAME,
+                    "Missing sensors file. Trying to read a file in the old directory...");
+                if(!file_stream_open(
+                       app->file_stream,
+                       "/ext/unitemp/sensors.cfg",
+                       FSAM_READ,
+                       FSOM_OPEN_EXISTING)) {
+                    FURI_LOG_W(APP_NAME, "The old sensor file is missing");
+                    break;
+                }
+                migration = true;
             } else {
                 FURI_LOG_E(
                     APP_NAME,
@@ -278,6 +290,15 @@ bool unitemp_sensors_load(void* context) {
         FURI_LOG_I(APP_NAME, "Loaded %d sensors from file.", unitemp_sensors_get_count());
     } else {
         FURI_LOG_E(APP_NAME, "Failed to load sensors");
+    }
+    if(migration) {
+        unitemp_sensors_save(app);
+        FS_Error error = storage_simply_remove_recursive(app->storage, "/ext/unitemp");
+        if(error == FSE_OK) {
+            FURI_LOG_I(APP_NAME, "Old Unitemp folder deleted successfully");
+        } else {
+            FURI_LOG_W(APP_NAME, "Failed to delete old Unitemp folder. Error: %d", error);
+        }
     }
 
     return success;

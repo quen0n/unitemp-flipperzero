@@ -3,7 +3,7 @@
 - General code quality improvements. Use of native Flipper Zero firmware libraries in the GUI and sensor drivers
 - Fixed memory leaks
 - Sensor polling and screen rendering now occur asynchronously in separate threads
-- Configuration and save files moved to apps_data
+- Configuration and save files moved to apps_data. Saved sensors will be moved automatically
 - On first application launch, measurement units will be automatically selected based on system localization settings
 - Saving the config is done only when it is initially created or subsequently modified
 - The backlight glows indefinitely only when displaying sensor values. In the menu, the backlight will off according to the system settings
@@ -12,14 +12,13 @@
 - The 1-wire driver has been rewritten using native Flipper Zero firmware features
 - The display of CO2 concentration values ​​in the air has been improved. The ability to display the heat index along with the CO2 value has been added
 
+TODO: поковыряться в драйвере SCD40 и исправить неверно возвращаемые статусы
 TODO: пока датчик не получил все значения, отображать счастливый флиппер и сообщение "Polling" или что-то подобное
 TODO: индикатор состояния среды (светодиодная индикация, звуковая сигнализация)
-TODO: загрузка и сохранение датчиков
 TODO: сцена редактирования датчика
 TODO: сцена редактирования имени датчика
 TODO: доделать добавление датчиков
 
-TODO: мигратор с старого конфига на новый
 TODO: в хелпе описать что такое heat index, dew point
 TODO: в readme добавить краткий гайд по использованию и основным фичам
 TODO: в readme у изображений удалить фон, добавить уже поддерживаемые датчики
