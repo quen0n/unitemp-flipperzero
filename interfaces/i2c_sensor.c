@@ -144,8 +144,5 @@ bool unitemp_i2c_sensor_free(Sensor* sensor) {
 }
 
 SensorStatus unitemp_i2c_sensor_update(Sensor* sensor) {
-    if(sensor->status != UT_SENSORSTATUS_OK) {
-        sensor->model->initializer(sensor);
-    }
     return sensor->model->updater(sensor);
 }

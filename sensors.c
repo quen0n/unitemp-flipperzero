@@ -115,8 +115,8 @@ Sensor* unitemp_sensor_alloc(char* name, const SensorModel* model, char* args) {
     strcpy(sensor->name, name);
     //Sensor model
     sensor->model = model;
-    //Status sensor by default - error
-    sensor->status = UT_SENSORSTATUS_ERROR;
+    //Status sensor by default
+    sensor->status = UT_SENSORSTATUS_UNINITIALIZED;
     //Time of last poll
     sensor->lastPollingTime =
         furi_get_tick() - 10000; //so that the first survey occurs as early as possible
@@ -378,6 +378,16 @@ bool unitemp_sensors_save(void* context) {
     return true;
 }
 
+bool unitemp_sensor_init(Sensor* sensor) {
+    bool result = sensor->model->initializer(sensor);
+    if(result) {
+        sensor->status = UT_SENSORSTATUS_INITIALIZED;
+    } else {
+        sensor->status = UT_SENSORSTATUS_UNINITIALIZED;
+    }
+    return result;
+}
+
 bool unitemp_sensors_init(void* context) {
     if(context == NULL) return false;
     UnitempApp* app = context;
@@ -392,11 +402,12 @@ bool unitemp_sensors_init(void* context) {
             power_enable_otg(app->power, true);
         }
 
-        if(!(*sensors_list[i]->model->initializer)(sensors_list[i])) {
+        if(!unitemp_sensor_init(sensors_list[i])) {
             FURI_LOG_E(
                 APP_NAME,
                 "An error occurred during sensor initialization %s",
                 sensors_list[i]->name);
+
             result = false;
         } else {
             FURI_LOG_I(APP_NAME, "Sensor %s successfully initialized", sensors_list[i]->name);
@@ -424,6 +435,7 @@ bool unitemp_sensors_deinit(void* context) {
             result = false;
         } else {
             FURI_LOG_I(APP_NAME, "Sensor %s successfully deinitialized", sensors_list[i]->name);
+            sensors_list[i]->status = UT_SENSORSTATUS_UNINITIALIZED;
         }
     }
 
@@ -441,6 +453,11 @@ SensorStatus unitemp_sensor_update(Sensor* sensor, void* context) {
     if(sensor->status == UT_SENSORSTATUS_INACTIVE) {
         return UT_SENSORSTATUS_INACTIVE;
     }
+
+    if(sensor->status == UT_SENSORSTATUS_UNINITIALIZED) {
+        if(!unitemp_sensor_init(sensor)) return UT_SENSORSTATUS_UNINITIALIZED;
+    }
+
     UnitempApp* app = context;
 
     //Checking the validity of the sensor polling

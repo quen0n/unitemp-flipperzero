@@ -41,6 +41,8 @@ typedef enum {
     UT_SENSORSTATUS_ERROR, //Other errors
     UT_SENSORSTATUS_POLLING, //A transformation occurs in the sensor
     UT_SENSORSTATUS_INACTIVE, //The sensor is being edited or deleted
+    UT_SENSORSTATUS_UNINITIALIZED,
+    UT_SENSORSTATUS_INITIALIZED,
 } SensorStatus;
 
 typedef struct Sensor Sensor;
@@ -141,6 +143,8 @@ Sensor* unitemp_sensor_alloc(char* name, const SensorModel* type, char* args);
  * @param sensor Pointer to sensor
  */
 void unitemp_sensor_free(Sensor* sensor);
+
+bool unitemp_sensor_init(Sensor* sensor);
 
 /**
  * @brief Add sensor to general list

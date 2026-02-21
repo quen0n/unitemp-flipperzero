@@ -11,8 +11,11 @@
 - It is now possible to disable automatic 5V power supply to port 1 in the settings
 - The 1-wire driver has been rewritten using native Flipper Zero firmware features
 - The display of CO2 concentration values ​​in the air has been improved. The ability to display the heat index along with the CO2 value has been added
+- Добавлена проверка инициализации всех датчиков и реинициализация при ошибке
+- Драйвер SCD30 переписан
 
-TODO: поковыряться в драйвере SCD40 и исправить неверно возвращаемые статусы
+TODO: печать чёрточек в CO2 если значения ещё не готовы
+TODO: реинициализация датчиков по каким-то условиям
 TODO: пока датчик не получил все значения, отображать счастливый флиппер и сообщение "Polling" или что-то подобное
 TODO: индикатор состояния среды (светодиодная индикация, звуковая сигнализация)
 TODO: сцена редактирования датчика
