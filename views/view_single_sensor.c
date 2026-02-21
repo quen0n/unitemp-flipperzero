@@ -91,6 +91,15 @@ static void _draw_sensor_not_responding(Canvas* canvas, Sensor* sensor) {
     canvas_draw_str_aligned(canvas, 65, 19, AlignCenter, AlignCenter, temp_str);
 }
 
+static void _draw_sensor_polling(Canvas* canvas, Sensor* sensor) {
+    UNUSED(sensor);
+    canvas_draw_icon(canvas, 34, 23, &I_flipper_happy_60x38);
+
+    canvas_set_font(canvas, FontSecondary);
+
+    canvas_draw_str_aligned(canvas, 65, 19, AlignCenter, AlignCenter, "Reading values...");
+}
+
 void single_sensor_draw_sensor(Canvas* canvas, Sensor* sensor, SingleSensorViewModel* view_model) {
     UnitempSettings* settings = ((UnitempApp*)(view_model->context))->settings;
 
@@ -236,7 +245,12 @@ void single_sensor_draw_sensor(Canvas* canvas, Sensor* sensor, SingleSensorViewM
             FURI_LOG_E(APP_NAME, "Unknown data type %d", sensor->model->data_type);
         }
     } else {
-        _draw_sensor_not_responding(canvas, sensor);
+        if((sensor->status == UT_SENSORSTATUS_POLLING && sensor->temperature == -128.0f) ||
+           (sensor->status == UT_SENSORSTATUS_INITIALIZED)) {
+            _draw_sensor_polling(canvas, sensor);
+        } else {
+            _draw_sensor_not_responding(canvas, sensor);
+        }
     }
 }
 
