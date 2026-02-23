@@ -101,8 +101,8 @@ bool unitemp_ds18x2x_sensor_init(Sensor* sensor) {
 
     bool result = false;
     if(instance->family_code == FC_DS18B20 || instance->family_code == FC_DS1822) {
+        FURI_CRITICAL_ENTER();
         do {
-            FURI_CRITICAL_ENTER();
             //Setting the bit depth to 10 bits
             if(!unitemp_onewire_bus_start(instance->bus)) {
                 UNITEMP_DEBUG(
@@ -133,8 +133,8 @@ bool unitemp_ds18x2x_sensor_init(Sensor* sensor) {
             unitemp_onewire_bus_select_device(instance->bus, instance->deviceID);
             unitemp_onewire_bus_write(instance->bus, 0x48); //Write to EEPROM
             result = true;
-            FURI_CRITICAL_EXIT();
         } while(0);
+        FURI_CRITICAL_EXIT();
     } else {
         result = true;
     }
@@ -162,19 +162,6 @@ SensorStatus unitemp_ds18x2x_sensor_update(Sensor* sensor) {
     uint8_t buff[9] = {0};
     //TODO: проверить возможность переделки способа опроса. После получения значения не дожидаться следующих 750 мс и сразу запускать измерение
     if(sensor->status != UT_SENSORSTATUS_POLLING) {
-        //If the sensor did not respond last time, check its presence on the tire
-        if(sensor->status == UT_SENSORSTATUS_TIMEOUT || sensor->status == UT_SENSORSTATUS_BADCRC) {
-            if(!unitemp_onewire_bus_start(instance->bus)) return UT_SENSORSTATUS_TIMEOUT;
-            unitemp_onewire_bus_select_device(instance->bus, instance->deviceID);
-            unitemp_onewire_bus_write(
-                instance->bus, DS18B20_CMD_READ_SCRATCHPAD); // Read Scratch-pad
-            unitemp_onewire_bus_read_bytes(instance->bus, buff, 9);
-            if(!unitemp_onewire_CRC_check(buff, 9)) {
-                UNITEMP_DEBUG("Sensor %s is not found", sensor->name);
-                return UT_SENSORSTATUS_TIMEOUT;
-            }
-        }
-
         if(!unitemp_onewire_bus_start(instance->bus)) return UT_SENSORSTATUS_TIMEOUT;
         //Starting conversion on all sensors in passive power mode
         unitemp_onewire_bus_write(instance->bus, DS18B20_CMD_SKIP_ROM); // skip addr
@@ -189,7 +176,6 @@ SensorStatus unitemp_ds18x2x_sensor_update(Sensor* sensor) {
         unitemp_onewire_bus_write(instance->bus, DS18B20_CMD_CONVERT); // convert t
 
         unitemp_onewire_bus_strong_mode(instance->bus, true);
-
         return UT_SENSORSTATUS_POLLING;
     } else {
         unitemp_onewire_bus_strong_mode(instance->bus, false);

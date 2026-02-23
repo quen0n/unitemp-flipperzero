@@ -259,6 +259,11 @@ static void unitemp_run(UnitempApp* app) {
 
 static void unitemp_stop(UnitempApp* app) {
     furi_check(app);
+    /* Signal the reader thread to cease operation and exit */
+    //furi_thread_flags_set(furi_thread_get_id(app->reader_thread), UnitempThreadFlagExit);
+
+    /* Wait for the reader thread to finish */
+    //furi_thread_join(app->reader_thread);
 
     unitemp_sensors_deinit(app);
 }

@@ -53,7 +53,7 @@ UnitempOneWireBus* unitemp_onewire_bus_alloc(const SensorGpioPin* gpio_pin) {
 void unitemp_onewire_bus_free(UnitempOneWireBus* unitemp_one_wire_bus) {
     if(unitemp_one_wire_bus != NULL) {
         if(unitemp_one_wire_bus->devices_count == 0) {
-            onewire_host_free(unitemp_one_wire_bus->host);
+            if(unitemp_one_wire_bus->host != NULL) onewire_host_free(unitemp_one_wire_bus->host);
             free(unitemp_one_wire_bus);
         }
     }
