@@ -101,11 +101,16 @@ bool unitemp_ds18x2x_sensor_init(Sensor* sensor) {
 
     bool result = false;
     if(instance->family_code == FC_DS18B20 || instance->family_code == FC_DS1822) {
-        for(;;) {
+        do {
             FURI_CRITICAL_ENTER();
             //Setting the bit depth to 10 bits
-            if(!unitemp_onewire_bus_start(instance->bus)) break;
-
+            if(!unitemp_onewire_bus_start(instance->bus)) {
+                UNITEMP_DEBUG(
+                    "Failed to start bus %s for sensor %s",
+                    instance->bus->bus_pin->name,
+                    sensor->name);
+                break;
+            }
             unitemp_onewire_bus_select_device(instance->bus, instance->deviceID);
 
             unitemp_onewire_bus_write(instance->bus, 0x4E); //Memory recording
@@ -118,14 +123,23 @@ bool unitemp_ds18x2x_sensor_init(Sensor* sensor) {
             unitemp_onewire_bus_write_bytes(instance->bus, buff, 3);
 
             //Stores values ​​in EEPROM for automatic recovery after power failures
-            if(!unitemp_onewire_bus_start(instance->bus)) break;
+            if(!unitemp_onewire_bus_start(instance->bus)) {
+                UNITEMP_DEBUG(
+                    "Failed to start bus %s for sensor %s after data writing",
+                    instance->bus->bus_pin->name,
+                    sensor->name);
+                break;
+            }
             unitemp_onewire_bus_select_device(instance->bus, instance->deviceID);
             unitemp_onewire_bus_write(instance->bus, 0x48); //Write to EEPROM
             result = true;
             FURI_CRITICAL_EXIT();
-            break;
-        }
+        } while(0);
+    } else {
+        result = true;
     }
+
+    if(!result) unitemp_onewire_bus_deinit(instance->bus);
 
     return result;
 }
@@ -146,6 +160,7 @@ SensorStatus unitemp_ds18x2x_sensor_update(Sensor* sensor) {
 
     OneWireSensor* instance = sensor->instance;
     uint8_t buff[9] = {0};
+    //TODO: проверить возможность переделки способа опроса. После получения значения не дожидаться следующих 750 мс и сразу запускать измерение
     if(sensor->status != UT_SENSORSTATUS_POLLING) {
         //If the sensor did not respond last time, check its presence on the tire
         if(sensor->status == UT_SENSORSTATUS_TIMEOUT || sensor->status == UT_SENSORSTATUS_BADCRC) {

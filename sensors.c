@@ -118,7 +118,7 @@ Sensor* unitemp_sensor_alloc(char* name, const SensorModel* model, char* args) {
     //Status sensor by default
     sensor->status = UT_SENSORSTATUS_UNINITIALIZED;
     //Time of last poll
-    sensor->lastPollingTime =
+    sensor->last_polling_time =
         furi_get_tick() - 10000; //so that the first survey occurs as early as possible
 
     sensor->temperature = -128.0f;
@@ -454,28 +454,40 @@ SensorStatus unitemp_sensor_update(Sensor* sensor, void* context) {
         return UT_SENSORSTATUS_INACTIVE;
     }
 
-    if(sensor->status == UT_SENSORSTATUS_UNINITIALIZED) {
-        if(!unitemp_sensor_init(sensor)) return UT_SENSORSTATUS_UNINITIALIZED;
-    }
-
     UnitempApp* app = context;
 
     //Checking the validity of the sensor polling
-    if(furi_get_tick() - sensor->lastPollingTime < sensor->model->polling_interval) {
+    if(furi_get_tick() - sensor->last_polling_time < sensor->model->polling_interval) {
         //Return an error if the last sensor poll was unsuccessful
         if(sensor->status == UT_SENSORSTATUS_TIMEOUT) {
             return UT_SENSORSTATUS_TIMEOUT;
         }
         return UT_SENSORSTATUS_EARLYPOOL;
     }
+    sensor->last_polling_time = furi_get_tick();
 
-    sensor->lastPollingTime = furi_get_tick();
+    if(sensor->status == UT_SENSORSTATUS_UNINITIALIZED) {
+        UNITEMP_DEBUG("Attempting to initialize the sensor %s", sensor->name);
+        if(!unitemp_sensor_init(sensor)) {
+            return UT_SENSORSTATUS_UNINITIALIZED;
+        } else {
+            UNITEMP_DEBUG("The sensor %s was initialized successfully", sensor->name);
+        }
+    }
 
     if(app->settings->otg_auto_on && !power_is_otg_enabled(app->power)) {
         power_enable_otg(app->power, true);
     }
 
-    sensor->status = sensor->model->interface->updater(sensor);
+    //Если датчик дважды не ответил, то он переводится в неинициализированные (требуется для BME* и SDC30)
+    SensorStatus status = sensor->model->interface->updater(sensor);
+    if(status == UT_SENSORSTATUS_TIMEOUT && sensor->status == UT_SENSORSTATUS_TIMEOUT) {
+        FURI_LOG_W(
+            APP_NAME, "Sensor %s not responding and was moved to uninitialized", sensor->name);
+        sensor->status = UT_SENSORSTATUS_UNINITIALIZED;
+    } else {
+        sensor->status = status;
+    }
 
     if(sensor->status != UT_SENSORSTATUS_OK && sensor->status != UT_SENSORSTATUS_POLLING) {
         FURI_LOG_W(APP_NAME, "Sensor %s update status %d", sensor->name, sensor->status);

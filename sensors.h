@@ -123,7 +123,7 @@ typedef struct Sensor {
     //Last sensor poll status
     SensorStatus status;
     //Time of the last sensor poll
-    uint32_t lastPollingTime;
+    uint32_t last_polling_time;
     //Sensor instance
     void* instance;
 } Sensor;
