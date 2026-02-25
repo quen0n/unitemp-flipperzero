@@ -47,4 +47,27 @@ void unitemp_gpio_lock(const SensorGpioPin* gpio, const SensorConnectionInterfac
  */
 void unitemp_gpio_unlock(const SensorGpioPin* gpio);
 
+/**
+ * @brief Get a pointer to the port available for the interface by index
+ * @param interface Pointer to interface
+ * @param index Port number (from 0 to unitemp_gpio_getAviablePortsCount())
+ * @param extraport Pointer to an additional port that will be forced to be considered available. 
+ * @return Pointer to an available port
+ */
+const SensorGpioPin* unitemp_gpio_get_aviable_pin(
+    const SensorConnectionInterface* interface,
+    uint8_t index,
+    const SensorGpioPin* extraport);
+
+/**
+ * @brief Get the number of available ports for the specified interface
+ * @param interface Pointer to interface
+ * @return Number of available ports
+ */
+uint8_t unitemp_gpio_get_aviable_pin_count(
+    const SensorConnectionInterface* interface,
+    const SensorGpioPin* extraport);
+
+const SensorGpioPin* unitemp_gpio_get_from_index(uint8_t index);
+
 #endif //UNITEMP_GPIO_H_

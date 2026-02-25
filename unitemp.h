@@ -150,6 +150,7 @@ typedef struct {
     Power* power;
 
     UnitempSettings* settings;
+    Sensor* editable_sensor;
 } UnitempApp;
 
 /* Flags which the reader thread responds to */

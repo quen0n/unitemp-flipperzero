@@ -160,7 +160,7 @@ SensorStatus unitemp_ds18x2x_sensor_update(Sensor* sensor) {
 
     OneWireSensor* instance = sensor->instance;
     uint8_t buff[9] = {0};
-    //TODO: проверить возможность переделки способа опроса. После получения значения не дожидаться следующих 750 мс и сразу запускать измерение
+
     if(sensor->status != UT_SENSORSTATUS_POLLING) {
         if(!unitemp_onewire_bus_start(instance->bus)) return UT_SENSORSTATUS_TIMEOUT;
         //Starting conversion on all sensors in passive power mode

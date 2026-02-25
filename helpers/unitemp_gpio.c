@@ -16,6 +16,10 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 #include "unitemp_gpio.h"
+#include "./interfaces/i2c_sensor.h"
+#include "./interfaces/onewire_sensor.h"
+#include "./interfaces/singlewire_sensor.h"
+#include "./interfaces/spi_sensor.h"
 
 //List of available GPIO pins with their numbers and names
 #define SENSOR_PINS_COUNT (int)(sizeof(gpio_list) / sizeof(const SensorGpioPin))
@@ -47,6 +51,10 @@ const SensorGpioPin* unitemp_gpio_get_from_int(uint8_t number) {
     return NULL;
 }
 
+const SensorGpioPin* unitemp_gpio_get_from_index(uint8_t index) {
+    return &gpio_list[index];
+}
+
 uint8_t unitemp_gpio_to_index(const GpioPin* gpio) {
     if(gpio == NULL) return 255;
 
@@ -66,6 +74,7 @@ void unitemp_gpio_lock(const SensorGpioPin* gpio, const SensorConnectionInterfac
     uint8_t i = unitemp_gpio_to_index(gpio->pin);
     if(i == 255) return;
     gpio_interfaces_list[i] = interface;
+    UNITEMP_DEBUG("%s been locked for interfaces %s", gpio->name, interface->name);
 }
 
 void unitemp_gpio_unlock(const SensorGpioPin* gpio) {
@@ -74,4 +83,98 @@ void unitemp_gpio_unlock(const SensorGpioPin* gpio) {
     uint8_t i = unitemp_gpio_to_index(gpio->pin);
     if(i == 255) return;
     gpio_interfaces_list[i] = NULL;
+}
+
+const SensorGpioPin* unitemp_gpio_get_aviable_pin(
+    const SensorConnectionInterface* interface,
+    uint8_t index,
+    const SensorGpioPin* extraport) {
+    //Check for I2C
+    if(interface == &unitemp_i2c) {
+        if((gpio_interfaces_list[10] == NULL || gpio_interfaces_list[10] == &unitemp_i2c) &&
+           (gpio_interfaces_list[11] == NULL || gpio_interfaces_list[11] == &unitemp_i2c)) {
+            //Return some true
+            return unitemp_gpio_get_from_index(0);
+        } else {
+            return NULL;
+        }
+    }
+    if(interface == &unitemp_spi) {
+        if(!((gpio_interfaces_list[0] == NULL || gpio_interfaces_list[0] == &unitemp_spi) &&
+             (gpio_interfaces_list[1] == NULL || gpio_interfaces_list[1] == &unitemp_spi) &&
+             (gpio_interfaces_list[3] == NULL || gpio_interfaces_list[3] == &unitemp_spi))) {
+            return NULL;
+        }
+    }
+
+    uint8_t aviable_index = 0;
+    for(uint8_t i = 0; i < SENSOR_PINS_COUNT; i++) {
+        //Check for one wire
+        if(interface == &unitemp_1w) {
+            if(((gpio_interfaces_list[i] == NULL || gpio_interfaces_list[i] == &unitemp_1w)) ||
+               (unitemp_gpio_get_from_index(i) == extraport)) {
+                if(aviable_index == index) {
+                    return unitemp_gpio_get_from_index(i);
+                } else {
+                    aviable_index++;
+                }
+            }
+        }
+        //Check for single wire dataline
+        if(interface == &singlewire) {
+            if(gpio_interfaces_list[i] == NULL || unitemp_gpio_get_from_index(i) == extraport) {
+                if(aviable_index == index) {
+                    return unitemp_gpio_get_from_index(i);
+                } else {
+                    aviable_index++;
+                }
+            }
+        }
+        //Check for SPI CS
+        if(interface == &unitemp_spi) {
+            if((gpio_interfaces_list[i] == NULL || unitemp_gpio_get_from_index(i) == extraport) &&
+               i != 0 && i != 1 && i != 3) {
+                if(aviable_index == index) {
+                    return unitemp_gpio_get_from_index(i);
+                } else {
+                    aviable_index++;
+                }
+            }
+        }
+    }
+
+    return NULL;
+}
+
+uint8_t unitemp_gpio_get_aviable_pin_count(
+    const SensorConnectionInterface* interface,
+    const SensorGpioPin* extraport) {
+    uint8_t aviable_ports_count = 0;
+    for(uint8_t i = 0; i < SENSOR_PINS_COUNT; i++) {
+        //Check for one wire
+        if(interface == &unitemp_1w) {
+            if(((gpio_interfaces_list[i] == NULL || gpio_interfaces_list[i] == &unitemp_1w)) ||
+               (unitemp_gpio_get_from_index(i) == extraport)) {
+                aviable_ports_count++;
+            }
+        }
+
+        //Check for single wire
+        if(interface == &singlewire || interface == &unitemp_spi) {
+            if(gpio_interfaces_list[i] == NULL || (unitemp_gpio_get_from_index(i) == extraport)) {
+                UNITEMP_DEBUG("%s pin is aviable", unitemp_gpio_get_from_index(i)->name);
+                aviable_ports_count++;
+            }
+        }
+
+        if(interface == &unitemp_i2c) {
+            if((gpio_interfaces_list[10] == NULL || gpio_interfaces_list[10] == &unitemp_i2c) &&
+               (gpio_interfaces_list[11] == NULL || gpio_interfaces_list[11] == &unitemp_i2c)) {
+                return 2;
+            } else {
+                return 0;
+            }
+        }
+    }
+    return aviable_ports_count;
 }
