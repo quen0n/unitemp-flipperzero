@@ -136,7 +136,27 @@ bool unitemp_ds18x2x_sensor_init(Sensor* sensor) {
         } while(0);
         FURI_CRITICAL_EXIT();
     } else {
-        result = true;
+        FURI_CRITICAL_ENTER();
+        do {
+            if(!unitemp_onewire_bus_start(instance->bus)) {
+                UNITEMP_DEBUG(
+                    "Failed to start bus %s for sensor %s",
+                    instance->bus->bus_pin->name,
+                    sensor->name);
+                break;
+            }
+            uint8_t buff[9];
+            unitemp_onewire_bus_select_device(instance->bus, instance->deviceID);
+            unitemp_onewire_bus_write(
+                instance->bus, DS18B20_CMD_READ_SCRATCHPAD); // Read Scratch-pad
+            unitemp_onewire_bus_read_bytes(instance->bus, buff, 9);
+            if(!unitemp_onewire_CRC_check(buff, 9)) {
+                UNITEMP_DEBUG("Failed CRC check: %s", sensor->name);
+                break;
+            }
+            result = true;
+        } while(0);
+        FURI_CRITICAL_EXIT();
     }
 
     if(!result) unitemp_onewire_bus_deinit(instance->bus);

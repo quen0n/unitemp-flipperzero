@@ -388,6 +388,13 @@ bool unitemp_sensor_init(Sensor* sensor) {
     return result;
 }
 
+bool unitemp_sensor_deinit(Sensor* sensor) {
+    bool result = sensor->model->deinitializer(sensor);
+    sensor->status = UT_SENSORSTATUS_UNINITIALIZED;
+
+    return result;
+}
+
 bool unitemp_sensors_init(void* context) {
     if(context == NULL) return false;
     UnitempApp* app = context;
@@ -427,7 +434,7 @@ bool unitemp_sensors_deinit(void* context) {
 
     //Searching through sensors from the list
     for(uint8_t i = 0; i < unitemp_sensors_get_count(); i++) {
-        if(!(*sensors_list[i]->model->deinitializer)(sensors_list[i])) {
+        if(!(unitemp_sensor_deinit(sensors_list[i]))) {
             FURI_LOG_E(
                 APP_NAME,
                 "An error occurred during sensor deinitialization %s",
@@ -482,9 +489,9 @@ SensorStatus unitemp_sensor_update(Sensor* sensor, void* context) {
     //Если датчик дважды не ответил, то он переводится в неинициализированные (требуется для BME* и SDC30)
     SensorStatus status = sensor->model->interface->updater(sensor);
     if(status == UT_SENSORSTATUS_TIMEOUT && sensor->status == UT_SENSORSTATUS_TIMEOUT) {
+        unitemp_sensor_deinit(sensor);
         FURI_LOG_W(
             APP_NAME, "Sensor %s not responding and was moved to uninitialized", sensor->name);
-        sensor->status = UT_SENSORSTATUS_UNINITIALIZED;
     } else {
         sensor->status = status;
     }

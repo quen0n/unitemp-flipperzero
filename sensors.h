@@ -146,6 +146,8 @@ void unitemp_sensor_free(Sensor* sensor);
 
 bool unitemp_sensor_init(Sensor* sensor);
 
+bool unitemp_sensor_deinit(Sensor* sensor);
+
 /**
  * @brief Add sensor to general list
  * @param sensor Pointer to sensor
