@@ -66,30 +66,15 @@ bool unitemp_scene_sensors_list_on_event(void* context, SceneManagerEvent event)
         do {
             //Checking Sensor Availability
             if(unitemp_gpio_get_aviable_pin(model->interface, 0, NULL) == NULL) {
-                //TODO: попочки-жопочки
                 if(model->interface == &singlewire || model->interface == &unitemp_1w) {
-                    // unitemp_popup(
-                    //     &I_Cry_dolph_55x52,
-                    //     "Sensor is unavailable",
-                    //     "All GPIOs\nare busy",
-                    //     VIEW_ID);
                     UNITEMP_DEBUG("Sensor is unavailable. All GPIOs are busy");
                 } else if(model->interface == &unitemp_i2c) {
-                    // unitemp_popup(
-                    //     &I_Cry_dolph_55x52,
-                    //     "Sensor is unavailable",
-                    //     "GPIOs 15 or 16\nare busy",
-                    //     VIEW_ID);
                     UNITEMP_DEBUG("Sensor is unavailable. GPIOs 15 or 16 are busy");
                 } else if(model->interface == &unitemp_spi) {
-                    // unitemp_popup(
-                    //     &I_Cry_dolph_55x52,
-                    //     "Sensor is unavailable",
-                    //     "GPIOs 15 or 16\nare busy",
-                    //     VIEW_ID);
                     UNITEMP_DEBUG(
                         "Sensor is unavailable. GPIOs 1, 2 or 4 are busy or there are no available pins for CS");
                 }
+                scene_manager_next_scene(app->scene_manager, UnitempSceneUnableToAddSensor);
                 break;
             }
             //Counting available sensors of this type

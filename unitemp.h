@@ -110,6 +110,7 @@ typedef enum {
     CustomEventSwitchToTempOverviewView,
     CustomEventSwitchToSensorInfoView,
     CustomEventTextEditResult,
+    CustonEventBack,
 } UnitempCustomEventEnum;
 
 /* Declaration of structures */
