@@ -26,6 +26,7 @@
 #include <gui/modules/popup.h>
 #include <gui/modules/widget.h>
 #include <gui/modules/variable_item_list.h>
+#include <gui/modules/text_input.h>
 
 #include "scenes/unitemp_scene.h"
 
@@ -73,6 +74,7 @@ typedef enum {
     UnitempViewSingleSensor,
     UnitempViewTempOverview,
     UnitempViewSensorInfo,
+    UnitempViewTextInput,
 
     UnitempViewsCount
 } UnitempView;
@@ -107,6 +109,7 @@ typedef enum {
     CustomEventSwitchToSingleSensorView,
     CustomEventSwitchToTempOverviewView,
     CustomEventSwitchToSensorInfoView,
+    CustomEventTextEditResult,
 } UnitempCustomEventEnum;
 
 /* Declaration of structures */
@@ -135,6 +138,7 @@ typedef struct {
     Widget* widget;
     Submenu* submenu;
     VariableItemList* var_item_list;
+    TextInput* text_input;
     NoSensors* no_sensors;
     SingleSensor* single_sensor;
     TempOverview* temp_overview;

@@ -107,9 +107,9 @@ bool unitemp_scene_sensors_list_on_event(void* context, SceneManagerEvent event)
             }
             //Adding a counter to the name if such a sensor exists
             if(sensor_current_model_count == 0)
-                snprintf(name, 11, "%s", model->modelname);
+                snprintf(name, 11, "%s%c", model->modelname, 0);
             else
-                snprintf(name, 11, "%s_%d", model->modelname, sensor_current_model_count);
+                snprintf(name, 11, "%s_%d%c", model->modelname, sensor_current_model_count, 0);
 
             char* args = malloc(21);
             //Selecting the first available port for single wire and SPI sensor

@@ -189,6 +189,9 @@ static UnitempApp* unitemp_app_alloc(void) {
         UnitempViewVariableList,
         variable_item_list_get_view(app->var_item_list));
 
+    app->text_input = text_input_alloc();
+    view_dispatcher_add_view(
+        app->view_dispatcher, UnitempViewTextInput, text_input_get_view(app->text_input));
     app->no_sensors = no_sensors_alloc(app);
     view_dispatcher_add_view(
         app->view_dispatcher, UnitempViewNoSensors, no_sensors_get_view(app->no_sensors));
@@ -209,6 +212,8 @@ static void unitemp_app_free(UnitempApp* app) {
 
     unitemp_sensors_free();
 
+    view_dispatcher_remove_view(app->view_dispatcher, UnitempViewTextInput);
+    text_input_free(app->text_input);
     view_dispatcher_remove_view(app->view_dispatcher, UnitempViewSensorInfo);
     sensor_info_free(app->sensor_info);
     view_dispatcher_remove_view(app->view_dispatcher, UnitempViewTempOverview);
@@ -259,11 +264,6 @@ static void unitemp_run(UnitempApp* app) {
 
 static void unitemp_stop(UnitempApp* app) {
     furi_check(app);
-    /* Signal the reader thread to cease operation and exit */
-    //furi_thread_flags_set(furi_thread_get_id(app->reader_thread), UnitempThreadFlagExit);
-
-    /* Wait for the reader thread to finish */
-    //furi_thread_join(app->reader_thread);
 
     unitemp_sensors_deinit(app);
 }

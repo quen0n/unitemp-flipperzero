@@ -27,9 +27,13 @@
 #define OFFSET_BUFF_SIZE 5
 static char* offset_buff;
 
+static bool name_edit = false;
+
 static void _name_change_callback(VariableItem* item) {
-    //Sensor* sensor = variable_item_get_context(item);
+    name_edit = true;
+    UnitempApp* app = variable_item_get_context(item);
     variable_item_set_current_value_index(item, 0);
+    scene_manager_next_scene(app->scene_manager, UnitempSceneSensorEditName);
 }
 
 static void _offset_change_callback(VariableItem* item) {
@@ -171,10 +175,21 @@ static void _i2c_addr_change_callback(VariableItem* item) {
     variable_item_set_current_value_text(item, buff);
 }
 
+static void _enter_callback(void* context, uint32_t index) {
+    UnitempApp* app = context;
+    //Name edit
+    if(index == 1) {
+        name_edit = true;
+        scene_manager_next_scene(app->scene_manager, UnitempSceneSensorEditName);
+    }
+}
+
 void unitemp_scene_sensor_edit_on_enter(void* context) {
     UnitempApp* app = context;
     VariableItemList* var_item_list = app->var_item_list;
     VariableItem* item;
+
+    name_edit = false;
 
     Sensor* sensor = app->editable_sensor;
     if(sensor == NULL) {
@@ -184,7 +199,7 @@ void unitemp_scene_sensor_edit_on_enter(void* context) {
 
     offset_buff = malloc(OFFSET_BUFF_SIZE);
 
-    variable_item_list_set_selected_item(var_item_list, 0);
+    variable_item_list_set_enter_callback(var_item_list, _enter_callback, app);
 
     //Sensor model (not editable)
     item = variable_item_list_add(var_item_list, "Model", 1, NULL, NULL);
@@ -196,7 +211,7 @@ void unitemp_scene_sensor_edit_on_enter(void* context) {
 
     //Sensor name
     item = variable_item_list_add(
-        var_item_list, "Name", strlen(sensor->name) > 7 ? 1 : 2, _name_change_callback, sensor);
+        var_item_list, "Name", strlen(sensor->name) > 7 ? 1 : 2, _name_change_callback, app);
     variable_item_set_current_value_index(item, 0);
     variable_item_set_current_value_text(item, sensor->name);
 
@@ -288,21 +303,9 @@ void unitemp_scene_sensor_edit_on_enter(void* context) {
 
 bool unitemp_scene_sensor_edit_on_event(void* context, SceneManagerEvent event) {
     UnitempApp* app = context;
+    UNUSED(app);
+    UNUSED(event);
     bool consumed = false;
-
-    if(event.type == SceneManagerEventTypeCustom) {
-        scene_manager_set_scene_state(app->scene_manager, UnitempSceneSensorEdit, event.event);
-        consumed = true;
-        // if(event.event == SubmenuIndexAddNewSensor) {
-        //     // scene_manager_next_scene(app->scene_manager, UnitempSceneAddNewSensor);
-        // } else if(event.event == SubmenuIndexSettings) {
-        //     scene_manager_next_scene(app->scene_manager, UnitempSceneSettings);
-        // } else if(event.event == SubmenuIndexHelp) {
-        //     scene_manager_next_scene(app->scene_manager, UnitempSceneHelp);
-        // } else if(event.event == SubmenuIndexAbout) {
-        //     scene_manager_next_scene(app->scene_manager, UnitempSceneAbout);
-        // }
-    }
 
     return consumed;
 }
@@ -311,7 +314,9 @@ void unitemp_scene_sensor_edit_on_exit(void* context) {
     UnitempApp* app = context;
     variable_item_list_reset(app->var_item_list);
     free(offset_buff);
-    if(app->editable_sensor != NULL) {
+
+    if(app->editable_sensor != NULL && !name_edit) {
+        variable_item_list_set_selected_item(app->var_item_list, 0);
         unitemp_sensor_free(app->editable_sensor);
     }
 }
