@@ -146,6 +146,8 @@ void unitemp_onewire_bus_read_bytes(UnitempOneWireBus* bus, uint8_t* data, uint8
  */
 bool unitemp_onewire_id_compare(uint8_t* id1, uint8_t* id2);
 
+bool unitemp_onewire_id_exist(uint8_t* id);
+
 /**
  * @brief Get the model name of the sensor on the One Wire bus
  * 
@@ -176,5 +178,7 @@ void unitemp_onewire_bus_enum_init(void);
  * @return Returns a pointer to a buffer containing an eight-byte address value, or NULL if the search is completed
  */
 uint8_t* unitemp_onewire_bus_enum_next(UnitempOneWireBus* bus);
+
+bool unitemp_onewire_scan(OneWireSensor* ow_sensor);
 
 #endif

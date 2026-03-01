@@ -28,6 +28,71 @@
 static char* offset_buff;
 
 static bool name_edit = false;
+static VariableItem* model_item;
+static VariableItem* onewire_scan_item;
+static VariableItem* gpio_pin_item;
+
+static void _onewire_scan_event_callback(void* context) {
+    UnitempApp* app = context;
+    OneWireSensor* ow_sensor = app->editable_sensor->instance;
+    FURI_CRITICAL_ENTER();
+    bool result = unitemp_onewire_scan(ow_sensor);
+    FURI_CRITICAL_EXIT();
+    if(!result) {
+        variable_item_set_current_value_text(onewire_scan_item, "not found");
+    } else {
+        char id_buff[10];
+        snprintf(
+            id_buff,
+            10,
+            "%02X%02X%02X",
+            ow_sensor->deviceID[1],
+            ow_sensor->deviceID[2],
+            ow_sensor->deviceID[3]);
+        variable_item_set_current_value_text(onewire_scan_item, id_buff);
+        variable_item_set_current_value_text(
+            model_item, unitemp_onewire_sensor_get_fc_name(app->editable_sensor));
+    }
+}
+
+static void _gpio_change_event_callback(void* context) {
+    UnitempApp* app = context;
+    Sensor* sensor = app->editable_sensor;
+    uint8_t index = variable_item_get_current_value_index(gpio_pin_item);
+    const SensorGpioPin* gpio_pin = NULL;
+    const SensorConnectionInterface* interface = sensor->model->interface;
+    if(interface == &unitemp_1w) {
+        gpio_pin = ((OneWireSensor*)sensor->instance)->bus->bus_pin;
+    } else if(interface == &singlewire) {
+        gpio_pin = ((SingleWireSensor*)sensor->instance)->data_pin;
+    } else if(interface == &unitemp_spi) {
+        gpio_pin = ((SPISensor*)sensor->instance)->cs_pin;
+    }
+    gpio_pin = unitemp_gpio_get_aviable_pin(interface, index, gpio_pin);
+
+    if(interface == &singlewire) {
+        SingleWireSensor* instance = sensor->instance;
+        instance->data_pin = gpio_pin;
+        variable_item_set_current_value_text(gpio_pin_item, instance->data_pin->name);
+    } else if(interface == &unitemp_spi) {
+        SPISensor* instance = sensor->instance;
+        instance->cs_pin = unitemp_gpio_get_aviable_pin(interface, index, instance->cs_pin);
+        variable_item_set_current_value_text(gpio_pin_item, instance->cs_pin->name);
+    } else if(interface == &unitemp_1w) {
+        OneWireSensor* instance = sensor->instance;
+
+        //removing old bus
+        unitemp_onewire_bus_free(
+            instance
+                ->bus); //This making a problem for developers. The function deinitializes the port and, for example, disables UART or SWD
+        //making new bus
+        const SensorGpioPin* bus_pin =
+            unitemp_gpio_get_aviable_pin(interface, index, instance->bus->bus_pin);
+        instance->bus = unitemp_onewire_bus_alloc(bus_pin);
+
+        variable_item_set_current_value_text(gpio_pin_item, bus_pin->name);
+    }
+}
 
 static void _name_change_callback(VariableItem* item) {
     name_edit = true;
@@ -50,120 +115,15 @@ static void _offset_change_callback(VariableItem* item) {
 }
 
 static void _gpio_change_callback(VariableItem* item) {
-    Sensor* sensor = variable_item_get_context(item);
-    uint8_t index = variable_item_get_current_value_index(item);
-    const SensorGpioPin* gpio_pin = NULL;
-    const SensorConnectionInterface* interface = sensor->model->interface;
-    if(interface == &unitemp_1w) {
-        gpio_pin = ((OneWireSensor*)sensor->instance)->bus->bus_pin;
-    } else if(interface == &singlewire) {
-        gpio_pin = ((SingleWireSensor*)sensor->instance)->data_pin;
-    } else if(interface == &unitemp_spi) {
-        gpio_pin = ((SPISensor*)sensor->instance)->cs_pin;
-    }
-    gpio_pin = unitemp_gpio_get_aviable_pin(interface, index, gpio_pin);
-
-    if(interface == &singlewire) {
-        SingleWireSensor* instance = sensor->instance;
-        instance->data_pin = gpio_pin;
-        variable_item_set_current_value_text(item, instance->data_pin->name);
-    } else if(interface == &unitemp_spi) {
-        SPISensor* instance = sensor->instance;
-        instance->cs_pin = unitemp_gpio_get_aviable_pin(interface, index, instance->cs_pin);
-        variable_item_set_current_value_text(item, instance->cs_pin->name);
-    } else if(interface == &unitemp_1w) {
-        OneWireSensor* instance = sensor->instance;
-        instance->bus->bus_pin =
-            unitemp_gpio_get_aviable_pin(interface, index, instance->bus->bus_pin);
-        variable_item_set_current_value_text(item, instance->bus->bus_pin->name);
-    }
+    UnitempApp* app = variable_item_get_context(item);
+    view_dispatcher_send_custom_event(app->view_dispatcher, CustomEventGPIOChanged);
 }
 
-// bool _onewire_id_exist(uint8_t* id) {
-//     if(id == NULL) return false;
-//     for(uint8_t i = 0; i < unitemp_sensors_get_count(); i++) {
-//         if(unitemp_sensors_get(i)->model->interface == &unitemp_1w) {
-//             if(unitemp_onewire_id_compare(
-//                    id, ((OneWireSensor*)(unitemp_sensors_get(i)->instance))->deviceID)) {
-//                 return true;
-//             }
-//         }
-//     }
-//     return false;
-// }
-
-// static void _onewire_scan(OneWireSensor* ow_sensor) {
-//     UNITEMP_DEBUG(
-//         "devices on wire %d: %d", ow_sensor->bus->bus_pin->num, ow_sensor->bus->devices_count);
-
-//     //One wire bus scan
-//     unitemp_onewire_bus_init(ow_sensor->bus);
-//     uint8_t* id = NULL;
-//     do {
-//         id = unitemp_onewire_bus_enum_next(ow_sensor->bus);
-//     } while(_onewire_id_exist(id));
-
-//     if(id == NULL) {
-//         unitemp_onewire_bus_enum_init();
-//         id = unitemp_onewire_bus_enum_next(ow_sensor->bus);
-//         if(_onewire_id_exist(id)) {
-//             do {
-//                 id = unitemp_onewire_bus_enum_next(ow_sensor->bus);
-//             } while(_onewire_id_exist(id) && id != NULL);
-//         }
-//         if(id == NULL) {
-//             memset(ow_sensor->deviceID, 0, 8);
-//             ow_sensor->family_code = 0;
-//             unitemp_onewire_bus_deinit(ow_sensor->bus);
-//             //TODO: чо за костыли и ваще чозабретто
-//             //variable_item_set_current_value_text(onewire_addr_item, "empty");
-//             //variable_item_set_current_value_text(
-//             //  onewire_type_item, unitemp_onewire_sensor_getModel(editable_sensor));
-//             return;
-//         }
-//     }
-
-//     unitemp_onewire_bus_deinit(ow_sensor->bus);
-
-//     memcpy(ow_sensor->deviceID, id, 8);
-//     ow_sensor->family_code = id[0];
-
-//     UNITEMP_DEBUG(
-//         "Found sensor's ID: %02X%02X%02X%02X%02X%02X%02X%02X",
-//         id[0],
-//         id[1],
-//         id[2],
-//         id[3],
-//         id[4],
-//         id[5],
-//         id[6],
-//         id[7]);
-
-//     if(ow_sensor->family_code != 0) {
-//         char id_buff[10];
-//         snprintf(
-//             id_buff,
-//             10,
-//             "%02X%02X%02X",
-//             ow_sensor->deviceID[1],
-//             ow_sensor->deviceID[2],
-//             ow_sensor->deviceID[3]);
-//         //And it doesn’t climb anymore(
-//         //TODO: чо за костыли
-//         //variable_item_set_current_value_text(onewire_addr_item, id_buff);
-//     } else {
-//         //TODO: чо за костыли
-//         //variable_item_set_current_value_text(onewire_addr_item, "empty");
-//     } //TODO: чо за костыли
-//     //variable_item_set_current_value_text(
-//     //onewire_type_item, unitemp_onewire_sensor_getModel(editable_sensor));
-// }
-
-// static void _onwire_addr_change_callback(VariableItem* item) {
-//     Sensor* sensor = variable_item_get_context(item);
-//     variable_item_set_current_value_index(item, 0);
-//     _onewire_scan(sensor->instance);
-// }
+static void _onwire_addr_change_callback(VariableItem* item) {
+    UnitempApp* app = variable_item_get_context(item);
+    variable_item_set_current_value_index(onewire_scan_item, 0);
+    view_dispatcher_send_custom_event(app->view_dispatcher, CustomEventOneWireScan);
+}
 
 static void _i2c_addr_change_callback(VariableItem* item) {
     Sensor* sensor = variable_item_get_context(item);
@@ -181,6 +141,9 @@ static void _enter_callback(void* context, uint32_t index) {
     if(index == 1) {
         name_edit = true;
         scene_manager_next_scene(app->scene_manager, UnitempSceneSensorEditName);
+    }
+    if(index == 3 && app->editable_sensor->model->interface == &unitemp_1w) {
+        view_dispatcher_send_custom_event(app->view_dispatcher, CustomEventOneWireScan);
     }
 }
 
@@ -201,19 +164,19 @@ void unitemp_scene_sensor_edit_on_enter(void* context) {
 
     variable_item_list_set_enter_callback(var_item_list, _enter_callback, app);
 
-    //Sensor model (not editable)
-    item = variable_item_list_add(var_item_list, "Model", 1, NULL, NULL);
-    variable_item_set_current_value_index(item, 0);
-    variable_item_set_current_value_text(
-        item,
-        (sensor->model->interface == &unitemp_1w ? unitemp_onewire_sensor_get_fc_name(sensor) :
-                                                   sensor->model->modelname));
-
     //Sensor name
     item = variable_item_list_add(
         var_item_list, "Name", strlen(sensor->name) > 7 ? 1 : 2, _name_change_callback, app);
     variable_item_set_current_value_index(item, 0);
     variable_item_set_current_value_text(item, sensor->name);
+
+    //Sensor model (not editable)
+    model_item = variable_item_list_add(var_item_list, "Model", 1, NULL, NULL);
+    variable_item_set_current_value_index(model_item, 0);
+    variable_item_set_current_value_text(
+        model_item,
+        (sensor->model->interface == &unitemp_1w ? unitemp_onewire_sensor_get_fc_name(sensor) :
+                                                   sensor->model->modelname));
 
     char buff[11];
     //Device address on the I2C bus (for I2C sensors)
@@ -231,10 +194,10 @@ void unitemp_scene_sensor_edit_on_enter(void* context) {
             (((I2CSensor*)sensor->instance)->current_i2c_adress >> 1) -
                 (((I2CSensor*)sensor->instance)->min_i2c_adress >> 1));
         variable_item_set_current_value_text(item, buff);
-    } else if(
-        sensor->model->interface == &unitemp_1w || sensor->model->interface == &singlewire ||
-        sensor->model->interface == &unitemp_spi) {
-        //Sensor connection port (for one wire, SPI and single wire)
+    }
+    //Sensor connection port (for one wire, SPI and single wire)
+    if(sensor->model->interface == &unitemp_1w || sensor->model->interface == &singlewire ||
+       sensor->model->interface == &unitemp_spi) {
         const SensorGpioPin* gpio_pin = NULL;
         if(sensor->model->interface == &unitemp_1w) {
             gpio_pin = ((OneWireSensor*)sensor->instance)->bus->bus_pin;
@@ -249,12 +212,12 @@ void unitemp_scene_sensor_edit_on_enter(void* context) {
         uint8_t aviable_gpio_count =
             unitemp_gpio_get_aviable_pin_count(sensor->model->interface, gpio_pin);
         UNITEMP_DEBUG("aviable %d values", aviable_gpio_count);
-        item = variable_item_list_add(
+        gpio_pin_item = variable_item_list_add(
             var_item_list,
             sensor->model->interface == &unitemp_spi ? "CS pin" : "Data pin",
             aviable_gpio_count,
             _gpio_change_callback,
-            sensor);
+            app);
 
         uint8_t gpio_index = 0;
         for(uint8_t i = 0; i < aviable_gpio_count; i++) {
@@ -263,28 +226,28 @@ void unitemp_scene_sensor_edit_on_enter(void* context) {
                 break;
             }
         }
-        variable_item_set_current_value_index(item, gpio_index);
-        variable_item_set_current_value_text(item, gpio_pin->name);
+        variable_item_set_current_value_index(gpio_pin_item, gpio_index);
+        variable_item_set_current_value_text(gpio_pin_item, gpio_pin->name);
     }
 
-    // // Device address on the one wire bus (for one wire sensors)
-    // if(sensor->model->interface == &unitemp_1w) {
-    //     item = variable_item_list_add(
-    //         var_item_list, "Address", 2, _onwire_addr_change_callback, sensor);
-    //     OneWireSensor* ow_sensor = sensor->instance;
-    //     if(ow_sensor->family_code == 0) {
-    //         variable_item_set_current_value_text(item, "Scan");
-    //     } else {
-    //         snprintf(
-    //             buff,
-    //             10,
-    //             "%02X%02X%02X",
-    //             ow_sensor->deviceID[1],
-    //             ow_sensor->deviceID[2],
-    //             ow_sensor->deviceID[3]);
-    //         variable_item_set_current_value_text(item, buff);
-    //     }
-    // }
+    // Device address on the one wire bus (for one wire sensors)
+    if(sensor->model->interface == &unitemp_1w) {
+        onewire_scan_item =
+            variable_item_list_add(var_item_list, "Address", 2, _onwire_addr_change_callback, app);
+        OneWireSensor* ow_sensor = sensor->instance;
+        if(ow_sensor->family_code == 0) {
+            variable_item_set_current_value_text(onewire_scan_item, "Scan");
+        } else {
+            snprintf(
+                buff,
+                10,
+                "%02X%02X%02X",
+                ow_sensor->deviceID[1],
+                ow_sensor->deviceID[2],
+                ow_sensor->deviceID[3]);
+            variable_item_set_current_value_text(onewire_scan_item, buff);
+        }
+    }
 
     //Temperature offset
     item =
@@ -303,9 +266,21 @@ void unitemp_scene_sensor_edit_on_enter(void* context) {
 
 bool unitemp_scene_sensor_edit_on_event(void* context, SceneManagerEvent event) {
     UnitempApp* app = context;
-    UNUSED(app);
-    UNUSED(event);
     bool consumed = false;
+    if(event.type == SceneManagerEventTypeCustom) {
+        consumed = true;
+        if(event.event == CustomEventOneWireScan) {
+            _onewire_scan_event_callback(app);
+        } else if(event.event == CustomEventGPIOChanged) {
+            _gpio_change_event_callback(app);
+        }
+        //мегажоский костыль
+        //дисплей обновляется только по нажатиям на клавиши влево-вправо. если работать через события, то дисплей обновится на момент нажатия
+        //после выполнения события дисплей НЕ ОБНОВЛЯЕТСЯ
+        //вот таким способом перерисовываем весь дисплей тогда, когда событие выполнено
+        //хоть бы этот костыль не пизданул с очередным обновлением...
+        view_dispatcher_switch_to_view(app->view_dispatcher, UnitempViewVariableList);
+    }
 
     return consumed;
 }

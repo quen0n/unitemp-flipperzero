@@ -23,7 +23,7 @@
 static void unitemp_scene_unable_to_add_sensor_callback(void* context) {
     UnitempApp* app = context;
     UNUSED(app);
-    view_dispatcher_send_custom_event(app->view_dispatcher, CustonEventBack);
+    view_dispatcher_send_custom_event(app->view_dispatcher, CustomEventBack);
 }
 
 void unitemp_scene_unable_to_add_sensor_on_enter(void* context) {
@@ -53,7 +53,7 @@ bool unitemp_scene_unable_to_add_sensor_on_event(void* context, SceneManagerEven
     bool consumed = false;
     if(event.type == SceneManagerEventTypeCustom) {
         consumed = true;
-        if(event.event == CustonEventBack) {
+        if(event.event == CustomEventBack) {
             scene_manager_search_and_switch_to_previous_scene(
                 app->scene_manager, UnitempSceneSensorsList);
         }

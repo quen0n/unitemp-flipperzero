@@ -50,6 +50,7 @@ UnitempOneWireBus* unitemp_onewire_bus_alloc(const SensorGpioPin* gpio_pin) {
 
     return bus;
 }
+
 void unitemp_onewire_bus_free(UnitempOneWireBus* unitemp_one_wire_bus) {
     if(unitemp_one_wire_bus != NULL) {
         if(unitemp_one_wire_bus->devices_count == 0) {
@@ -62,6 +63,7 @@ void unitemp_onewire_bus_free(UnitempOneWireBus* unitemp_one_wire_bus) {
 bool unitemp_onewire_bus_init(UnitempOneWireBus* bus) {
     if(bus == NULL) return false;
     bus->devices_count++;
+    UNITEMP_DEBUG("Device to bus %s added. Total: %d", bus->bus_pin->name, bus->devices_count);
     //Output if the bus has already been initialized
     if(bus->devices_count > 1) return true;
 
@@ -70,14 +72,14 @@ bool unitemp_onewire_bus_init(UnitempOneWireBus* bus) {
     onewire_host_start(bus->host);
 
     LL_GPIO_SetPinPull(bus->bus_pin->pin->port, bus->bus_pin->pin->pin, LL_GPIO_PULL_UP);
-
+    furi_delay_ms(100);
     return true;
 }
 
 bool unitemp_onewire_bus_deinit(UnitempOneWireBus* bus) {
     if(bus->devices_count == 0) return true;
     bus->devices_count--;
-    UNITEMP_DEBUG("There are %d devices left on bus %s.", bus->devices_count, bus->bus_pin->name);
+    UNITEMP_DEBUG("Device removed from bus %s. Total: %d", bus->bus_pin->name, bus->devices_count);
     if(bus->devices_count == 0) {
         unitemp_gpio_unlock(bus->bus_pin);
         onewire_host_stop(bus->host);
@@ -148,14 +150,6 @@ bool unitemp_onewire_sensor_read_id(OneWireSensor* instance) {
     return true;
 }
 
-bool unitemp_onewire_id_compare(uint8_t* id1, uint8_t* id2) {
-    if(id1 == NULL || id2 == NULL) return false;
-    for(uint8_t i = 0; i < 8; i++) {
-        if(id1[i] != id2[i]) return false;
-    }
-    return true;
-}
-
 char* unitemp_onewire_sensor_get_fc_name(Sensor* sensor) {
     OneWireSensor* ow_sensor = sensor->instance;
     switch(ow_sensor->deviceID[0]) {
@@ -168,6 +162,77 @@ char* unitemp_onewire_sensor_get_fc_name(Sensor* sensor) {
     default:
         return "unknown";
     }
+}
+
+bool unitemp_onewire_id_compare(uint8_t* id1, uint8_t* id2) {
+    if(id1 == NULL || id2 == NULL) return false;
+    for(uint8_t i = 0; i < 8; i++) {
+        if(id1[i] != id2[i]) return false;
+    }
+    return true;
+}
+
+bool unitemp_onewire_id_exist(uint8_t* id) {
+    if(id == NULL) return false;
+    for(uint8_t i = 0; i < unitemp_sensors_get_count(); i++) {
+        if(unitemp_sensors_get(i)->model->interface == &unitemp_1w) {
+            if(unitemp_onewire_id_compare(
+                   id, ((OneWireSensor*)(unitemp_sensors_get(i)->instance))->deviceID)) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+bool unitemp_onewire_scan(OneWireSensor* ow_sensor) {
+    UNITEMP_DEBUG(
+        "Devices on bus %d: %d", ow_sensor->bus->bus_pin->num, ow_sensor->bus->devices_count);
+
+    //One wire bus scan
+    unitemp_onewire_bus_init(ow_sensor->bus);
+    uint8_t* id = NULL;
+    do {
+        id = unitemp_onewire_bus_enum_next(ow_sensor->bus);
+    } while(unitemp_onewire_id_exist(id));
+
+    if(id == NULL) {
+        unitemp_onewire_bus_enum_init();
+        id = unitemp_onewire_bus_enum_next(ow_sensor->bus);
+        if(unitemp_onewire_id_exist(id)) {
+            do {
+                id = unitemp_onewire_bus_enum_next(ow_sensor->bus);
+            } while(unitemp_onewire_id_exist(id) && id != NULL);
+        }
+        if(id == NULL) {
+            memset(ow_sensor->deviceID, 0, 8);
+            ow_sensor->family_code = 0;
+            unitemp_onewire_bus_deinit(ow_sensor->bus);
+
+            return false;
+        }
+    }
+
+    unitemp_onewire_bus_deinit(ow_sensor->bus);
+
+    memcpy(ow_sensor->deviceID, id, 8);
+    ow_sensor->family_code = id[0];
+
+    UNITEMP_DEBUG(
+        "Found sensor's ID: %02X%02X%02X%02X%02X%02X%02X%02X",
+        id[0],
+        id[1],
+        id[2],
+        id[3],
+        id[4],
+        id[5],
+        id[6],
+        id[7]);
+
+    if(ow_sensor->family_code != 0) {
+        return true;
+    }
+    return false;
 }
 
 //Variables for storing the intermediate result of a bus scan
@@ -183,7 +248,6 @@ void unitemp_onewire_bus_enum_init(void) {
 }
 
 uint8_t* unitemp_onewire_bus_enum_next(UnitempOneWireBus* bus) {
-    furi_delay_ms(10);
     if(!onewire_enum_fork_bit) { //If there were no disagreements at the previous step
         UNITEMP_DEBUG("All devices on wire %s is found", bus->bus_pin->name);
         return 0; //then we just leave without returning anything
