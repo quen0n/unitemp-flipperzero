@@ -56,7 +56,9 @@ bool unitemp_scene_sensor_menu_on_event(void* context, SceneManagerEvent event) 
         scene_manager_set_scene_state(app->scene_manager, UnitempSceneMenu, event.event);
         consumed = true;
         if(event.event == SubmenuIndexInfo) {
-            //scene_manager_next_scene(app->scene_manager, );
+            view_dispatcher_send_custom_event(
+                app->view_dispatcher, CustomEventSwitchToSensorInfoView);
+            scene_manager_previous_scene(app->scene_manager);
         } else if(event.event == SubmenuIndexEdit) {
             scene_manager_next_scene(app->scene_manager, UnitempSceneSensorEdit);
         } else if(event.event == SubmenuIndexDelete) {

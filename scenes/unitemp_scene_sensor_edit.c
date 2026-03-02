@@ -178,6 +178,8 @@ void unitemp_scene_sensor_edit_on_enter(void* context) {
 
     variable_item_list_set_enter_callback(var_item_list, _enter_callback, app);
 
+    unitemp_sensor_deinit(sensor);
+
     //Sensor name
     item = variable_item_list_add(
         var_item_list, "Name", strlen(sensor->name) > 7 ? 1 : 2, _name_change_callback, app);
@@ -274,7 +276,7 @@ void unitemp_scene_sensor_edit_on_enter(void* context) {
         (double)(sensor->temperature_offset / 10.0));
     variable_item_set_current_value_text(item, app->txt_buff);
 
-    if(!unitemp_sensor_in_list(app->editable_sensor)) {
+    if(!unitemp_sensor_in_list(sensor)) {
         variable_item_list_add(var_item_list, "Save", 1, NULL, NULL);
     }
 
@@ -306,11 +308,18 @@ void unitemp_scene_sensor_edit_on_exit(void* context) {
     UnitempApp* app = context;
     variable_item_list_reset(app->var_item_list);
 
+    Sensor* sensor = app->editable_sensor;
+
     if(!name_edit) {
         variable_item_list_set_selected_item(app->var_item_list, 0);
         unitemp_sensors_save(app);
     }
-    if(app->editable_sensor != NULL && !unitemp_sensor_in_list(app->editable_sensor)) {
-        unitemp_sensor_free(app->editable_sensor);
+
+    if(sensor != NULL && unitemp_sensor_in_list(sensor)) {
+        unitemp_sensor_init(sensor);
+    }
+
+    if(sensor != NULL && !unitemp_sensor_in_list(sensor)) {
+        unitemp_sensor_free(sensor);
     }
 }

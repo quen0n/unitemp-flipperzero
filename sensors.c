@@ -390,6 +390,10 @@ bool unitemp_sensor_init(Sensor* sensor) {
 }
 
 bool unitemp_sensor_deinit(Sensor* sensor) {
+    if(sensor->status == UT_SENSORSTATUS_UNINITIALIZED) {
+        FURI_LOG_W(APP_NAME, "Sensor %s is already uninitialized!", sensor->name);
+        return true;
+    }
     bool result = sensor->model->deinitializer(sensor);
     sensor->status = UT_SENSORSTATUS_UNINITIALIZED;
 

@@ -182,6 +182,14 @@ static bool sensor_info_input_callback(InputEvent* event, void* context) {
     return consumed;
 }
 
+static uint32_t sensor_info_previous_callback(void* context) {
+    furi_assert(context);
+    SensorInfo* sensor_info = context;
+    UnitempApp* app = sensor_info->context;
+    view_dispatcher_send_custom_event(app->view_dispatcher, CustomEventSwitchToSingleSensorView);
+    return UnitempViewSensorInfo;
+}
+
 SensorInfo* sensor_info_alloc(void* context) {
     UnitempApp* app = context;
     SensorInfo* sensor_info = malloc(sizeof(SensorInfo));
@@ -197,6 +205,7 @@ SensorInfo* sensor_info_alloc(void* context) {
     view_set_context(sensor_info->view, sensor_info);
     view_set_draw_callback(sensor_info->view, sensor_info_draw_callback);
     view_set_input_callback(sensor_info->view, sensor_info_input_callback);
+    view_set_previous_callback(sensor_info->view, sensor_info_previous_callback);
 
     return sensor_info;
 }
