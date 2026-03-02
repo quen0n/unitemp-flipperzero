@@ -48,6 +48,12 @@ void unitemp_submenu_callback(void* context, uint32_t index) {
     view_dispatcher_send_custom_event(app->view_dispatcher, index);
 }
 
+void unitemp_widget_callback(GuiButtonType result, InputType type, void* context) {
+    UnitempApp* app = context;
+    if(type == InputTypeShort) {
+        view_dispatcher_send_custom_event(app->view_dispatcher, result);
+    }
+}
 bool unitemp_settings_load(void* context) {
     if(context == NULL) return false;
 
@@ -146,6 +152,7 @@ static UnitempApp* unitemp_app_alloc(void) {
     app->storage = furi_record_open(RECORD_STORAGE);
     app->power = furi_record_open(RECORD_POWER);
     app->notifications = furi_record_open(RECORD_NOTIFICATION);
+    app->dialogs = furi_record_open(RECORD_DIALOGS);
 
     app->settings = malloc(sizeof(UnitempSettings));
     app->txt_buff = malloc(TEXT_STORE_SIZE);
@@ -235,9 +242,15 @@ static void unitemp_app_free(UnitempApp* app) {
     furi_thread_free(app->reader_thread);
 
     furi_record_close(RECORD_NOTIFICATION);
+    app->notifications = NULL;
     furi_record_close(RECORD_POWER);
+    app->power = NULL;
     furi_record_close(RECORD_GUI);
+    app->gui = NULL;
     furi_record_close(RECORD_STORAGE);
+    app->storage = NULL;
+    furi_record_close(RECORD_DIALOGS);
+    app->dialogs = NULL;
 
     free(app->txt_buff);
     free(app->settings);

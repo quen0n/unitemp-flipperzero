@@ -27,6 +27,7 @@
 #include <gui/modules/widget.h>
 #include <gui/modules/variable_item_list.h>
 #include <gui/modules/text_input.h>
+#include <dialogs/dialogs.h>
 
 #include "scenes/unitemp_scene.h"
 
@@ -142,6 +143,8 @@ typedef struct {
     Submenu* submenu;
     VariableItemList* var_item_list;
     TextInput* text_input;
+    DialogsApp* dialogs;
+
     NoSensors* no_sensors;
     SingleSensor* single_sensor;
     TempOverview* temp_overview;

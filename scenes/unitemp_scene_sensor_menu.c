@@ -62,7 +62,7 @@ bool unitemp_scene_sensor_menu_on_event(void* context, SceneManagerEvent event) 
         } else if(event.event == SubmenuIndexEdit) {
             scene_manager_next_scene(app->scene_manager, UnitempSceneSensorEdit);
         } else if(event.event == SubmenuIndexDelete) {
-            //scene_manager_next_scene(app->scene_manager, );
+            scene_manager_next_scene(app->scene_manager, UnitempSceneDeleteConfirm);
         } else if(event.event == SubmenuIndexAddNewSensor) {
             scene_manager_next_scene(app->scene_manager, UnitempSceneSensorsList);
         } else if(event.event == SubmenuIndexSettings) {
@@ -80,4 +80,5 @@ bool unitemp_scene_sensor_menu_on_event(void* context, SceneManagerEvent event) 
 void unitemp_scene_sensor_menu_on_exit(void* context) {
     UnitempApp* app = context;
     submenu_reset(app->submenu);
+    submenu_set_selected_item(app->submenu, 0);
 }

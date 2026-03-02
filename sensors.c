@@ -166,12 +166,53 @@ void unitemp_sensor_free(Sensor* sensor) {
     free(sensor);
 }
 
-void unitemp_sensors_add(Sensor* sensor) {
+bool unitemp_sensors_add(Sensor* sensor) {
     furi_check(sensor);
 
     sensors_list = (Sensor**)realloc(sensors_list, (sensors_count + 1) * sizeof(Sensor*));
+    if(sensors_list == NULL) {
+        FURI_LOG_E(APP_NAME, "Failed to allocate memory for new sensor");
+        return false;
+    }
     sensors_list[sensors_count] = sensor;
     sensors_count++;
+    return true;
+}
+
+bool unitemp_sensor_delete(Sensor* sensor) {
+    furi_check(sensor);
+
+    uint8_t index_to_remove = 255;
+    for(uint8_t i = 0; i < sensors_count; i++) {
+        if(sensors_list[i] == sensor) {
+            index_to_remove = i;
+            break;
+        }
+    }
+    if(index_to_remove >= sensors_count) {
+        FURI_LOG_E(APP_NAME, "Sensor %s not found in sensor list", sensor->name);
+        return false;
+    }
+
+    unitemp_sensor_deinit(sensor);
+    unitemp_sensor_free(sensor);
+
+    memmove(
+        sensors_list + index_to_remove,
+        sensors_list + index_to_remove + 1,
+        (sensors_count - index_to_remove - 1) * sizeof(Sensor*));
+    sensors_count--;
+    if(sensors_count != 0) {
+        sensors_list = (Sensor**)realloc(sensors_list, (sensors_count) * sizeof(Sensor*));
+        if(sensors_list == NULL) {
+            FURI_LOG_E(APP_NAME, "Failed to reallocate memory");
+            return false;
+        }
+    } else {
+        free(sensors_list);
+    }
+
+    return true;
 }
 
 void unitemp_sensors_free(void) {
@@ -213,8 +254,8 @@ bool unitemp_sensors_load(void* context) {
                        "/ext/unitemp/sensors.cfg",
                        FSAM_READ,
                        FSOM_OPEN_EXISTING)) {
-                    file_stream_close(app->file_stream);
                     FURI_LOG_W(APP_NAME, "The old sensor file is missing");
+                    file_stream_close(app->file_stream);
                     break;
                 }
                 migration = true;
@@ -232,6 +273,7 @@ bool unitemp_sensors_load(void* context) {
         //If the file is empty, then:
         if(file_size == (uint8_t)0) {
             FURI_LOG_W(APP_NAME, "Sensors file is empty");
+            file_stream_close(app->file_stream);
             break;
         }
         UNITEMP_DEBUG("stream size %d", file_size);
@@ -283,10 +325,10 @@ bool unitemp_sensors_load(void* context) {
             }
         }
         file_stream_close(app->file_stream);
-        stream_free(app->file_stream);
         furi_string_free(line);
         success = true;
     } while(0);
+    stream_free(app->file_stream);
 
     if(success) {
         FURI_LOG_I(APP_NAME, "Loaded %d sensors from file.", unitemp_sensors_get_count());

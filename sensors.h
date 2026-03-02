@@ -152,7 +152,7 @@ bool unitemp_sensor_deinit(Sensor* sensor);
  * @brief Add sensor to general list
  * @param sensor Pointer to sensor
  */
-void unitemp_sensors_add(Sensor* sensor);
+bool unitemp_sensors_add(Sensor* sensor);
 
 /**
  * @brief Freeing up the memory of all sensors
@@ -214,6 +214,7 @@ uint8_t unitemp_sensors_models_get_count(void);
 
 void unitemp_sensors_reload(void* context);
 bool unitemp_sensor_in_list(Sensor* sensor);
+bool unitemp_sensor_delete(Sensor* sensor);
 
 int32_t unitemp_sensors_update_callback(void* ctx);
 

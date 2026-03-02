@@ -28,7 +28,7 @@ void unitemp_scene_monitor_on_enter(void* context) {
         notification_message(app->notifications, &sequence_display_backlight_enforce_on);
     }
 
-    if(view_mode == UnitempViewNoSensors) {
+    if(view_mode == UnitempViewNoSensors || unitemp_sensors_get_count() == 0) {
         if(unitemp_sensors_get_count() == 0) {
             view_mode = UnitempViewNoSensors;
         } else if(unitemp_sensors_get_count() == 1) {
