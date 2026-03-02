@@ -68,11 +68,15 @@ static void _gpio_change_event_callback(void* context) {
 
     if(interface == &singlewire) {
         SingleWireSensor* instance = sensor->instance;
+        unitemp_gpio_unlock(instance->data_pin);
         instance->data_pin = gpio_pin;
+        unitemp_gpio_lock(gpio_pin, interface);
         variable_item_set_current_value_text(gpio_pin_item, instance->data_pin->name);
     } else if(interface == &unitemp_spi) {
         SPISensor* instance = sensor->instance;
+        unitemp_gpio_unlock(instance->cs_pin);
         instance->cs_pin = unitemp_gpio_get_aviable_pin(interface, index, instance->cs_pin);
+        unitemp_gpio_lock(gpio_pin, interface);
         variable_item_set_current_value_text(gpio_pin_item, instance->cs_pin->name);
     } else if(interface == &unitemp_1w) {
         OneWireSensor* instance = sensor->instance;
