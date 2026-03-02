@@ -20,6 +20,7 @@
 #include "sensors.h"
 #include "./helpers/unitemp_gpio.h"
 #include "scenes/unitemp_scene.h"
+#include "unitemp_icons.h"
 
 #include "./interfaces/i2c_sensor.h"
 #include "./interfaces/onewire_sensor.h"
@@ -66,15 +67,51 @@ bool unitemp_scene_sensors_list_on_event(void* context, SceneManagerEvent event)
         do {
             //Checking Sensor Availability
             if(unitemp_gpio_get_aviable_pin(model->interface, 0, NULL) == NULL) {
+                DialogMessage* message = dialog_message_alloc();
+                dialog_message_set_icon(
+                    message,
+                    &I_confused_dolph_43x31,
+                    0,
+                    64 - icon_get_height(&I_confused_dolph_43x31));
+                dialog_message_set_header(
+                    message, "Unable to add a sensor", 64, 6, AlignCenter, AlignCenter);
                 if(model->interface == &singlewire || model->interface == &unitemp_1w) {
-                    UNITEMP_DEBUG("Sensor is unavailable. All GPIOs are busy");
+                    dialog_message_set_text(
+                        message,
+                        "All GPIO's are busy",
+                        (128 - icon_get_width(&I_confused_dolph_43x31)) / 2 +
+                            icon_get_width(&I_confused_dolph_43x31),
+                        36,
+                        AlignCenter,
+                        AlignCenter);
+                    UNITEMP_DEBUG("Unable to add a sensor. All GPIOs are busy");
                 } else if(model->interface == &unitemp_i2c) {
-                    UNITEMP_DEBUG("Sensor is unavailable. GPIOs 15 or 16 are busy");
+                    dialog_message_set_text(
+                        message,
+                        "GPIO's 15 or 16\nare busy",
+                        (128 - icon_get_width(&I_confused_dolph_43x31)) / 2 +
+                            icon_get_width(&I_confused_dolph_43x31),
+                        36,
+                        AlignCenter,
+                        AlignCenter);
+                    UNITEMP_DEBUG("Unable to add a sensor. GPIOs 15 or 16 are busy");
                 } else if(model->interface == &unitemp_spi) {
+                    dialog_message_set_text(
+                        message,
+                        "GPIO's 1, 2 or 4\n are busy or there \nare no available pin\nfor CS wire",
+                        (128 - icon_get_width(&I_confused_dolph_43x31)) / 2 +
+                            icon_get_width(&I_confused_dolph_43x31),
+                        36,
+                        AlignCenter,
+                        AlignCenter);
                     UNITEMP_DEBUG(
-                        "Sensor is unavailable. GPIOs 1, 2 or 4 are busy or there are no available pins for CS");
+                        "Unable to add a sensor. GPIOs 1, 2 or 4 are busy or there are no available pins for CS");
                 }
-                scene_manager_next_scene(app->scene_manager, UnitempSceneUnableToAddSensor);
+
+                dialog_message_show(app->dialogs, message);
+                dialog_message_free(message);
+
+                scene_manager_previous_scene(app->scene_manager);
                 break;
             }
             //Counting available sensors of this type
