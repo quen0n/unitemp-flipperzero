@@ -151,6 +151,8 @@ void unitemp_scene_settings_on_enter(void* context) {
     variable_item_set_current_value_index(item, value_index);
     variable_item_set_current_value_text(item, unitemp_scene_settings_off_on_text[value_index]);
 
+    variable_item_list_set_selected_item(app->var_item_list, 0);
+
     view_dispatcher_switch_to_view(app->view_dispatcher, UnitempViewVariableList);
 }
 

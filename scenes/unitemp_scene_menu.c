@@ -36,8 +36,7 @@ void unitemp_scene_menu_on_enter(void* context) {
     submenu_add_item(submenu, "Help", SubmenuIndexHelp, unitemp_submenu_callback, app);
     submenu_add_item(submenu, "About", SubmenuIndexAbout, unitemp_submenu_callback, app);
 
-    submenu_set_selected_item(
-        submenu, scene_manager_get_scene_state(app->scene_manager, UnitempSceneMenu));
+    submenu_set_selected_item(app->submenu, 0);
 
     view_dispatcher_switch_to_view(app->view_dispatcher, UnitempViewSubmenu);
 }
@@ -66,5 +65,4 @@ bool unitemp_scene_menu_on_event(void* context, SceneManagerEvent event) {
 void unitemp_scene_menu_on_exit(void* context) {
     UnitempApp* app = context;
     submenu_reset(app->submenu);
-    submenu_set_selected_item(app->submenu, 0);
 }

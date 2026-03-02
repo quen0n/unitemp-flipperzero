@@ -46,9 +46,6 @@ void unitemp_scene_sensors_list_on_enter(void* context) {
     submenu_add_item(
         submenu, " * Need help? * ", sensor_models_count, unitemp_submenu_callback, app);
 
-    submenu_set_selected_item(
-        submenu, scene_manager_get_scene_state(app->scene_manager, UnitempSceneSensorsList));
-
     view_dispatcher_switch_to_view(app->view_dispatcher, UnitempViewSubmenu);
 }
 
@@ -57,7 +54,6 @@ bool unitemp_scene_sensors_list_on_event(void* context, SceneManagerEvent event)
     bool consumed = false;
 
     if(event.type == SceneManagerEventTypeCustom) {
-        scene_manager_set_scene_state(app->scene_manager, UnitempSceneSensorsList, event.event);
         if(event.event == unitemp_sensors_models_get_count()) {
             scene_manager_next_scene(app->scene_manager, UnitempSceneHelp);
             return true;
