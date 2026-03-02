@@ -172,7 +172,7 @@ void unitemp_scene_sensor_edit_on_enter(void* context) {
 
     Sensor* sensor = app->editable_sensor;
     if(sensor == NULL) {
-        UNITEMP_DEBUG("Editable sensor is NULL!");
+        FURI_LOG_E(APP_NAME, "Editable sensor is NULL!");
         return;
     }
 
@@ -308,8 +308,9 @@ void unitemp_scene_sensor_edit_on_exit(void* context) {
 
     if(!name_edit) {
         variable_item_list_set_selected_item(app->var_item_list, 0);
+        unitemp_sensors_save(app);
     }
-    if(app->editable_sensor != NULL) {
+    if(app->editable_sensor != NULL && !unitemp_sensor_in_list(app->editable_sensor)) {
         unitemp_sensor_free(app->editable_sensor);
     }
 }

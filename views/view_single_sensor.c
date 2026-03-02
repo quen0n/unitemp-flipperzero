@@ -267,7 +267,16 @@ static bool single_sensor_input_callback(InputEvent* event, void* context) {
     bool consumed = false;
 
     if(event->key == InputKeyOk && event->type == InputTypeShort) {
-        scene_manager_next_scene(app->scene_manager, UnitempSceneMenu);
+        with_view_model(
+            single_sensor->view,
+            SingleSensorViewModel * model,
+            {
+                Sensor* sensor = unitemp_sensors_get(model->sensor_index);
+                app->editable_sensor = sensor;
+            },
+            false);
+
+        scene_manager_next_scene(app->scene_manager, UnitempSceneSensorMenu);
         consumed = true;
     } else if(event->key == InputKeyOk && event->type == InputTypeLong) {
         if(++app->settings->temperature_unit >= UT_TEMP_COUNT) app->settings->temperature_unit = 0;
