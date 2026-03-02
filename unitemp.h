@@ -150,7 +150,6 @@ typedef struct {
 
     Storage* storage;
     Stream* file_stream;
-    File* file;
     NotificationApp* notifications;
 
     FuriThread* reader_thread;

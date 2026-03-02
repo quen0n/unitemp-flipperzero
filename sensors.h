@@ -212,6 +212,9 @@ Sensor* unitemp_sensors_get(uint8_t index);
 const SensorModel** unitemp_sensors_models_get(void);
 uint8_t unitemp_sensors_models_get_count(void);
 
+void unitemp_sensors_reload(void* context);
+bool unitemp_sensor_in_list(Sensor* sensor);
+
 int32_t unitemp_sensors_update_callback(void* ctx);
 
 #endif // UNITEMP_SENSORS

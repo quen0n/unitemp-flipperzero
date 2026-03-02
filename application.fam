@@ -7,7 +7,7 @@ App(
     requires=[
         "gui",
     ],
-    stack_size=2 * 1024,
+    stack_size=4 * 1024,
     order=100,
     fap_description="Universal temperature sensors reader",
     fap_version="2.0",

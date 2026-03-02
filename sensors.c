@@ -213,6 +213,7 @@ bool unitemp_sensors_load(void* context) {
                        "/ext/unitemp/sensors.cfg",
                        FSAM_READ,
                        FSOM_OPEN_EXISTING)) {
+                    file_stream_close(app->file_stream);
                     FURI_LOG_W(APP_NAME, "The old sensor file is missing");
                     break;
                 }
@@ -222,6 +223,7 @@ bool unitemp_sensors_load(void* context) {
                     APP_NAME,
                     "An error occurred while loading the sensors file: %d",
                     file_stream_get_error(app->file_stream));
+                file_stream_close(app->file_stream);
                 break;
             }
         }
@@ -232,6 +234,7 @@ bool unitemp_sensors_load(void* context) {
             FURI_LOG_W(APP_NAME, "Sensors file is empty");
             break;
         }
+        UNITEMP_DEBUG("stream size %d", file_size);
 
         FuriString* line = furi_string_alloc();
 
@@ -279,12 +282,11 @@ bool unitemp_sensors_load(void* context) {
                     sensor_model->modelname);
             }
         }
+        file_stream_close(app->file_stream);
+        stream_free(app->file_stream);
         furi_string_free(line);
         success = true;
     } while(0);
-
-    file_stream_close(app->file_stream);
-    stream_free(app->file_stream);
 
     if(success) {
         FURI_LOG_I(APP_NAME, "Loaded %d sensors from file.", unitemp_sensors_get_count());
@@ -303,12 +305,12 @@ bool unitemp_sensors_load(void* context) {
 
     return success;
 }
+
 bool unitemp_sensors_save(void* context) {
     if(context == NULL) return false;
     UnitempApp* app = context;
     UNITEMP_DEBUG("Saving sensors...");
 
-    //Allocation of memory for a thread
     app->file_stream = file_stream_alloc(app->storage);
 
     //Creating a plugin folder
@@ -373,7 +375,6 @@ bool unitemp_sensors_save(void* context) {
     //Closing a stream and freeing memory
     file_stream_close(app->file_stream);
     stream_free(app->file_stream);
-
     FURI_LOG_I(APP_NAME, "Sensors have been successfully saved");
     return true;
 }
@@ -510,4 +511,19 @@ SensorStatus unitemp_sensor_update(Sensor* sensor, void* context) {
         sensor->temperature += sensor->temperature_offset / 10.f;
     }
     return sensor->status;
+}
+
+void unitemp_sensors_reload(void* context) {
+    unitemp_sensors_deinit(context);
+    unitemp_sensors_free();
+
+    unitemp_sensors_load(context);
+    unitemp_sensors_init(context);
+}
+
+bool unitemp_sensor_in_list(Sensor* sensor) {
+    for(uint8_t i = 0; i < unitemp_sensors_get_count(); i++) {
+        if(sensors_list[i] == sensor) return true;
+    }
+    return false;
 }

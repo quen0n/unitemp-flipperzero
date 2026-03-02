@@ -107,7 +107,6 @@ bool unitemp_settings_save(void* context) {
     if(context == NULL) return false;
     UnitempApp* app = context;
     FURI_LOG_I(APP_NAME, "Saving settings...");
-
     FlipperFormat* file = flipper_format_file_alloc(app->storage);
 
     bool result = false;
@@ -137,7 +136,6 @@ bool unitemp_settings_save(void* context) {
     if(!result) {
         FURI_LOG_E(APP_NAME, "Failed to save settings");
     }
-
     UNITEMP_DEBUG("Saving settings  %s", result ? "success" : "failed");
     return result;
 }
@@ -146,7 +144,6 @@ static UnitempApp* unitemp_app_alloc(void) {
     UnitempApp* app = malloc(sizeof(UnitempApp));
 
     app->storage = furi_record_open(RECORD_STORAGE);
-    app->file = storage_file_alloc(app->storage);
     app->power = furi_record_open(RECORD_POWER);
     app->notifications = furi_record_open(RECORD_NOTIFICATION);
 
@@ -155,7 +152,7 @@ static UnitempApp* unitemp_app_alloc(void) {
     app->reader_thread = furi_thread_alloc();
     furi_thread_set_priority(app->reader_thread, FuriThreadPriorityHigh);
     furi_thread_set_name(app->reader_thread, "Sensors poller");
-    furi_thread_set_stack_size(app->reader_thread, 1024U);
+    furi_thread_set_stack_size(app->reader_thread, 2048U);
     furi_thread_set_context(app->reader_thread, app);
     furi_thread_set_callback(app->reader_thread, unitemp_sensors_update_callback);
 
@@ -235,8 +232,6 @@ static void unitemp_app_free(UnitempApp* app) {
     scene_manager_free(app->scene_manager);
 
     furi_thread_free(app->reader_thread);
-
-    storage_file_free(app->file);
 
     furi_record_close(RECORD_NOTIFICATION);
     furi_record_close(RECORD_POWER);

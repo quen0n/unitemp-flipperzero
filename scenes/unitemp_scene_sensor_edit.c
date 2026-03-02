@@ -109,7 +109,7 @@ static void _offset_change_callback(VariableItem* item) {
     snprintf(
         offset_buff,
         OFFSET_BUFF_SIZE,
-        sensor->temperature_offset == 0 ? "%1.1f" : "%+1.1f",
+        sensor->temperature_offset == 0 ? "%1.0f" : "%+1.1f",
         (double)(sensor->temperature_offset / 10.0));
     variable_item_set_current_value_text(item, offset_buff);
 }
@@ -138,12 +138,31 @@ static void _i2c_addr_change_callback(VariableItem* item) {
 static void _enter_callback(void* context, uint32_t index) {
     UnitempApp* app = context;
     //Name edit
-    if(index == 1) {
+    if(index == 0) {
         name_edit = true;
         scene_manager_next_scene(app->scene_manager, UnitempSceneSensorEditName);
     }
+    //1W sensors scan
     if(index == 3 && app->editable_sensor->model->interface == &unitemp_1w) {
         view_dispatcher_send_custom_event(app->view_dispatcher, CustomEventOneWireScan);
+    }
+    //Save
+    if((index == 4 && app->editable_sensor->model->interface != &unitemp_1w) ||
+       (index == 5 && app->editable_sensor->model->interface == &unitemp_1w)) {
+        //Output if the one wire sensor does not have an ID
+        if(app->editable_sensor->model->interface == &unitemp_1w &&
+           ((OneWireSensor*)(app->editable_sensor->instance))->family_code == 0) {
+            return;
+        }
+
+        if(!unitemp_sensor_in_list(app->editable_sensor)) {
+            unitemp_sensors_add(app->editable_sensor);
+            unitemp_sensor_init(app->editable_sensor);
+        }
+
+        unitemp_sensors_save(app);
+        app->editable_sensor = NULL;
+        scene_manager_search_and_switch_to_previous_scene(app->scene_manager, UnitempSceneMonitor);
     }
 }
 
@@ -232,8 +251,8 @@ void unitemp_scene_sensor_edit_on_enter(void* context) {
 
     // Device address on the one wire bus (for one wire sensors)
     if(sensor->model->interface == &unitemp_1w) {
-        onewire_scan_item =
-            variable_item_list_add(var_item_list, "Address", 2, _onwire_addr_change_callback, app);
+        onewire_scan_item = variable_item_list_add(
+            var_item_list, "Device ID", 2, _onwire_addr_change_callback, app);
         OneWireSensor* ow_sensor = sensor->instance;
         if(ow_sensor->family_code == 0) {
             variable_item_set_current_value_text(onewire_scan_item, "Scan");
@@ -257,9 +276,13 @@ void unitemp_scene_sensor_edit_on_enter(void* context) {
     snprintf(
         offset_buff,
         OFFSET_BUFF_SIZE,
-        sensor->temperature_offset == 0 ? "%1.1f" : "%+1.1f",
+        sensor->temperature_offset == 0 ? "%1.0f" : "%+1.1f",
         (double)(sensor->temperature_offset / 10.0));
     variable_item_set_current_value_text(item, offset_buff);
+
+    if(!unitemp_sensor_in_list(app->editable_sensor)) {
+        variable_item_list_add(var_item_list, "Save", 1, NULL, NULL);
+    }
 
     view_dispatcher_switch_to_view(app->view_dispatcher, UnitempViewVariableList);
 }
@@ -290,8 +313,10 @@ void unitemp_scene_sensor_edit_on_exit(void* context) {
     variable_item_list_reset(app->var_item_list);
     free(offset_buff);
 
-    if(app->editable_sensor != NULL && !name_edit) {
+    if(!name_edit) {
         variable_item_list_set_selected_item(app->var_item_list, 0);
+    }
+    if(app->editable_sensor != NULL) {
         unitemp_sensor_free(app->editable_sensor);
     }
 }
