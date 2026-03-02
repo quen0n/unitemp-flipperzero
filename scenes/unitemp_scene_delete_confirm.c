@@ -75,6 +75,14 @@ void unitemp_scene_delete_confirm_on_enter(void* context) {
         widget_add_text_box_element(
             app->widget, 0, 28, 128, 23, AlignLeft, AlignTop, furi_string_get_cstr(tmp), false);
     }
+    if(sensor->model->interface == &unitemp_spi) {
+        furi_string_printf(tmp, "\e#Model:\e# %s", sensor->model->modelname);
+        widget_add_text_box_element(
+            app->widget, 0, 16, 128, 23, AlignLeft, AlignTop, furi_string_get_cstr(tmp), false);
+        furi_string_printf(tmp, "\e#CS pin:\e# %s", ((SPISensor*)sensor->instance)->cs_pin->name);
+        widget_add_text_box_element(
+            app->widget, 0, 28, 128, 23, AlignLeft, AlignTop, furi_string_get_cstr(tmp), false);
+    }
 
     if(sensor->model->interface == &unitemp_i2c) {
         furi_string_printf(tmp, "\e#Model:\e# %s", sensor->model->modelname);
