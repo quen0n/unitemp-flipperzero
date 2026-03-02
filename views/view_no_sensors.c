@@ -35,7 +35,7 @@ static void no_sensors_draw_callback(Canvas* canvas, void* model) {
     canvas_draw_rframe(canvas, 0, 0, 128, 63, 7);
     canvas_draw_rframe(canvas, 0, 0, 128, 64, 7);
     canvas_set_font(canvas, FontPrimary);
-    canvas_draw_str_aligned(canvas, 63, 10, AlignCenter, AlignCenter, "No sensors found");
+    canvas_draw_str_aligned(canvas, 63, 10, AlignCenter, AlignCenter, "No sensors yet");
     canvas_set_font(canvas, FontSecondary);
     const uint8_t x = 65, y = 32;
     canvas_draw_rframe(canvas, x - 4, y - 10, 54, 33, 3);

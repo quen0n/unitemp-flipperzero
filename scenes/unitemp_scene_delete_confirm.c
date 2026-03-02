@@ -109,14 +109,17 @@ bool unitemp_scene_delete_confirm_on_event(void* context, SceneManagerEvent even
                     message, "An error occurred", 64, 6, AlignCenter, AlignCenter);
                 dialog_message_set_text(
                     message,
-                    "Please report\nthis to the\napp developers",
-                    (128 - icon_get_width(&I_Cry_dolph_55x52)) / 2 +
-                        icon_get_width(&I_Cry_dolph_55x52),
-                    32,
+                    "Please report\nthis to the\napp developers\ntiny.one/unitemp",
+                    (128 - icon_get_width(&I_confused_dolph_43x31)) / 2 +
+                        icon_get_width(&I_confused_dolph_43x31),
+                    36,
                     AlignCenter,
                     AlignCenter);
                 dialog_message_set_icon(
-                    message, &I_Cry_dolph_55x52, 0, 64 - icon_get_height(&I_Cry_dolph_55x52));
+                    message,
+                    &I_confused_dolph_43x31,
+                    0,
+                    64 - icon_get_height(&I_confused_dolph_43x31));
                 dialog_message_show(app->dialogs, message);
                 dialog_message_free(message);
 

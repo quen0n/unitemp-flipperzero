@@ -30,12 +30,14 @@ void unitemp_scene_unable_to_add_sensor_on_enter(void* context) {
     UnitempApp* app = context;
     Popup* popup = app->popup;
 
-    popup_set_icon(app->popup, 0, 64 - icon_get_height(&I_Cry_dolph_55x52), &I_Cry_dolph_55x52);
+    popup_set_icon(
+        app->popup, 0, 64 - icon_get_height(&I_confused_dolph_43x31), &I_confused_dolph_43x31);
     popup_set_header(app->popup, "No GPIO's available", 64, 6, AlignCenter, AlignCenter);
     popup_set_text(
         app->popup,
         "Free ports 15,16\nfor I2C or 1,2,4\n and any for SPI",
-        (128 - icon_get_width(&I_Cry_dolph_55x52)) / 2 + icon_get_width(&I_Cry_dolph_55x52),
+        (128 - icon_get_width(&I_confused_dolph_43x31)) / 2 +
+            icon_get_width(&I_confused_dolph_43x31),
         32,
         AlignCenter,
         AlignCenter);
