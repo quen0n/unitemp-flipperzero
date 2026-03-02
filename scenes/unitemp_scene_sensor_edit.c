@@ -24,9 +24,6 @@
 #include "./interfaces/spi_sensor.h"
 #include "scenes/unitemp_scene.h"
 
-#define OFFSET_BUFF_SIZE 5
-static char* offset_buff;
-
 static bool name_edit = false;
 static VariableItem* model_item;
 static VariableItem* onewire_scan_item;
@@ -41,15 +38,14 @@ static void _onewire_scan_event_callback(void* context) {
     if(!result) {
         variable_item_set_current_value_text(onewire_scan_item, "not found");
     } else {
-        char id_buff[10];
         snprintf(
-            id_buff,
+            app->txt_buff,
             10,
             "%02X%02X%02X",
             ow_sensor->deviceID[1],
             ow_sensor->deviceID[2],
             ow_sensor->deviceID[3]);
-        variable_item_set_current_value_text(onewire_scan_item, id_buff);
+        variable_item_set_current_value_text(onewire_scan_item, app->txt_buff);
         variable_item_set_current_value_text(
             model_item, unitemp_onewire_sensor_get_fc_name(app->editable_sensor));
     }
@@ -102,16 +98,17 @@ static void _name_change_callback(VariableItem* item) {
 }
 
 static void _offset_change_callback(VariableItem* item) {
-    Sensor* sensor = variable_item_get_context(item);
+    UnitempApp* app = variable_item_get_context(item);
+    Sensor* sensor = app->editable_sensor;
     uint8_t index = variable_item_get_current_value_index(item);
 
     sensor->temperature_offset = index - 20;
     snprintf(
-        offset_buff,
-        OFFSET_BUFF_SIZE,
+        app->txt_buff,
+        5,
         sensor->temperature_offset == 0 ? "%1.0f" : "%+1.1f",
         (double)(sensor->temperature_offset / 10.0));
-    variable_item_set_current_value_text(item, offset_buff);
+    variable_item_set_current_value_text(item, app->txt_buff);
 }
 
 static void _gpio_change_callback(VariableItem* item) {
@@ -126,13 +123,13 @@ static void _onwire_addr_change_callback(VariableItem* item) {
 }
 
 static void _i2c_addr_change_callback(VariableItem* item) {
-    Sensor* sensor = variable_item_get_context(item);
+    UnitempApp* app = variable_item_get_context(item);
+    Sensor* sensor = app->editable_sensor;
     uint8_t index = variable_item_get_current_value_index(item);
     ((I2CSensor*)sensor->instance)->current_i2c_adress =
         ((I2CSensor*)sensor->instance)->min_i2c_adress + index * 2;
-    char buff[5];
-    snprintf(buff, 5, "0x%2X", ((I2CSensor*)sensor->instance)->current_i2c_adress >> 1);
-    variable_item_set_current_value_text(item, buff);
+    snprintf(app->txt_buff, 5, "0x%2X", ((I2CSensor*)sensor->instance)->current_i2c_adress >> 1);
+    variable_item_set_current_value_text(item, app->txt_buff);
 }
 
 static void _enter_callback(void* context, uint32_t index) {
@@ -179,8 +176,6 @@ void unitemp_scene_sensor_edit_on_enter(void* context) {
         return;
     }
 
-    offset_buff = malloc(OFFSET_BUFF_SIZE);
-
     variable_item_list_set_enter_callback(var_item_list, _enter_callback, app);
 
     //Sensor name
@@ -197,7 +192,6 @@ void unitemp_scene_sensor_edit_on_enter(void* context) {
         (sensor->model->interface == &unitemp_1w ? unitemp_onewire_sensor_get_fc_name(sensor) :
                                                    sensor->model->modelname));
 
-    char buff[11];
     //Device address on the I2C bus (for I2C sensors)
     if(sensor->model->interface == &unitemp_i2c) {
         item = variable_item_list_add(
@@ -206,13 +200,14 @@ void unitemp_scene_sensor_edit_on_enter(void* context) {
             (((I2CSensor*)sensor->instance)->max_i2c_adress >> 1) -
                 (((I2CSensor*)sensor->instance)->min_i2c_adress >> 1) + 1,
             _i2c_addr_change_callback,
-            sensor);
-        snprintf(buff, 5, "0x%2X", ((I2CSensor*)sensor->instance)->current_i2c_adress >> 1);
+            app);
+        snprintf(
+            app->txt_buff, 5, "0x%2X", ((I2CSensor*)sensor->instance)->current_i2c_adress >> 1);
         variable_item_set_current_value_index(
             item,
             (((I2CSensor*)sensor->instance)->current_i2c_adress >> 1) -
                 (((I2CSensor*)sensor->instance)->min_i2c_adress >> 1));
-        variable_item_set_current_value_text(item, buff);
+        variable_item_set_current_value_text(item, app->txt_buff);
     }
     //Sensor connection port (for one wire, SPI and single wire)
     if(sensor->model->interface == &unitemp_1w || sensor->model->interface == &singlewire ||
@@ -258,27 +253,26 @@ void unitemp_scene_sensor_edit_on_enter(void* context) {
             variable_item_set_current_value_text(onewire_scan_item, "Scan");
         } else {
             snprintf(
-                buff,
+                app->txt_buff,
                 10,
                 "%02X%02X%02X",
                 ow_sensor->deviceID[1],
                 ow_sensor->deviceID[2],
                 ow_sensor->deviceID[3]);
-            variable_item_set_current_value_text(onewire_scan_item, buff);
+            variable_item_set_current_value_text(onewire_scan_item, app->txt_buff);
         }
     }
 
     //Temperature offset
-    item =
-        variable_item_list_add(var_item_list, "Temp. offset", 41, _offset_change_callback, sensor);
+    item = variable_item_list_add(var_item_list, "Temp. offset", 41, _offset_change_callback, app);
     variable_item_set_current_value_index(item, sensor->temperature_offset + 20);
 
     snprintf(
-        offset_buff,
-        OFFSET_BUFF_SIZE,
+        app->txt_buff,
+        5,
         sensor->temperature_offset == 0 ? "%1.0f" : "%+1.1f",
         (double)(sensor->temperature_offset / 10.0));
-    variable_item_set_current_value_text(item, offset_buff);
+    variable_item_set_current_value_text(item, app->txt_buff);
 
     if(!unitemp_sensor_in_list(app->editable_sensor)) {
         variable_item_list_add(var_item_list, "Save", 1, NULL, NULL);
@@ -311,7 +305,6 @@ bool unitemp_scene_sensor_edit_on_event(void* context, SceneManagerEvent event) 
 void unitemp_scene_sensor_edit_on_exit(void* context) {
     UnitempApp* app = context;
     variable_item_list_reset(app->var_item_list);
-    free(offset_buff);
 
     if(!name_edit) {
         variable_item_list_set_selected_item(app->var_item_list, 0);

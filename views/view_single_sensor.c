@@ -33,7 +33,7 @@ extern const Icon I_ButtonRight_4x7;
 extern const Icon I_ButtonLeft_4x7;
 
 #define TEMP_STR_SIZE 32
-static char temp_str[TEMP_STR_SIZE];
+static char* temp_str;
 
 #define UT_DATA_POS_CENTER      37, 23
 #define UT_DATA_POS_UP_LEFT     9, 16
@@ -312,6 +312,7 @@ static bool single_sensor_input_callback(InputEvent* event, void* context) {
 SingleSensor* single_sensor_alloc(void* context) {
     UnitempApp* app = context;
     SingleSensor* single_sensor = malloc(sizeof(SingleSensor));
+    temp_str = malloc(TEMP_STR_SIZE);
 
     single_sensor->view = view_alloc();
     single_sensor->context = app;
@@ -337,6 +338,7 @@ void single_sensor_free(SingleSensor* single_sensor) {
     furi_assert(single_sensor);
     view_free_model(single_sensor->view);
     view_free(single_sensor->view);
+    free(temp_str);
     free(single_sensor);
 }
 

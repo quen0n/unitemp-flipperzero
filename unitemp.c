@@ -148,6 +148,7 @@ static UnitempApp* unitemp_app_alloc(void) {
     app->notifications = furi_record_open(RECORD_NOTIFICATION);
 
     app->settings = malloc(sizeof(UnitempSettings));
+    app->txt_buff = malloc(TEXT_STORE_SIZE);
 
     app->reader_thread = furi_thread_alloc();
     furi_thread_set_priority(app->reader_thread, FuriThreadPriorityHigh);
@@ -238,6 +239,7 @@ static void unitemp_app_free(UnitempApp* app) {
     furi_record_close(RECORD_GUI);
     furi_record_close(RECORD_STORAGE);
 
+    free(app->txt_buff);
     free(app->settings);
     free(app);
 }
