@@ -54,45 +54,6 @@ static const SensorModel* sensor_model_list[] = {
 //Number of sensor models
 #define SENSOR_MODELS_COUNT (int)(sizeof(sensor_model_list) / sizeof(const SensorModel*))
 
-const SensorModel** unitemp_sensors_models_get(void) {
-    return sensor_model_list;
-}
-
-uint8_t unitemp_sensors_models_get_count(void) {
-    return SENSOR_MODELS_COUNT;
-}
-
-const SensorModel* unitemp_sensors_get_model_from_str(char* str) {
-    if(str == NULL) return NULL;
-
-    for(uint8_t i = 0; i < SENSOR_MODELS_COUNT; i++) {
-        if(!strcmp(str, sensor_model_list[i]->modelname)) {
-            return sensor_model_list[i];
-        }
-    }
-    UNITEMP_DEBUG("Unknown sensor model: %s", str);
-    return NULL;
-}
-
-/* Periodically requests measurements and reads temperature. This function runs in a separare thread. */
-int32_t unitemp_sensors_update_callback(void* context) {
-    furi_check(context);
-
-    UnitempApp* app = context;
-    for(;;) {
-        for(uint8_t i = 0; i < unitemp_sensors_get_count(); i++) {
-            unitemp_sensor_update((unitemp_sensors_get(i)), app);
-        }
-
-        const uint32_t flags =
-            furi_thread_flags_wait(UnitempThreadFlagExit, FuriFlagWaitAny, UPDATE_PERIOD_MS);
-
-        /* If an exit signal was received, return from this thread. */
-        if(flags != (unsigned)FuriFlagErrorTimeout) break;
-    }
-    return 0;
-}
-
 Sensor* unitemp_sensor_alloc(char* name, const SensorModel* model, char* args) {
     if(name == NULL || model == NULL || args == NULL) return NULL;
 
@@ -166,21 +127,11 @@ void unitemp_sensor_free(Sensor* sensor) {
     free(sensor);
 }
 
-bool unitemp_sensors_add(Sensor* sensor) {
-    furi_check(sensor);
-
-    sensors_list = (Sensor**)realloc(sensors_list, (sensors_count + 1) * sizeof(Sensor*));
-    if(sensors_list == NULL) {
-        FURI_LOG_E(APP_NAME, "Failed to allocate memory for new sensor");
+bool unitemp_sensor_delete(Sensor* sensor) {
+    if(sensor == NULL) {
+        FURI_LOG_E(APP_NAME, "Null pointer sensor deleting");
         return false;
     }
-    sensors_list[sensors_count] = sensor;
-    sensors_count++;
-    return true;
-}
-
-bool unitemp_sensor_delete(Sensor* sensor) {
-    furi_check(sensor);
 
     uint8_t index_to_remove = 255;
     for(uint8_t i = 0; i < sensors_count; i++) {
@@ -211,8 +162,120 @@ bool unitemp_sensor_delete(Sensor* sensor) {
     } else {
         free(sensors_list);
     }
-
+    UNITEMP_DEBUG("Sensor %s successfully deleted", sensor->name);
     return true;
+}
+
+bool unitemp_sensor_init(Sensor* sensor) {
+    bool result = sensor->model->initializer(sensor);
+    if(result) {
+        UNITEMP_DEBUG("Sensor %s successfully initialized", sensor->name);
+        sensor->status = UT_SENSORSTATUS_INITIALIZED;
+    } else {
+        UNITEMP_DEBUG("Sensor %s initialization failed", sensor->name);
+        sensor->status = UT_SENSORSTATUS_UNINITIALIZED;
+    }
+    return result;
+}
+
+bool unitemp_sensor_deinit(Sensor* sensor) {
+    if(sensor->status == UT_SENSORSTATUS_UNINITIALIZED) {
+        FURI_LOG_W(APP_NAME, "Sensor %s is already uninitialized!", sensor->name);
+        return true;
+    }
+    bool result = sensor->model->deinitializer(sensor);
+    sensor->status = UT_SENSORSTATUS_UNINITIALIZED;
+    if(result) {
+        UNITEMP_DEBUG("Sensor %s successfully deinitialized", sensor->name);
+    } else {
+        UNITEMP_DEBUG("Sensor %s deinitialization failed", sensor->name);
+    }
+    return result;
+}
+
+SensorStatus unitemp_sensor_update(Sensor* sensor, void* context) {
+    if(sensor == NULL || context == NULL) {
+        return UT_SENSORSTATUS_ERROR;
+    }
+    if(sensor->status == UT_SENSORSTATUS_INACTIVE) {
+        return UT_SENSORSTATUS_INACTIVE;
+    }
+
+    UnitempApp* app = context;
+
+    //Checking the validity of the sensor polling
+    if(furi_get_tick() - sensor->last_polling_time < sensor->model->polling_interval) {
+        //Return an error if the last sensor poll was unsuccessful
+        if(sensor->status == UT_SENSORSTATUS_TIMEOUT) {
+            return UT_SENSORSTATUS_TIMEOUT;
+        }
+        return UT_SENSORSTATUS_EARLYPOOL;
+    }
+    sensor->last_polling_time = furi_get_tick();
+
+    if(sensor->status == UT_SENSORSTATUS_UNINITIALIZED) {
+        UNITEMP_DEBUG("Attempting to initialize the sensor %s", sensor->name);
+        if(!unitemp_sensor_init(sensor)) {
+            return UT_SENSORSTATUS_UNINITIALIZED;
+        }
+    }
+
+    if(app->settings->otg_auto_on && !power_is_otg_enabled(app->power)) {
+        power_enable_otg(app->power, true);
+    }
+
+    //Если датчик дважды не ответил, то он переводится в неинициализированные (требуется для BME* и SDC30)
+    SensorStatus status = sensor->model->interface->updater(sensor);
+    if(status == UT_SENSORSTATUS_TIMEOUT && sensor->status == UT_SENSORSTATUS_TIMEOUT) {
+        unitemp_sensor_deinit(sensor);
+        FURI_LOG_W(
+            APP_NAME, "Sensor %s not responding and was moved to uninitialized", sensor->name);
+    } else {
+        sensor->status = status;
+    }
+
+    if(sensor->status != UT_SENSORSTATUS_OK && sensor->status != UT_SENSORSTATUS_POLLING) {
+        FURI_LOG_W(APP_NAME, "Sensor %s update status %d", sensor->name, sensor->status);
+    } else {
+        UNITEMP_DEBUG(
+            "Sensor %s successfully updated. Values: temp=%.2f, hum=%.2f, pres=%.2f, co=%.2f",
+            sensor->name,
+            (double)sensor->temperature,
+            (double)sensor->humidity,
+            (double)sensor->pressure,
+            (double)sensor->co2);
+    }
+
+    if(sensor->status == UT_SENSORSTATUS_OK) {
+        sensor->temperature += sensor->temperature_offset / 10.f;
+    }
+    return sensor->status;
+}
+
+bool unitemp_sensor_in_list(Sensor* sensor) {
+    for(uint8_t i = 0; i < unitemp_sensors_get_count(); i++) {
+        if(sensors_list[i] == sensor) return true;
+    }
+    return false;
+}
+
+/* Periodically requests measurements and reads temperature. This function runs in a separare thread. */
+int32_t unitemp_sensors_update_callback(void* context) {
+    furi_check(context);
+
+    UnitempApp* app = context;
+    for(;;) {
+        for(uint8_t i = 0; i < unitemp_sensors_get_count(); i++) {
+            unitemp_sensor_update((unitemp_sensors_get(i)), app);
+        }
+
+        const uint32_t flags =
+            furi_thread_flags_wait(UnitempThreadFlagExit, FuriFlagWaitAny, UPDATE_PERIOD_MS);
+
+        /* If an exit signal was received, return from this thread. */
+        if(flags != (unsigned)FuriFlagErrorTimeout) break;
+    }
+    return 0;
 }
 
 void unitemp_sensors_free(void) {
@@ -421,27 +484,6 @@ bool unitemp_sensors_save(void* context) {
     return true;
 }
 
-bool unitemp_sensor_init(Sensor* sensor) {
-    bool result = sensor->model->initializer(sensor);
-    if(result) {
-        sensor->status = UT_SENSORSTATUS_INITIALIZED;
-    } else {
-        sensor->status = UT_SENSORSTATUS_UNINITIALIZED;
-    }
-    return result;
-}
-
-bool unitemp_sensor_deinit(Sensor* sensor) {
-    if(sensor->status == UT_SENSORSTATUS_UNINITIALIZED) {
-        FURI_LOG_W(APP_NAME, "Sensor %s is already uninitialized!", sensor->name);
-        return true;
-    }
-    bool result = sensor->model->deinitializer(sensor);
-    sensor->status = UT_SENSORSTATUS_UNINITIALIZED;
-
-    return result;
-}
-
 bool unitemp_sensors_init(void* context) {
     if(context == NULL) return false;
     UnitempApp* app = context;
@@ -500,65 +542,6 @@ Sensor* unitemp_sensors_get(uint8_t index) {
     return sensors_list[index];
 }
 
-SensorStatus unitemp_sensor_update(Sensor* sensor, void* context) {
-    if(sensor == NULL || context == NULL) {
-        return UT_SENSORSTATUS_ERROR;
-    }
-    if(sensor->status == UT_SENSORSTATUS_INACTIVE) {
-        return UT_SENSORSTATUS_INACTIVE;
-    }
-
-    UnitempApp* app = context;
-
-    //Checking the validity of the sensor polling
-    if(furi_get_tick() - sensor->last_polling_time < sensor->model->polling_interval) {
-        //Return an error if the last sensor poll was unsuccessful
-        if(sensor->status == UT_SENSORSTATUS_TIMEOUT) {
-            return UT_SENSORSTATUS_TIMEOUT;
-        }
-        return UT_SENSORSTATUS_EARLYPOOL;
-    }
-    sensor->last_polling_time = furi_get_tick();
-
-    if(sensor->status == UT_SENSORSTATUS_UNINITIALIZED) {
-        UNITEMP_DEBUG("Attempting to initialize the sensor %s", sensor->name);
-        if(!unitemp_sensor_init(sensor)) {
-            return UT_SENSORSTATUS_UNINITIALIZED;
-        } else {
-            UNITEMP_DEBUG("The sensor %s was initialized successfully", sensor->name);
-        }
-    }
-
-    if(app->settings->otg_auto_on && !power_is_otg_enabled(app->power)) {
-        power_enable_otg(app->power, true);
-    }
-
-    //Если датчик дважды не ответил, то он переводится в неинициализированные (требуется для BME* и SDC30)
-    SensorStatus status = sensor->model->interface->updater(sensor);
-    if(status == UT_SENSORSTATUS_TIMEOUT && sensor->status == UT_SENSORSTATUS_TIMEOUT) {
-        unitemp_sensor_deinit(sensor);
-        FURI_LOG_W(
-            APP_NAME, "Sensor %s not responding and was moved to uninitialized", sensor->name);
-    } else {
-        sensor->status = status;
-    }
-
-    if(sensor->status != UT_SENSORSTATUS_OK && sensor->status != UT_SENSORSTATUS_POLLING) {
-        FURI_LOG_W(APP_NAME, "Sensor %s update status %d", sensor->name, sensor->status);
-    } else {
-        UNITEMP_DEBUG(
-            "Sensor %s successfully updated. Values: temp=%.2f, hum=%.2f",
-            sensor->name,
-            (double)sensor->temperature,
-            (double)sensor->humidity);
-    }
-
-    if(sensor->status == UT_SENSORSTATUS_OK) {
-        sensor->temperature += sensor->temperature_offset / 10.f;
-    }
-    return sensor->status;
-}
-
 void unitemp_sensors_reload(void* context) {
     unitemp_sensors_deinit(context);
     unitemp_sensors_free();
@@ -567,9 +550,36 @@ void unitemp_sensors_reload(void* context) {
     unitemp_sensors_init(context);
 }
 
-bool unitemp_sensor_in_list(Sensor* sensor) {
-    for(uint8_t i = 0; i < unitemp_sensors_get_count(); i++) {
-        if(sensors_list[i] == sensor) return true;
+const SensorModel** unitemp_sensors_models_get(void) {
+    return sensor_model_list;
+}
+
+uint8_t unitemp_sensors_models_get_count(void) {
+    return SENSOR_MODELS_COUNT;
+}
+
+const SensorModel* unitemp_sensors_get_model_from_str(char* str) {
+    if(str == NULL) return NULL;
+
+    for(uint8_t i = 0; i < SENSOR_MODELS_COUNT; i++) {
+        if(!strcmp(str, sensor_model_list[i]->modelname)) {
+            return sensor_model_list[i];
+        }
     }
-    return false;
+    UNITEMP_DEBUG("Unknown sensor model: %s", str);
+    return NULL;
+}
+
+bool unitemp_sensors_add(Sensor* sensor) {
+    furi_check(sensor);
+
+    sensors_list = (Sensor**)realloc(sensors_list, (sensors_count + 1) * sizeof(Sensor*));
+    if(sensors_list == NULL) {
+        FURI_LOG_E(APP_NAME, "Failed to allocate memory for new sensor");
+        return false;
+    }
+    sensors_list[sensors_count] = sensor;
+    sensors_count++;
+    UNITEMP_DEBUG("Sensor %s memory successfully added", sensor->name);
+    return true;
 }

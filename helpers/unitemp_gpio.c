@@ -74,7 +74,7 @@ void unitemp_gpio_lock(const SensorGpioPin* gpio, const SensorConnectionInterfac
     uint8_t i = unitemp_gpio_to_index(gpio->pin);
     if(i == 255) return;
     gpio_interfaces_list[i] = interface;
-    UNITEMP_DEBUG("%s been locked for interfaces %s", gpio->name, interface->name);
+    UNITEMP_DEBUG("%s has been locked for interface %s", gpio->name, interface->name);
 }
 
 void unitemp_gpio_unlock(const SensorGpioPin* gpio) {
@@ -83,6 +83,7 @@ void unitemp_gpio_unlock(const SensorGpioPin* gpio) {
     uint8_t i = unitemp_gpio_to_index(gpio->pin);
     if(i == 255) return;
     gpio_interfaces_list[i] = NULL;
+    UNITEMP_DEBUG("%s has been unlocked", gpio->name);
 }
 
 const SensorGpioPin* unitemp_gpio_get_aviable_pin(

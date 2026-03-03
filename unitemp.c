@@ -104,7 +104,7 @@ bool unitemp_settings_load(void* context) {
 
     furi_string_free(file_type);
     flipper_format_free(file);
-    UNITEMP_DEBUG("Loading settings  %s", result ? "success" : "failed");
+    UNITEMP_DEBUG("Loading settings %s", result ? "success" : "failed");
 
     return result;
 }
