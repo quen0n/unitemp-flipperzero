@@ -162,7 +162,7 @@ bool unitemp_sensor_delete(Sensor* sensor) {
     } else {
         free(sensors_list);
     }
-    UNITEMP_DEBUG("Sensor %s successfully deleted", sensor->name);
+    UNITEMP_DEBUG("Sensor successfully deleted");
     return true;
 }
 
@@ -339,7 +339,6 @@ bool unitemp_sensors_load(void* context) {
             file_stream_close(app->file_stream);
             break;
         }
-        UNITEMP_DEBUG("stream size %d", file_size);
 
         FuriString* line = furi_string_alloc();
 

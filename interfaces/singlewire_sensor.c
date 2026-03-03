@@ -54,7 +54,9 @@ bool unitemp_singlewire_alloc(Sensor* sensor, char* args) {
 }
 
 bool unitemp_singlewire_free(Sensor* sensor) {
-    free(sensor->instance);
+    SingleWireSensor* instance = sensor->instance;
+    unitemp_gpio_unlock(instance->data_pin);
+    free(instance);
 
     return true;
 }
@@ -63,7 +65,9 @@ bool unitemp_singlewire_sensor_gpio_set(Sensor* sensor, const SensorGpioPin* dat
     if(sensor == NULL || data_pin == NULL) return false;
 
     SingleWireSensor* instance = sensor->instance;
+    if(instance->data_pin != NULL) unitemp_gpio_unlock(instance->data_pin);
     instance->data_pin = data_pin;
+    unitemp_gpio_lock(instance->data_pin, &singlewire);
     return true;
 }
 
@@ -81,7 +85,6 @@ bool unitemp_singlewire_init(Sensor* sensor) {
         FURI_LOG_E(APP_NAME, "Sensor pointer is null!");
         return false;
     }
-    unitemp_gpio_lock(instance->data_pin, &singlewire);
     // High level by default
     furi_hal_gpio_write(instance->data_pin->pin, true);
     // Operation mode - OpenDrain, pull-up enabled just in case
@@ -98,7 +101,6 @@ bool unitemp_singlewire_deinit(Sensor* sensor) {
 
     SingleWireSensor* instance = ((Sensor*)sensor)->instance;
     if(instance == NULL || instance->data_pin == NULL) return false;
-    unitemp_gpio_unlock(instance->data_pin);
     // Low level by default
     furi_hal_gpio_write(instance->data_pin->pin, false);
     // Mode - analog, pull-up disabled
