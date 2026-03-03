@@ -70,7 +70,7 @@ static void _draw_sensor_not_responding(Canvas* canvas, Sensor* sensor) {
 
     canvas_set_font(canvas, FontSecondary);
 
-    if(sensor->model->interface == &singlewire) {
+    if(sensor->model->interface == &unitemp_singlewire) {
         snprintf(
             temp_str,
             TEMP_STR_SIZE,

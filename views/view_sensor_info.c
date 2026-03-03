@@ -80,7 +80,7 @@ static void sensor_info_draw_callback(Canvas* canvas, void* model) {
     canvas_set_font(canvas, FontSecondary);
     canvas_draw_str(canvas, 48, 23, sensor->model->modelname);
     canvas_set_font(canvas, FontPrimary);
-    if(sensor->model->interface == &singlewire) {
+    if(sensor->model->interface == &unitemp_singlewire) {
         SingleWireSensor* s = sensor->instance;
         canvas_draw_str(canvas, 10, 34, "Data pin: ");
 

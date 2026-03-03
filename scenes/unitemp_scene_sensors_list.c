@@ -71,7 +71,7 @@ bool unitemp_scene_sensors_list_on_event(void* context, SceneManagerEvent event)
                     64 - icon_get_height(&I_confused_dolph_43x31));
                 dialog_message_set_header(
                     message, "Unable to add a sensor", 64, 6, AlignCenter, AlignCenter);
-                if(model->interface == &singlewire || model->interface == &unitemp_1w) {
+                if(model->interface == &unitemp_singlewire || model->interface == &unitemp_1w) {
                     dialog_message_set_text(
                         message,
                         "All GPIO's are busy",
@@ -131,7 +131,7 @@ bool unitemp_scene_sensors_list_on_event(void* context, SceneManagerEvent event)
 
             char* args = malloc(21);
             //Selecting the first available port for single wire and SPI sensor
-            if(model->interface == &singlewire || model->interface == &unitemp_spi) {
+            if(model->interface == &unitemp_singlewire || model->interface == &unitemp_spi) {
                 snprintf(
                     args, 4, "%d", unitemp_gpio_get_aviable_pin(model->interface, 0, NULL)->num);
             }

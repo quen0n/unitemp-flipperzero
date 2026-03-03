@@ -21,8 +21,8 @@
 #include "./sensors/DS18x2x.h"
 #include "./sensors/SCD30.h"
 
-#define UPDATE_PERIOD_MS     250UL
-#define APP_SENSORS_FILENAME "sensors.list"
+#define DISPLAY_UPDATE_PERIOD_MS 250UL
+#define APP_SENSORS_FILENAME     "sensors.list"
 
 static Sensor** sensors_list = NULL;
 //Number of loaded sensors
@@ -31,7 +31,7 @@ static uint8_t sensors_count = 0;
 //List of sensor models
 static const SensorModel* sensor_model_list[] = {
     &AHT10, //tested
-    &AM2320_SW, //TODO: do not work :|
+    &AM2320_SW, //tested
     &AM2320_I2C, //tested
     &BMP180, //tested
     &BMP280,     &BME280,
@@ -269,8 +269,8 @@ int32_t unitemp_sensors_update_callback(void* context) {
             unitemp_sensor_update((unitemp_sensors_get(i)), app);
         }
 
-        const uint32_t flags =
-            furi_thread_flags_wait(UnitempThreadFlagExit, FuriFlagWaitAny, UPDATE_PERIOD_MS);
+        const uint32_t flags = furi_thread_flags_wait(
+            UnitempThreadFlagExit, FuriFlagWaitAny, DISPLAY_UPDATE_PERIOD_MS);
 
         /* If an exit signal was received, return from this thread. */
         if(flags != (unsigned)FuriFlagErrorTimeout) break;
@@ -447,7 +447,7 @@ bool unitemp_sensors_save(void* context) {
             sensor->model->modelname,
             sensor->temperature_offset);
 
-        if(sensor->model->interface == &singlewire) {
+        if(sensor->model->interface == &unitemp_singlewire) {
             stream_write_format(
                 app->file_stream, "%d\n", unitemp_singlewire_sensor_gpio_get(sensor)->num);
         }

@@ -22,9 +22,9 @@
 #include "../sensors/AM2320.h"
 
 // Maximum number of polling ticks while waiting for the sensor
-#define POLLING_TIMEOUT_TICKS 500
+#define POLLING_TIMEOUT_TICKS 5000
 
-const SensorConnectionInterface singlewire = {
+const SensorConnectionInterface unitemp_singlewire = {
     .name = "Single wire",
     .allocator = unitemp_singlewire_alloc,
     .mem_releaser = unitemp_singlewire_free,
@@ -67,7 +67,7 @@ bool unitemp_singlewire_sensor_gpio_set(Sensor* sensor, const SensorGpioPin* dat
     SingleWireSensor* instance = sensor->instance;
     if(instance->data_pin != NULL) unitemp_gpio_unlock(instance->data_pin);
     instance->data_pin = data_pin;
-    unitemp_gpio_lock(instance->data_pin, &singlewire);
+    unitemp_gpio_lock(instance->data_pin, &unitemp_singlewire);
     return true;
 }
 

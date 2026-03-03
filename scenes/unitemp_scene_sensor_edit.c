@@ -59,14 +59,14 @@ static void _gpio_change_event_callback(void* context) {
     const SensorConnectionInterface* interface = sensor->model->interface;
     if(interface == &unitemp_1w) {
         gpio_pin = ((OneWireSensor*)sensor->instance)->bus->bus_pin;
-    } else if(interface == &singlewire) {
+    } else if(interface == &unitemp_singlewire) {
         gpio_pin = ((SingleWireSensor*)sensor->instance)->data_pin;
     } else if(interface == &unitemp_spi) {
         gpio_pin = ((SPISensor*)sensor->instance)->cs_pin;
     }
     gpio_pin = unitemp_gpio_get_aviable_pin(interface, index, gpio_pin);
 
-    if(interface == &singlewire) {
+    if(interface == &unitemp_singlewire) {
         SingleWireSensor* instance = sensor->instance;
         unitemp_gpio_unlock(instance->data_pin);
         instance->data_pin = gpio_pin;
@@ -216,12 +216,13 @@ void unitemp_scene_sensor_edit_on_enter(void* context) {
         variable_item_set_current_value_text(item, app->txt_buff);
     }
     //Sensor connection port (for one wire, SPI and single wire)
-    if(sensor->model->interface == &unitemp_1w || sensor->model->interface == &singlewire ||
+    if(sensor->model->interface == &unitemp_1w ||
+       sensor->model->interface == &unitemp_singlewire ||
        sensor->model->interface == &unitemp_spi) {
         const SensorGpioPin* gpio_pin = NULL;
         if(sensor->model->interface == &unitemp_1w) {
             gpio_pin = ((OneWireSensor*)sensor->instance)->bus->bus_pin;
-        } else if(sensor->model->interface == &singlewire) {
+        } else if(sensor->model->interface == &unitemp_singlewire) {
             gpio_pin = ((SingleWireSensor*)sensor->instance)->data_pin;
             unitemp_gpio_unlock(gpio_pin);
         } else if(sensor->model->interface == &unitemp_spi) {

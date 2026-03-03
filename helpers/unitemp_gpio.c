@@ -122,7 +122,7 @@ const SensorGpioPin* unitemp_gpio_get_aviable_pin(
             }
         }
         //Check for single wire dataline
-        if(interface == &singlewire) {
+        if(interface == &unitemp_singlewire) {
             if(gpio_interfaces_list[i] == NULL || unitemp_gpio_get_from_index(i) == extraport) {
                 if(aviable_index == index) {
                     return unitemp_gpio_get_from_index(i);
@@ -161,7 +161,7 @@ uint8_t unitemp_gpio_get_aviable_pin_count(
         }
 
         //Check for single wire
-        if(interface == &singlewire || interface == &unitemp_spi) {
+        if(interface == &unitemp_singlewire || interface == &unitemp_spi) {
             if(gpio_interfaces_list[i] == NULL || (unitemp_gpio_get_from_index(i) == extraport)) {
                 UNITEMP_DEBUG("%s pin is aviable", unitemp_gpio_get_from_index(i)->name);
                 aviable_ports_count++;

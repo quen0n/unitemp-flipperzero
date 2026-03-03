@@ -66,7 +66,7 @@ void unitemp_scene_delete_confirm_on_enter(void* context) {
             app->widget, 0, 40, 128, 23, AlignLeft, AlignTop, furi_string_get_cstr(tmp), false);
     }
 
-    if(sensor->model->interface == &singlewire) {
+    if(sensor->model->interface == &unitemp_singlewire) {
         furi_string_printf(tmp, "\e#Model:\e# %s", sensor->model->modelname);
         widget_add_text_box_element(
             app->widget, 0, 16, 128, 23, AlignLeft, AlignTop, furi_string_get_cstr(tmp), false);

@@ -29,7 +29,7 @@ typedef struct {
 } SingleWireSensor;
 
 extern const SensorConnectionInterface
-    singlewire; //Proprietary single-wire protocol for DHTXX and AM23XX sensors
+    unitemp_singlewire; //Proprietary single-wire protocol for DHTXX and AM23XX sensors
 
 /**
  * @brief Memory allocation for a sensor on a One Wire line
