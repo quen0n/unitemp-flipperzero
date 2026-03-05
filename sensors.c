@@ -16,6 +16,7 @@
 #include "./sensors/BMP180.h"
 #include "./sensors/HTU21x.h"
 #include "./sensors/HDC1080.h"
+#include "./sensors/HDC2080.h"
 #include "./sensors/MAX31855.h"
 #include "./sensors/MAX6675.h"
 #include "./sensors/DS18x2x.h"
@@ -43,6 +44,7 @@ static const SensorModel* sensor_model_list[] = {
     &DHT22,
     &GXHT30, //tested
     &HDC1080, //tested
+    &HDC2080, //tested
     &HTU21x, //tested
     &LM75, //tested
     &MAX6675, //tested
