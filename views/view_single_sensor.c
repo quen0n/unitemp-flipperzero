@@ -359,6 +359,14 @@ View* single_sensor_get_view(SingleSensor* single_sensor) {
 void single_sensor_refresh_data(SingleSensor* instance) {
     furi_assert(instance);
 
-    //Вызываем перерисовку вида псевдообновлением модели. Вызывается по таймеру
-    with_view_model(instance->view, SingleSensorViewModel * model, { UNUSED(model); }, true);
+    //Проверяем корректность индекса и перерисовываем экран обновлением модели
+    with_view_model(
+        instance->view,
+        SingleSensorViewModel * model,
+        {
+            if(model->sensor_index > unitemp_sensors_get_count() - 1) {
+                model->sensor_index = unitemp_sensors_get_count() - 1;
+            }
+        },
+        true);
 }

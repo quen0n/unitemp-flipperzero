@@ -50,7 +50,12 @@ static void sensor_info_draw_callback(Canvas* canvas, void* model) {
     with_view_model(
         single_sensor_get_view(app->single_sensor),
         SingleSensorViewModel * m,
-        { sensor_index = m->sensor_index; },
+        {
+            if(m->sensor_index > unitemp_sensors_get_count() - 1) {
+                m->sensor_index = unitemp_sensors_get_count() - 1;
+            }
+            sensor_index = m->sensor_index;
+        },
         false);
     sensor = unitemp_sensors_get(sensor_index);
 
