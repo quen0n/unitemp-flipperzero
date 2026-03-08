@@ -19,7 +19,7 @@
 #include "../interfaces/i2c_sensor.h"
 
 const SensorModel SHT30 = {
-    .modelname = "SHT30",
+    .modelname = "SHT3x",
     .altname = "SHT30/31/35",
     .interface = &unitemp_i2c,
     .data_type = UT_DATA_TYPE_TEMP_HUM,
@@ -30,7 +30,7 @@ const SensorModel SHT30 = {
     .deinitializer = unitemp_SHT30_I2C_deinit,
     .updater = unitemp_SHT30_I2C_update};
 const SensorModel GXHT30 = {
-    .modelname = "GXHT30",
+    .modelname = "GXHT3x",
     .altname = "GXHT30/31/35",
     .interface = &unitemp_i2c,
     .data_type = UT_DATA_TYPE_TEMP_HUM,

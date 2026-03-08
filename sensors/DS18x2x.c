@@ -24,7 +24,7 @@
 
 const SensorModel Dallas = {
     .modelname = "Dallas",
-    .altname = "Dallas (DS18x2x)",
+    .altname = "DS18B20(22)/DS1820",
     .interface = &unitemp_1w,
     .data_type = UT_DATA_TYPE_TEMP,
     .polling_interval = 750,

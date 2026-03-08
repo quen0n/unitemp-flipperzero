@@ -26,6 +26,7 @@ extern const SensorModel DHT21;
 extern const SensorModel DHT22;
 extern const SensorModel DHT20;
 extern const SensorModel AHT10;
+extern const SensorModel AHT20;
 
 /**
  * @brief Allocating memory and setting initial values ​​for the DHT20 sensor

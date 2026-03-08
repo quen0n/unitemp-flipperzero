@@ -32,16 +32,17 @@ static uint8_t sensors_count = 0;
 //List of sensor models
 static const SensorModel* sensor_model_list[] = {
     &AHT10, //tested
+    &AHT20, //tested
     &AM2320_SW, //tested
     &AM2320_I2C, //tested
     &BMP180, //tested
     &BMP280,     &BME280,
     &BME680, //tested
-    &Dallas, //tested
     &DHT11, //tested
     &DHT20, //tested
     &DHT21, //tested
-    &DHT22,
+    &DHT22, //tested
+    &Dallas, //tested
     &GXHT30, //tested
     &HDC1080, //tested
     &HDC2080, //tested
@@ -50,7 +51,9 @@ static const SensorModel* sensor_model_list[] = {
     &MAX6675, //tested
     &MAX31855, //tested
     &SCD30, //tested
+    &SHT2x, //tested
     &SHT30, //tested
+    &SI7021
 
 };
 //Number of sensor models
