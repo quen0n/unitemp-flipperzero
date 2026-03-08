@@ -216,7 +216,7 @@ SensorStatus unitemp_HDC2080_update(Sensor* sensor) {
 void HDC2080_read_meas_conf_reg(I2CSensor* i2c_sensor) {
     HDC2080Sensor* hdc2080_sensor = i2c_sensor->sensor_instance;
     uint8_t reg = unitemp_i2c_read_reg(i2c_sensor, MEASUREMENT_CONFIG);
-    hdc2080_sensor->meas_config_reg = *(HDC2080_MCR*)&reg;
+    memcpy(&(hdc2080_sensor->meas_config_reg), &reg, sizeof(uint8_t));
     UNITEMP_DEBUG("readed MCR: %02X", reg);
 }
 
@@ -230,7 +230,7 @@ void HDC2080_write_meas_conf_reg(I2CSensor* i2c_sensor) {
 void HDC2080_read_conf_reg(I2CSensor* i2c_sensor) {
     HDC2080Sensor* hdc2080_sensor = i2c_sensor->sensor_instance;
     uint8_t reg = unitemp_i2c_read_reg(i2c_sensor, RESET_DRYD_INT_CONF);
-    hdc2080_sensor->config_reg = *(HDC2080_CR*)&reg;
+    memcpy(&(hdc2080_sensor->config_reg), &reg, sizeof(uint8_t));
     UNITEMP_DEBUG("readed CR: %02X", reg);
 }
 
@@ -244,7 +244,7 @@ void HDC2080_write_conf_reg(I2CSensor* i2c_sensor) {
 void HDC2080_read_int_conf_reg(I2CSensor* i2c_sensor) {
     HDC2080Sensor* hdc2080_sensor = i2c_sensor->sensor_instance;
     uint8_t reg = unitemp_i2c_read_reg(i2c_sensor, INTERRUPT_ENABLE);
-    hdc2080_sensor->int_conf_reg = *(HDC2080_ICR*)&reg;
+    memcpy(&(hdc2080_sensor->int_conf_reg), &reg, sizeof(uint8_t));
     UNITEMP_DEBUG("readed ICR: %02X", reg);
 }
 
