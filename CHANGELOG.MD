@@ -20,9 +20,10 @@
 - новый датчик - HDC2080
 - временно выпилены SCD40/41 (жду пока дойдут с алика)
 - обновлён список датчиков в Readme
+- сканирование адресов на шине I2C при добавлении и редактировании датчиков
 ### TODO лист
 - индикатор состояния среды (светодиодная индикация, звуковая сигнализация)
-- скан шины I2C
+- добавить пункт "how to connect" в меню редактирования датчика
 - добавить недостающие датчики из старой версии (MAX31725, SCD40, SCD41)
 - напиздить датчики со всяких форков и PR (https://github.com/quen0n/unitemp-flipperzero/pull/50, TMP102 https://github.com/dolphindan23/unitemp-flipperzero-bme688/, BME688 https://github.com/macdja38/unimonit-flipperzero/blob/main/sensors/BME688.c)
 - написать драйверы для SHT40

@@ -113,7 +113,8 @@ typedef enum {
     CustomEventTextEditResult,
     CustomEventBack,
     CustomEventOneWireScan,
-    CustomEventGPIOChanged
+    CustomEventGPIOChanged,
+    CustomEventI2CScan,
 } UnitempCustomEventEnum;
 
 /* Declaration of structures */

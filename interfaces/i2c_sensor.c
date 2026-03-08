@@ -146,3 +146,22 @@ bool unitemp_i2c_sensor_free(Sensor* sensor) {
 SensorStatus unitemp_i2c_sensor_update(Sensor* sensor) {
     return sensor->model->updater(sensor);
 }
+
+uint8_t unitemp_i2c_bus_scan_next(I2CSensor* i2c_sensor) {
+    uint8_t i2c_addr = i2c_sensor->current_i2c_adress;
+    i2c_addr += 2; //next address
+    if(i2c_addr > i2c_sensor->max_i2c_adress || i2c_addr < i2c_sensor->min_i2c_adress) {
+        i2c_addr = i2c_sensor->min_i2c_adress;
+    }
+
+    for(uint8_t i = 0; i2c_addr + i <= i2c_sensor->max_i2c_adress; i += 2) {
+        unitemp_i2c_acquire(i2c_sensor->i2c_handle);
+        bool result = furi_hal_i2c_is_device_ready(i2c_sensor->i2c_handle, i2c_addr + i, 10);
+        furi_hal_i2c_release(i2c_sensor->i2c_handle);
+
+        if(result) {
+            return i2c_addr + i;
+        }
+    }
+    return 0;
+}

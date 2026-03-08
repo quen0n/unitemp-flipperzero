@@ -137,4 +137,19 @@ bool unitemp_i2c_read_array(I2CSensor* i2c_sensor, uint8_t len, uint8_t* data);
  * @return True if the device returned data
  */
 bool unitemp_i2c_write_array(I2CSensor* i2c_sensor, uint8_t len, uint8_t* data);
+
+/**
+ * @brief Scans the I2C bus for connected devices within a sensor's address range.
+ * 
+ * This function performs a sequential scan of the I2C bus, checking device availability
+ * at addresses within the range defined by the I2C sensor's minimum and maximum addresses.
+ * It maintains the current scan position to allow for incremental scanning across multiple calls.
+ * 
+ * @param sensor Pointer to the Sensor structure containing the I2C sensor instance to scan.
+ * 
+ * @return The I2C address of the first detected device, or 0 if no device is found.
+ *         
+ * 
+ */
+uint8_t unitemp_i2c_bus_scan_next(I2CSensor* i2c_sensor);
 #endif
