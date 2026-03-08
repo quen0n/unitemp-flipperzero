@@ -17,6 +17,7 @@
 */
 
 #include "../unitemp.h"
+#include "../helpers/unitemp_utils.h"
 
 static UnitempView view_mode = UnitempViewNoSensors;
 
@@ -80,7 +81,7 @@ void unitemp_scene_monitor_on_exit(void* context) {
     if(app->settings->infinity_backlight) {
         notification_message(app->notifications, &sequence_display_backlight_enforce_auto);
     }
-
+    unitemp_reset_environment_state(app->notifications);
     /* Signal the reader thread to cease operation and exit */
     furi_thread_flags_set(furi_thread_get_id(app->reader_thread), UnitempThreadFlagExit);
 

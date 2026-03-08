@@ -18,6 +18,7 @@
 #include "view_single_sensor.h"
 #include "../unitemp.h"
 #include "../helpers/unitemp_draw.h"
+#include "../helpers/unitemp_utils.h"
 #include "../interfaces/singlewire_sensor.h"
 #include "../interfaces/i2c_sensor.h"
 #include "../interfaces/spi_sensor.h"
@@ -366,6 +367,31 @@ void single_sensor_refresh_data(SingleSensor* instance) {
         {
             if(model->sensor_index > unitemp_sensors_get_count() - 1) {
                 model->sensor_index = unitemp_sensors_get_count() - 1;
+            }
+
+            EnvironmentState environment_state =
+                unitemp_determine_environment_state(unitemp_sensors_get(model->sensor_index));
+
+            UnitempApp* app = model->context;
+            NotificationApp* notification_app = app->notifications;
+
+            if(environment_state == EnvironmentStateDangerous) {
+                if(app->settings->infinity_backlight) {
+                    notification_message(
+                        app->notifications, &sequence_display_backlight_enforce_auto);
+                }
+            }
+            unitemp_display_environment_state(
+                notification_app,
+                environment_state,
+                app->settings->environment_state_led_indication,
+                true);
+
+            if(environment_state == EnvironmentStateDangerous) {
+                if(app->settings->infinity_backlight) {
+                    notification_message(
+                        app->notifications, &sequence_display_backlight_enforce_on);
+                }
             }
         },
         true);

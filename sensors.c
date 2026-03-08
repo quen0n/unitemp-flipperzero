@@ -271,9 +271,11 @@ int32_t unitemp_sensors_update_callback(void* context) {
     furi_check(context);
 
     UnitempApp* app = context;
+
     for(;;) {
         for(uint8_t i = 0; i < unitemp_sensors_get_count(); i++) {
-            unitemp_sensor_update((unitemp_sensors_get(i)), app);
+            Sensor* sensor = unitemp_sensors_get(i);
+            unitemp_sensor_update(sensor, app);
         }
 
         const uint32_t flags = furi_thread_flags_wait(

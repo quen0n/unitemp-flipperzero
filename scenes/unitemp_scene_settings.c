@@ -71,9 +71,29 @@ static void unitemp_scene_settings_heat_index_change_callback(VariableItem* item
 
     variable_item_set_current_value_text(item, unitemp_scene_settings_off_on_text[index]);
     app->settings->heat_index = (bool)index;
-    UNITEMP_DEBUG("Heat index calculation set to %s", unitemp_scene_settings_off_on_text[index]);
+    UNITEMP_DEBUG("Heat index displaying set to %s", unitemp_scene_settings_off_on_text[index]);
 }
 
+static void unitemp_scene_settings_env_state_led_change_callback(VariableItem* item) {
+    UnitempApp* app = variable_item_get_context(item);
+    const uint8_t index = variable_item_get_current_value_index(item);
+
+    variable_item_set_current_value_text(item, unitemp_scene_settings_off_on_text[index]);
+    app->settings->environment_state_led_indication = (bool)index;
+    UNITEMP_DEBUG(
+        "environment_state_led_indication %s", unitemp_scene_settings_off_on_text[index]);
+}
+
+static void unitemp_scene_settings_env_state_sound_change_callback(VariableItem* item) {
+    UnitempApp* app = variable_item_get_context(item);
+    const uint8_t index = variable_item_get_current_value_index(item);
+
+    variable_item_set_current_value_text(item, unitemp_scene_settings_off_on_text[index]);
+    app->settings->environment_state_sound_and_vibro_indication = (bool)index;
+    UNITEMP_DEBUG(
+        "environment_state_sound_and_vibro_indication %s",
+        unitemp_scene_settings_off_on_text[index]);
+}
 static void unitemp_scene_settings_otg_auto_on_change_callback(VariableItem* item) {
     UnitempApp* app = variable_item_get_context(item);
     const uint8_t index = variable_item_get_current_value_index(item);
@@ -88,16 +108,6 @@ void unitemp_scene_settings_on_enter(void* context) {
     VariableItemList* var_item_list = app->var_item_list;
     VariableItem* item;
     uint8_t value_index;
-
-    item = variable_item_list_add(
-        var_item_list,
-        "Backlight time",
-        COUNT_OF(unitemp_scene_settings_backlight_text),
-        unitemp_scene_settings_backlight_change_callback,
-        app);
-    value_index = app->settings->infinity_backlight;
-    variable_item_set_current_value_index(item, value_index);
-    variable_item_set_current_value_text(item, unitemp_scene_settings_backlight_text[value_index]);
 
     item = variable_item_list_add(
         var_item_list,
@@ -134,13 +144,45 @@ void unitemp_scene_settings_on_enter(void* context) {
 
     item = variable_item_list_add(
         var_item_list,
-        "Calc. heat index",
+        "Disp. heat index",
         COUNT_OF(unitemp_scene_settings_off_on_text),
         unitemp_scene_settings_heat_index_change_callback,
         app);
     value_index = app->settings->heat_index;
     variable_item_set_current_value_index(item, value_index);
     variable_item_set_current_value_text(item, unitemp_scene_settings_off_on_text[value_index]);
+
+    item = variable_item_list_add(
+        var_item_list,
+        "Env. state LED",
+        COUNT_OF(unitemp_scene_settings_off_on_text),
+        unitemp_scene_settings_env_state_led_change_callback,
+        app);
+    value_index = app->settings->environment_state_led_indication;
+    variable_item_set_current_value_index(item, value_index);
+    variable_item_set_current_value_text(item, unitemp_scene_settings_off_on_text[value_index]);
+
+    item = variable_item_list_add(
+        var_item_list,
+        "Env. state sound",
+        COUNT_OF(unitemp_scene_settings_off_on_text),
+        unitemp_scene_settings_env_state_sound_change_callback,
+        app);
+    value_index = app->settings->environment_state_sound_and_vibro_indication;
+
+    variable_item_set_current_value_index(item, value_index);
+    variable_item_set_current_value_text(item, unitemp_scene_settings_off_on_text[value_index]);
+
+    item = variable_item_list_add(
+        var_item_list,
+        "Backlight time",
+        COUNT_OF(unitemp_scene_settings_backlight_text),
+        unitemp_scene_settings_backlight_change_callback,
+        app);
+    value_index = app->settings->infinity_backlight;
+    variable_item_set_current_value_index(item, value_index);
+    variable_item_set_current_value_text(item, unitemp_scene_settings_backlight_text[value_index]);
+
     item = variable_item_list_add(
         var_item_list,
         "Auto 5V on",

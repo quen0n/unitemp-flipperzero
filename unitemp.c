@@ -75,6 +75,8 @@ bool unitemp_settings_load(void* context) {
     app->settings->heat_index = false;
     app->settings->otg_auto_on = true;
     app->settings->otg_latest_state = power_is_otg_enabled(app->power);
+    app->settings->environment_state_led_indication = true;
+    app->settings->environment_state_sound_and_vibro_indication = true;
 
     bool result = false;
     FlipperFormat* file = flipper_format_file_alloc(app->storage);
@@ -98,7 +100,11 @@ bool unitemp_settings_load(void* context) {
         app->settings->heat_index = (bool)uint32_value;
         flipper_format_read_uint32(file, "otg_auto_on", &uint32_value, 1);
         app->settings->otg_auto_on = (bool)uint32_value;
-
+        flipper_format_read_uint32(file, "environment_state_led_indication", &uint32_value, 1);
+        app->settings->environment_state_led_indication = (bool)uint32_value;
+        flipper_format_read_uint32(
+            file, "environment_state_sound_and_vibro_indication", &uint32_value, 1);
+        app->settings->environment_state_sound_and_vibro_indication = (bool)uint32_value;
         result = true;
     } while(0);
 

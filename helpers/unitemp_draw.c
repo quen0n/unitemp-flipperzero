@@ -236,7 +236,7 @@ void unitemp_draw_heat_index(
     float temperature = sensor->temperature;
 
     float heat_index;
-    if(temperature >= 26.67f) {
+    if(temperature >= 21.0f) {
         temperature = locale_celsius_to_fahrenheit(sensor->temperature);
         heat_index = unitemp_calculate_heat_index(temperature, sensor->humidity);
         if(temperature_unit == UT_TEMP_CELSIUS) {

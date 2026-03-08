@@ -30,6 +30,7 @@
 #include <dialogs/dialogs.h>
 
 #include "scenes/unitemp_scene.h"
+#include "helpers/unitemp_utils.h"
 
 #include "views/view_no_sensors.h"
 #include "views/view_single_sensor.h"
@@ -134,6 +135,10 @@ typedef struct {
     bool otg_auto_on;
     // Latest OTG status
     bool otg_latest_state;
+    // Light indication of the environment state
+    bool environment_state_led_indication;
+    // Sound and vibro indication of the environment state
+    bool environment_state_sound_and_vibro_indication;
 } UnitempSettings;
 
 typedef struct {
@@ -161,6 +166,7 @@ typedef struct {
 
     UnitempSettings* settings;
     Sensor* editable_sensor;
+    EnvironmentState environment_state;
 
     char* txt_buff;
 } UnitempApp;

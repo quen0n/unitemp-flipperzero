@@ -17,7 +17,18 @@
 */
 #ifndef UNTIEMP_UTILS_H_
 #define UNTIEMP_UTILS_H_
-#include "../unitemp.h"
+
+#include "notification/notification.h"
+#include "sensors.h"
+
+typedef enum {
+    EnvironmentStateUndefined,
+    EnvironmentStateExcellent,
+    EnvironmentStateGood,
+    EnvironmentStateModerate,
+    EnvironmentStatePoor,
+    EnvironmentStateDangerous
+} EnvironmentState;
 
 /**
  * @brief Calculates the dew point temperature based on ambient temperature and humidity.
@@ -50,11 +61,11 @@ float unitemp_calculate_dew_point(float temperature_in_celsius, float humidity_i
  * 
  * @return The calculated heat index value in degrees Fahrenheit.
  * 
- * @note The heat index is typically defined for temperatures above 80°F (26.7°C).
+ * @note The heat index is typically defined for temperatures above 70°F (21°C).
  *       For lower temperatures, the function may still return a value but it should
  *       not be relied upon for accuracy.
  * 
- * @see https://www.ncei.noaa.gov/products/heat-index for more information about heat index calculation.
+ * @see https://en.wikipedia.org/wiki/Heat_index for more information about heat index calculation.
  */
 float unitemp_calculate_heat_index(float temperature_in_fahrenheit, float humidity_in_percent);
 
@@ -85,4 +96,18 @@ float unitemp_convert_pa_to_kpa(float pressure_in_pa);
  * @return Pressure value in hPa
  */
 float unitemp_convert_pa_to_hpa(float pressure_in_pa);
+
+EnvironmentState unitemp_determine_environment_state_from_hi(float heat_index_in_fahrenheit);
+
+EnvironmentState unitemp_determine_environment_state_from_co2(uint16_t ppm);
+
+EnvironmentState unitemp_determine_environment_state(Sensor* sensor);
+
+void unitemp_display_environment_state(
+    NotificationApp* app,
+    EnvironmentState state,
+    bool light,
+    bool vibro_and_sound);
+
+void unitemp_reset_environment_state(NotificationApp* app);
 #endif //#UNTIEMP_UTILS_H_

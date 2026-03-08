@@ -7,7 +7,7 @@
 - On first application launch, measurement units will be automatically selected based on system localization settings
 - Saving the config is done only when it is initially created or subsequently modified
 - The backlight glows indefinitely only when displaying sensor values. In the menu, the backlight will off according to the system settings
-- The temperature index calculation has been corrected. It is now calculated only for temperatures above 26.67°C (80°F)
+- The temperature index calculation has been corrected. It is now calculated only for temperatures above 21°C (70°F)
 - It is now possible to disable automatic 5V power supply to port 1 in the settings
 - The 1-wire driver has been rewritten using native Flipper Zero firmware features
 - The display of CO2 concentration values ​​in the air has been improved. The ability to display the heat index along with the CO2 value has been added
