@@ -324,7 +324,7 @@ void unitemp_scene_sensor_edit_on_exit(void* context) {
         unitemp_sensor_init(sensor);
     }
 
-    if(sensor != NULL && !unitemp_sensor_in_list(sensor)) {
+    if(sensor != NULL && !unitemp_sensor_in_list(sensor) && !name_edit) {
         unitemp_sensor_free(sensor);
     }
 }
