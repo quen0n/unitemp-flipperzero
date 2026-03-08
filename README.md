@@ -10,12 +10,40 @@
 Development of the Unitemp app began in 2022. Much has changed since then: the Flipper Zero firmware API has stabilized, and new features and improvements have been added. The new version of Unitemp will update the code to reflect these changes, and accumulated bugs will be fixed. It is also planned to add a detailed description of connecting sensors to the Flipper Zero.
 
 ## List of supported sensors
-| Model          | Interface    | Temperature range           | Humidity range       |              |
-|:---------------|:------------:|:----------------------------|:---------------------|:------------:|
-| DHT11 (AOSONG) | Single Wire  | 0...50°C (±2°C, 1°C)        | 20...90% (±5%, 1%)   | [<img src=".github\images\sensors\DHT11\general.png" width="150"/>](https://www.aliexpress.com/w/wholesale-DHT11-module.html) |
-| DHT11 (ASAIR)  | Single Wire  | -20...60°C (±2°C, 0.1°C)    | 5...95% (±5%, 1%)    | [<img src=".github\images\sensors\DHT11\general.png" width="150"/>](https://www.aliexpress.com/w/wholesale-DHT11-module.html) |
-| DHT12          | Single Wire  | -20...60°C (±0.5°C, 0.1°C)  | 20...90% (±5%, 0.1%) | [<img src=".github\images\sensors\DHT12\general.png" width="150"/>](https://www.aliexpress.com/w/wholesale-DHT12-module.html) |
+| Model                | Interface     | Temperature range        | Humidity range      | Extra range                |Image and link |
+|:---------------------|:-------------:|:-------------------------|:--------------------|:---------------------------|:--------------:|
+|AHT10                 |I2C            |-40...85°C (±0.3, 0.01)   |0...100% (±2, 0.024) |                            ||
+|AHT20                 |I2C            |-40...85°C (±0.3, 0.01)   |0...100% (±2, 0.024) |                            ||
+|AM2320                |Single Wire/I2C|-40...80°C (±0.5, 0.1)    |0...100% (±3, 0.1)   |                            ||                 
+|BMP180                |I2C            |-40...85°C (±0.5, 0.01)   |                     |300...1100hPa (±1.0, 0.01)  ||
+|BMP280                |I2C            |-40...85°C (±1.0, 0.01)   |                     |300...1100hPa (±1.0, 0.0016)||
+|BME280                |I2C            |-40...85°C (±1.0, 0.01)   |0...100% (±3, 0.008) |300...1100hPa (±1.0, 0.0016)||
+|BME680                |I2C            |-40...85°C (±0.5, 0.01)   |0...100% (±3, 0.008) |300...1100hPa (±0.6, 0.18)  ||
+|DHT11 (AOSONG)        | Single Wire   | 0...50°C (±2, 1.0)       | 20...90% (±5, 1.0)  |                            |[<img src=".github\images\sensors\DHT11\general.png" width="150"/>](https://www.aliexpress.com/w/wholesale-DHT11-module.html) |
+|DHT11 (ASAIR)         | Single Wire   | -20...60°C (±2, 0.1)     | 5...95% (±5, 1.0)   |                            |[<img src=".github\images\sensors\DHT11\general.png" width="150"/>](https://www.aliexpress.com/w/wholesale-DHT11-module.html) |
+|DHT12                 | Single Wire   | -20...60°C (±0.5, 0.1)   | 20...90% (±5, 0.1)  |                            |[<img src=".github\images\sensors\DHT12\general.png" width="150"/>](https://www.aliexpress.com/w/wholesale-DHT12-module.html) |
+|DHT20/AM2108          |I2C            |-40...80°C (±0.5, 0.1)    |0...100% (±3, 0.1)   |                            ||
+|DHT21/AM2301          |Single Wire    |-40...80°C (±1.0, 0.1)    |0...100% (±3, 0.1)   |                            ||
+|DHT22/AM2302          |Single Wire    |-40...80°C (±0.5, 0.1)    |0...100% (±2, 0.1)   |                            ||
+|DS18B20               |One Wire       |-55...125°C (±0.5, 0.0625)|                     |                            ||
+|DS18S20 (DS1820)      |One Wire       |-55...125°C (±0.5, 0.5)   |                     |                            ||
+|DS1822                |One Wire       |-55...125°C (±2.0, 0.0625)|                     |                            ||
+|HDC1080               |I2C            |-40...125°C (±0.2, 0.1)   |0...100% (±2, 0.1)   |                            ||
+|HDC2080               |I2C            |-40...125°C (±0.2, 0.1)   |0...100% (±2, 0.1)   |                            ||
+|HTU21D(F)             |I2C            |-40...125°C (±0.3, 0.1)   |0...100% (±2, 0.04)  |                            ||
+|LM75                  |I2C            |-55...125°C (±2.0, 0.1)   |                     |                            ||
+|MAX6675               |SPI            |0...1024°C (±9.0, 0.25)   |                     |                            ||
+|MAX31855              |SPI            |-200...1800°C (±2.0, 0.25)|                     |                            ||
+|SCD30                 |I2C            |0...50°C (±0.4, 0.01)     |0...100% (±3, 0.004) |0...40000 ppm CO2 (±30, 1.0)||
+|SHT20                 |I2C            |-40...125°C (±0.3, 0.01)  |0...100% (±3, 0.04)  |                            ||
+|SHT21                 |I2C            |-40...125°C (±0.3, 0.01)  |0...100% (±2, 0.04)  |                            ||
+|SHT25                 |I2C            |-40...125°C (±0.2, 0.01)  |0...100% (±1.8, 0.04)|                            ||
+|Si7021                |I2C            |-40...125°C (±0.3, 0.01)  |0...100% (±2, 0.025) |                            ||
+|SHT30/GXHT30          |I2C            |-40...125°C (±0.2, 0.01)  |0...100% (±2, 0.01)  |                            ||
+|SHT31/GXHT31          |I2C            |-40...125°C (±0.2, 0.01)  |0...100% (±2, 0.01)  |                            ||
+|SHT35/GXHT35          |I2C            |-40...125°C (±0.2, 0.01)  |0...100% (±1.5, 0.01)|                            ||
 
+A comprehensive overview of the sensors can be found here (RU): https://kotyara12.ru/iot/th_sensors/
 ## Gratitudes
 - Special thanks [xMasterX](https://github.com/xMasterX), [vladin79](https://github.com/vladin79), [divinebird](https://github.com/divinebird), [jamisonderek](https://github.com/jamisonderek), [kaklik](https://github.com/kaklik)
 - [Svaarich](https://github.com/Svaarich) for the UI design 
