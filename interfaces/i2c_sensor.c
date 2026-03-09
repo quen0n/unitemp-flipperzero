@@ -148,20 +148,60 @@ SensorStatus unitemp_i2c_sensor_update(Sensor* sensor) {
 }
 
 uint8_t unitemp_i2c_bus_scan_next(I2CSensor* i2c_sensor) {
-    uint8_t i2c_addr = i2c_sensor->current_i2c_adress;
-    i2c_addr += 2; //next address
-    if(i2c_addr > i2c_sensor->max_i2c_adress || i2c_addr < i2c_sensor->min_i2c_adress) {
-        i2c_addr = i2c_sensor->min_i2c_adress;
+    static I2CSensor* last_sensor;
+    static uint8_t last_addr = 0;
+
+    if(i2c_sensor != last_sensor) {
+        last_sensor = i2c_sensor;
+        last_addr = i2c_sensor->current_i2c_adress;
     }
 
-    for(uint8_t i = 0; i2c_addr + i <= i2c_sensor->max_i2c_adress; i += 2) {
+    for(uint8_t i = 0; i < (i2c_sensor->max_i2c_adress - i2c_sensor->min_i2c_adress + 1); i++) {
+        last_addr += 2;
+        if(last_addr > i2c_sensor->max_i2c_adress || last_addr < i2c_sensor->min_i2c_adress) {
+            last_addr = i2c_sensor->min_i2c_adress;
+        }
+
         unitemp_i2c_acquire(i2c_sensor->i2c_handle);
-        bool result = furi_hal_i2c_is_device_ready(i2c_sensor->i2c_handle, i2c_addr + i, 10);
+        bool result = furi_hal_i2c_is_device_ready(i2c_sensor->i2c_handle, last_addr, 10);
         furi_hal_i2c_release(i2c_sensor->i2c_handle);
 
+        UNITEMP_DEBUG("Address 0x%02X is %s", (last_addr >> 1), result ? "found" : "not found");
+
         if(result) {
-            return i2c_addr + i;
+            return last_addr;
         }
     }
+
     return 0;
+
+    // static I2CSensor* last_sensor;
+    // static uint8_t last_addr = 0;
+
+    // if(i2c_sensor != last_sensor) {
+    //     last_sensor = i2c_sensor;
+    //     last_addr = i2c_sensor->current_i2c_adress;
+    // }
+
+    // uint8_t start_addr = last_addr;
+    // for(uint8_t i = 2; last_addr + i != start_addr; i += 2) {
+    //     if(last_addr + i > i2c_sensor->max_i2c_adress ||
+    //        last_addr + i < i2c_sensor->min_i2c_adress) {
+    //         last_addr = i2c_sensor->min_i2c_adress;
+    //         i = 0;
+    //         if(last_addr == start_addr) return 0;
+    //     }
+
+    //     unitemp_i2c_acquire(i2c_sensor->i2c_handle);
+    //     bool result = furi_hal_i2c_is_device_ready(i2c_sensor->i2c_handle, last_addr + i, 10);
+    //     furi_hal_i2c_release(i2c_sensor->i2c_handle);
+
+    //     UNITEMP_DEBUG("Address 0x%02X is %s", (last_addr + i), result ? "found" : "not found");
+
+    //     if(result) {
+    //         last_addr += i;
+    //         return last_addr;
+    //     }
+    // }
+    // return 0;
 }
