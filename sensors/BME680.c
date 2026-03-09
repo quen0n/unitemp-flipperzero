@@ -395,7 +395,7 @@ SensorStatus unitemp_BME680_update(Sensor* sensor) {
     unitemp_i2c_read_reg_array(i2c_sensor, 0xF4, 2, buff);
     if(buff[0] == 0) {
         FURI_LOG_W(APP_NAME, "Sensor %s is not initialized!", sensor->name);
-        return UT_SENSORSTATUS_ERROR;
+        return UT_SENSORSTATUS_UNINITIALIZED;
     }
 
     unitemp_i2c_write_reg(
