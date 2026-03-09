@@ -257,6 +257,11 @@ void single_sensor_draw_sensor(Canvas* canvas, Sensor* sensor, SingleSensorViewM
 
 static void single_sensor_draw_callback(Canvas* canvas, void* model) {
     SingleSensorViewModel* view_model = model;
+
+    if(view_model->sensor_index > unitemp_sensors_get_count() - 1) {
+        view_model->sensor_index = unitemp_sensors_get_count() - 1;
+    }
+
     Sensor* sensor = unitemp_sensors_get(view_model->sensor_index);
     single_sensor_draw_sensor(canvas, sensor, view_model);
 }

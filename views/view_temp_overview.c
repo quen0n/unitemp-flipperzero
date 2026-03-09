@@ -86,6 +86,12 @@ void temp_overview_draw(Canvas* canvas, TempOverviewViewModel* view_model) {
 
 static void temp_overview_draw_callback(Canvas* canvas, void* model) {
     TempOverviewViewModel* view_model = model;
+
+    uint8_t pages = unitemp_sensors_get_count() / 4 + (unitemp_sensors_get_count() % 4 ? 1 : 0);
+    if(view_model->sensors_page > pages) {
+        view_model->sensors_page = pages - 1;
+    }
+
     temp_overview_draw(canvas, view_model);
 }
 

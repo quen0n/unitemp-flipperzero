@@ -159,7 +159,9 @@ bool unitemp_sensor_delete(Sensor* sensor) {
         sensors_list + index_to_remove,
         sensors_list + index_to_remove + 1,
         (sensors_count - index_to_remove - 1) * sizeof(Sensor*));
+
     sensors_count--;
+
     if(sensors_count != 0) {
         sensors_list = (Sensor**)realloc(sensors_list, (sensors_count) * sizeof(Sensor*));
         if(sensors_list == NULL) {
