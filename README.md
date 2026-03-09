@@ -7,7 +7,24 @@
 [Flipper Zero](https://flipper.net/products/flipper-zero) application for reading temperature, humidity and pressure sensors like a DHT11/22, DS18B20, BMP280, HTU21 and more. 
 
 ## 🚧 Unitemp 2 is under construction 🚧
-Development of the Unitemp app began in 2022. Much has changed since then: the Flipper Zero firmware API has stabilized, and new features and improvements have been added. The new version of Unitemp will update the code to reflect these changes, and accumulated bugs will be fixed. It is also planned to add a detailed description of connecting sensors to the Flipper Zero.
+Development of the Unitemp app began in 2022. Much has changed since then: the Flipper Zero firmware API has stabilized, and new features and improvements have been added. The new version of Unitemp will update the code to reflect these changes, and accumulated bugs will be fixed. It is also planned to add a detailed description of connecting sensors to the Flipper Zero. 
+
+❗You can already try out the updated app by installing it yourself or as part of the [Unleashed Firmware](https://web.unleashedflip.com/) dev builds. You can review the changes in [CHANGELOG.md](CHANGELOG.md). Please test the app and report bugs in [Issues](https://github.com/quen0n/unitemp-flipperzero/issues/new) or on [Discord](https://discord.com/channels/740930220399525928/1056727938747351060).
+
+## How to install latest dev version
+- Go to [Actions](https://github.com/quen0n/unitemp-flipperzero/actions), select last workflow run
+<img width="1814" height="503" alt="image" src="https://github.com/user-attachments/assets/cc3c7459-c2a7-41f9-bd01-40a400757cca" />
+
+- Click to download icon
+<img width="1882" height="732" alt="image" src="https://github.com/user-attachments/assets/d08e3d74-447d-426c-b7a9-46a6ee8619b0" />
+
+- Download the archive and unzip it
+- Upload unitemp.fap to the flipper in SD Card/apps/GPIO via qFlipper, [Flipper lab](https://lab.flipper.net/archive), or mobile app
+<img width="862" height="532" alt="image" src="https://github.com/user-attachments/assets/7d104513-21fc-4772-b405-982385f8ecd5" />
+
+- Enjoy!
+
+
 
 ## List of supported sensors
 | Model                | Interface     | Temperature range        | Humidity range      | Extra range                |Image and link |
