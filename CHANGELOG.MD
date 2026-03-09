@@ -21,6 +21,7 @@
 - временно выпилены SCD40/41 (жду пока дойдут с алика)
 - обновлён список датчиков в Readme
 - сканирование адресов на шине I2C при добавлении и редактировании датчиков
+- добавлена светодиодная, звуковая и вибро индикация состояния среды
 ## Unitemp 1.8
 - Fixes and improvements. Many thanks to [xMasterX](https://github.com/xMasterX) for their help and support.
 ## Unitemp 1.7

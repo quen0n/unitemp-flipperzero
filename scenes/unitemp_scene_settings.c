@@ -211,5 +211,6 @@ bool unitemp_scene_settings_on_event(void* context, SceneManagerEvent event) {
 void unitemp_scene_settings_on_exit(void* context) {
     UnitempApp* app = context;
     variable_item_list_reset(app->var_item_list);
+    variable_item_list_set_selected_item(app->var_item_list, 0);
     unitemp_settings_save(app);
 }
