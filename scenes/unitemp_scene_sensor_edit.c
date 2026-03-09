@@ -68,7 +68,12 @@ static void _i2c_scan_event_callback(void* context) {
         i2c_sensor->current_i2c_adress = i2c_addr;
         snprintf(app->txt_buff, 5, "0x%2X", i2c_sensor->current_i2c_adress >> 1);
         variable_item_set_current_value_text(i2c_addr_item, app->txt_buff);
-        variable_item_set_values_count(i2c_addr_item, 2);
+        if(i2c_sensor->max_i2c_adress - i2c_sensor->min_i2c_adress) {
+            variable_item_set_values_count(i2c_addr_item, 2);
+        } else {
+            variable_item_set_values_count(i2c_addr_item, 1);
+        }
+
         if(i2c_sensor->current_i2c_adress == i2c_sensor->min_i2c_adress) {
             variable_item_set_current_value_index(i2c_addr_item, 0);
         } else if(i2c_sensor->current_i2c_adress == i2c_sensor->max_i2c_adress) {

@@ -147,6 +147,18 @@ SensorStatus unitemp_i2c_sensor_update(Sensor* sensor) {
     return sensor->model->updater(sensor);
 }
 
+bool unitemp_i2c_addr_is_used(uint8_t addr) {
+    for(uint8_t i = 0; i < unitemp_sensors_get_count(); i++) {
+        Sensor* sensor = unitemp_sensors_get(i);
+        if(sensor->model->interface == &unitemp_i2c) {
+            I2CSensor* i2c_sensor = sensor->instance;
+            if(i2c_sensor->current_i2c_adress == addr) return true;
+        }
+    }
+
+    return false;
+}
+
 uint8_t unitemp_i2c_bus_scan_next(I2CSensor* i2c_sensor) {
     static I2CSensor* last_sensor;
     static uint8_t last_addr = 0;
@@ -166,9 +178,14 @@ uint8_t unitemp_i2c_bus_scan_next(I2CSensor* i2c_sensor) {
         bool result = furi_hal_i2c_is_device_ready(i2c_sensor->i2c_handle, last_addr, 10);
         furi_hal_i2c_release(i2c_sensor->i2c_handle);
 
-        UNITEMP_DEBUG("Address 0x%02X is %s", (last_addr >> 1), result ? "found" : "not found");
+        bool is_used = unitemp_i2c_addr_is_used(last_addr);
+        UNITEMP_DEBUG(
+            "Address 0x%02X is %s and %s used for other sensor",
+            (last_addr >> 1),
+            result ? "found" : "not found",
+            is_used ? "is" : "isn't");
 
-        if(result) {
+        if(result && !is_used) {
             return last_addr;
         }
     }

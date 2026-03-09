@@ -152,4 +152,13 @@ bool unitemp_i2c_write_array(I2CSensor* i2c_sensor, uint8_t len, uint8_t* data);
  * 
  */
 uint8_t unitemp_i2c_bus_scan_next(I2CSensor* i2c_sensor);
+
+/**
+ * @brief Checks if the specified I2C address is already in use by a sensor.
+ * 
+ * @param addr The I2C address to check (8-bit format).
+ * 
+ * @return true if the address is already used by an active sensor, false otherwise.
+ */
+bool unitemp_i2c_addr_is_used(uint8_t addr);
 #endif
