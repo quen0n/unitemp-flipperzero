@@ -1,32 +1,34 @@
 # Unitemp changelog
 ## Unitemp 2.0
-#### Общее
-- Файлы конфигурации и сохранений датчиков перемещены в apps_data. Сохраненные датчики из предыдущей версии приложения автоматически мигрируют в новое расположение.
-- При первом запуске приложения единицы измерения автоматически выбираются на основе настроек локализации системы.
-- Исправлен расчет температурного индекса. Теперь он рассчитывается только для температур выше 21°C (70°F).
-- Появилась возможность подключения датчиков Dallas (DS18B20 и т.д.) к порту 17 (1W).
-- Добавлена поддержка датчика HDC2080.
-- Временно удалены датчики SCD40/41.
-- Обновлён список датчиков в README.
-#### Пользовательский интерфейс
-- Добавлена светодиодная, звуковая и вибро индикация состояния среды. RGB-светодиод покажет насколько безопасен тепловой индекс и концентрация CO2 в воздухе. Зелёный - безопасно, жёлтый - нужно исключить активную нагрузку и проветрить помещение. Красный - окружающая среда опасна для здоровья. Мигающий красный и звуко-вибро сигнализация - смертельная опасность для здоровья.
-- При создании или редактировании датчика добавлено сканирование подключенных устройств к шине I2C. Это позволит легко найти нужный адрес и не позволит создать датчики с одинаковыми адресами.
-- Улучшено отображение значений концентрации CO2 в воздухе. Добавлена ​​возможность отображения теплового индекса вместе с показателем CO2.
-- Добавлены единицы измерения при отображении температуры точки росы.
-- Добавлена настройка управления питанием 5 В.
-- Подсветка работает постоянно только при отображении значений датчиков. В меню подсветка будет выключена в соответствии с настройками системы.
-- Добавлено состояние ожидания значений с датчика. Если датчик инициализирован, но его значения ещё не готовы, отображается сообщение "Reading values...".
-- Сообщение "No sensors found" заменено на "No sensors yet"
-- Иконка плачущего дельфина заменена на сконфуженного (что бы это не значило).
-- Новые окна и прочие улучшения GUI.
-#### Код приложения
-- Общее улучшение качества кода. Графический интерфейс был полностью переписан с использованием нативных библиотек в прошивке Flipper Zero.
-- Исправлены утечки памяти.
-- Опрос датчиков и отрисовка экрана теперь производится асинхронно в отдельных потоках.
-- Сохранение конфигурации выполняется только при ее первоначальном создании или последующем изменении.
-- Драйвер 1-wire переписан с использованием нативных функций прошивки Flipper Zero. Много исправлений и улучшений.
-- Добавлена проверка инициализации всех датчиков и реинициализация при ошибке.
-- Драйвер SCD30 полностью переписан. Теперь значения и статус датчика отображаются корректно.
+#### Новые функции и датчики
+#### New Features and Sensors
+- Added LED, sound, and vibration indication of the environment's status. The RGB LED will show the safety level of the thermal index and CO2 concentration in the air. Green means safe, yellow means remove active loads and ventilate the room. Red means the environment is hazardous to health. Flashing red and audible and vibration alarms indicate a fatal health hazard.
+- Added scanning for devices connected to the I2C bus when creating or editing a sensor. This will make it easy to find the required address and prevent creating sensors with duplicate addresses.
+- Added the ability to connect Dallas sensors (DS18B20, etc.) to port 17 (1W).
+- Added the ability to display the thermal index along with the CO2 reading.
+- When the application is first launched, units of measurement are automatically selected based on the system's localization settings.
+- Added units of measurement when displaying dew point temperature. 
+- Added 5V power management setting.
+- Added support for the HDC2080 sensor.
+#### General
+- Sensor configuration and save files have been moved to apps_data. Saved sensors from the previous version of the app will automatically migrate to the new location.
+- Fixed temperature index calculation. It is now only calculated for temperatures above 21°C (70°F).
+- Temporarily removed SCD40/41 sensors.
+- Updated the list of sensors in the README.
+#### User Interface
+- Improved display of CO2 concentration values ​​in the air.
+- The backlight is always on only when sensor values ​​are displayed. In the menu, the backlight will be turned off according to the system settings.
+- Added a wait state for sensor values. If a sensor is initialized but its values ​​are not yet ready, the message "Reading values..." is displayed. - The "No sensors found" message has been replaced with "No sensors yet."
+- The crying dolphin icon has been replaced with a confused one (whatever that means).
+- New windows and other GUI improvements.
+#### Application Code
+- General code quality improvements. The GUI has been completely rewritten using native libraries.
+- Memory leaks have been fixed.
+- Sensor polling and screen rendering are now performed asynchronously in separate threads.
+- Configuration is now saved only upon initial creation or subsequent modification.
+- The 1-wire driver has been rewritten using native Flipper Zero firmware functions. Numerous fixes and improvements have been made.
+- A check for the initialization of all sensors has been added, along with reinitialization on error.
+- The SCD30 driver has been completely rewritten. Sensor values ​​and status are now displayed correctly.
 
 ## Unitemp 1.8
 - Fixes and improvements. Many thanks to [xMasterX](https://github.com/xMasterX) for their help and support.
