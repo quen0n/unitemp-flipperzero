@@ -393,10 +393,10 @@ bool unitemp_sensors_load(void* context) {
                 }
             } else {
                 FURI_LOG_E(
-                    APP_NAME,
-                    "Unsupported sensor name (%s) or sensor model (%s)",
-                    name,
-                    sensor_model->modelname);
+                    APP_NAME, "Unsupported sensor name (%s) or sensor model (%s)", name, model);
+                furi_string_free(line);
+                file_stream_close(app->file_stream);
+                break;
             }
         }
         file_stream_close(app->file_stream);

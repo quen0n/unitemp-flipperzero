@@ -66,7 +66,7 @@ uint64_t SCD4x_get_serial_number(Sensor* sensor);
 
 static bool _send_cmd(Sensor* sensor, uint16_t cmd);
 static uint8_t _compute_crc8(uint8_t* message, uint8_t len);
-static bool _send_cmd_arg_crc(Sensor* sensor, uint16_t cmd, uint16_t arg);
+//static bool _send_cmd_arg_crc(Sensor* sensor, uint16_t cmd, uint16_t arg);
 
 bool unitemp_SCD4x_alloc(Sensor* sensor, char* args) {
     UNUSED(args);
@@ -98,7 +98,7 @@ bool unitemp_SCD4x_deinit(Sensor* sensor) {
 }
 
 SensorStatus unitemp_SCD4x_update(Sensor* sensor) {
-    if(!SCD4x_get_data_ready_status(sensor)) return UT_SENSORSTATUS_POLLING;
+    if(!SCD4x_get_data_ready_status(sensor)) return UT_SENSORSTATUS_TIMEOUT;
 
     return SCD4x_read_measurement(sensor) ? UT_SENSORSTATUS_OK : UT_SENSORSTATUS_TIMEOUT;
 }
@@ -123,15 +123,15 @@ static bool _send_cmd(Sensor* sensor, uint16_t cmd) {
     return unitemp_i2c_write_array(i2c_sensor, 2, buff);
 }
 
-static bool _send_cmd_arg_crc(Sensor* sensor, uint16_t cmd, uint16_t arg) {
-    I2CSensor* i2c_sensor = (I2CSensor*)sensor->instance;
+// static bool _send_cmd_arg_crc(Sensor* sensor, uint16_t cmd, uint16_t arg) {
+//     I2CSensor* i2c_sensor = (I2CSensor*)sensor->instance;
 
-    uint8_t buff[5] = {cmd >> 8, cmd, arg >> 8, arg};
-    uint8_t crc = _compute_crc8(buff + 2, 2);
-    buff[4] = crc;
+//     uint8_t buff[5] = {cmd >> 8, cmd, arg >> 8, arg};
+//     uint8_t crc = _compute_crc8(buff + 2, 2);
+//     buff[4] = crc;
 
-    return unitemp_i2c_write_array(i2c_sensor, 5, buff);
-}
+//     return unitemp_i2c_write_array(i2c_sensor, 5, buff);
+// }
 
 bool SCD4x_start_periodic_measurement(Sensor* sensor) {
     return _send_cmd(sensor, COMMAND_START_PERIODIC_MEASUREMENT);
