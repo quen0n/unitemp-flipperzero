@@ -22,6 +22,7 @@
 #include "./sensors/DS18x2x.h"
 #include "./sensors/SCD30.h"
 #include "./sensors/MAX31725.h"
+#include "./sensors/SCD4x.h"
 
 #define DISPLAY_UPDATE_PERIOD_MS 250UL
 #define APP_SENSORS_FILENAME     "sensors.list"
@@ -53,6 +54,7 @@ static const SensorModel* sensor_model_list[] = {
     &MAX31725,
     &MAX31855, //tested
     &SCD30, //tested
+    &SCD4x, //tested
     &SHT2x, //tested
     &SHT30, //tested
     &SI7021
