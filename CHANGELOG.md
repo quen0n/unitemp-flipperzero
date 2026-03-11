@@ -1,5 +1,7 @@
 # Unitemp changelog
 ## Unitemp 2.0
+##### Unitemp 2.0.1-dev
+- Fixed a bug where scanning the OneWire bus was not possible if there was an active sensor on it.
 #### New Features and Sensors
 - Added LED, sound, and vibration indication of the environment's status. The RGB LED will show the safety level of the thermal index and CO2 concentration in the air. Green means safe, yellow means remove active loads and ventilate the room. Red means the environment is hazardous to health. Flashing red and audible and vibration alarms indicate a fatal health hazard.
 - Added scanning for devices connected to the I2C bus when creating or editing a sensor. This will make it easy to find the required address and prevent creating sensors with duplicate addresses.
