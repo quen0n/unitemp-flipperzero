@@ -1,5 +1,8 @@
 # Unitemp changelog
 ## Unitemp 2.0
+##### Unitemp 2.0.2-dev
+- Some bug fixes
+- Added SHT40/41/45 sensors
 ##### Unitemp 2.0.1-dev
 - Fixed a bug where scanning the OneWire bus was not possible if there was an active sensor on it.
 - Added SCD40/41 sensors.

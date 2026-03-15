@@ -13,6 +13,7 @@
 #include "./sensors/BMx280.h"
 #include "./sensors/BME680.h"
 #include "./sensors/SHT30.h"
+#include "./sensors/SHT4x.h"
 #include "./sensors/BMP180.h"
 #include "./sensors/HTU21x.h"
 #include "./sensors/HDC1080.h"
@@ -57,6 +58,7 @@ static const SensorModel* sensor_model_list[] = {
     &SCD4x, //tested
     &SHT2x, //tested
     &SHT30, //tested
+    &SHT4x, //tested
     &SI7021
 
 };
