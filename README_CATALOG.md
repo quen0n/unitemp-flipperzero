@@ -1,7 +1,5 @@
 ![Flipper usage](https://user-images.githubusercontent.com/10090793/211182642-e41919c5-3091-4125-815a-2d6a77a859f6.png)
 # 🌡️ Unitemp - Universal temperature sensor reader
-[![License](https://img.shields.io/github/license/quen0n/unitemp-flipperzero)](https://github.com/quen0n/unitemp-flipperzero/blob/dev/LICENSE.md)
-
 An app for [Flipper Zero](https://flipper.net/products/flipper-zero) that turns your gadget into a multifunctional environmental sensor. It can read data from various sensors you connect to Flipper Zero, for example, temperature, humidity, atmospheric pressure, and even CO₂ levels. You can assess the climate at home or in the office, or simply use Flipper Zero as a portable thermometer.
 
 # Features
