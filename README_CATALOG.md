@@ -4,7 +4,7 @@
 
 An app for [Flipper Zero](https://flipper.net/products/flipper-zero) that turns your gadget into a multifunctional environmental sensor. It can read data from various sensors you connect to Flipper Zero, for example, temperature, humidity, atmospheric pressure, and even CO₂ levels. You can assess the climate at home or in the office, or simply use Flipper Zero as a portable thermometer.
 
-## Features
+# Features
 - Real-time display of temperature, humidity, pressure, and CO₂ concentration.
 - [Heat index](https://en.wikipedia.org/wiki/Heat_index) and [dew point](https://en.wikipedia.org/wiki/Dew_point) temperature display.
 - Environmental quality analysis and visual and audible indicators (good 🟢, normal 🟡, poor 🟠, dangerous 🔴)
@@ -13,17 +13,17 @@ An app for [Flipper Zero](https://flipper.net/products/flipper-zero) that turns 
 - User-friendly and intuitive interface.
 
 
-## Connecting sensors
+# Connecting sensors
 To connect, you will need a supported sensor and [Dupont male-female](https://www.aliexpress.com/w/wholesale-Dupont-male-female.html) wires. The connection method depends on the interface.
 
-### Single Wire (DHT11 and etc)
+## Single Wire (DHT11 and etc)
 |Sensor pin   | Flipper Zero pin    |
 |:-----------:|:-------------------:|
 |VCC          |9 (3V3)              |
 |GND          |any GND (8,11 or 18) |
 |Data         |any free digital port|
 
-### 1-Wire (DS18B20 and etc)
+## 1-Wire (DS18B20 and etc)
 |Sensor pin   | Flipper Zero pin    |
 |:-----------:|:-------------------:|
 |VCC          |9 (3V3)              |
@@ -32,7 +32,7 @@ To connect, you will need a supported sensor and [Dupont male-female](https://ww
 
 Pin 17 (1W) is preferred. You can also connect multiple sensors in parallel using the same circuit.
 
-### SPI (MAX6675, MAX31725 and etc)
+## SPI (MAX6675, MAX31725 and etc)
 |Sensor pin   | Flipper Zero pin    |
 |:-----------:|:-------------------:|
 |VCC          |9 (3V3)              |
@@ -42,7 +42,7 @@ Pin 17 (1W) is preferred. You can also connect multiple sensors in parallel usin
 |SCK (CLK)    |5 (B3)               |
 |CS (SS)      |any free digital port|
 
-### I²C
+## I²C
 |Sensor pin| Flipper Zero pin   |
 |:--------:|:------------------:|
 |VCC       |9 (3V3)             |
@@ -50,21 +50,21 @@ Pin 17 (1W) is preferred. You can also connect multiple sensors in parallel usin
 |SDA       |15 (C1)             |
 |SCL       |16 (C2)             |
 
-## Need help? Discussions?
+# Need help? Discussions?
 
 Join the discussion, ask a question, or just send a photo of the flipper with sensors to [Discord](https://discord.com/channels/740930220399525928/1056727938747351060). [Invite link](https://discord.com/invite/flipper)
 
-## Contributing 
+# Contributing 
 You can write a driver for your favorite sensor and submit it in pull requests. This is encouraged.
 
-## Gratitudes
+# Gratitudes
 - Special thanks [xMasterX](https://github.com/xMasterX), [vladin79](https://github.com/vladin79), [divinebird](https://github.com/divinebird), [jamisonderek](https://github.com/jamisonderek), [kaklik](https://github.com/kaklik)
 - [Svaarich](https://github.com/Svaarich) for the UI design 
 - Unleashed firmware community for sensors testing and feedbacks
 - ...and everyone who helped with development and testing
 
 
-## List of supported sensors
+# List of supported sensors
 
 | Model                | Temperature range<br>(accuracy, step)| Humidity range<br>(accuracy, step)| Extra range<br>(accuracy, step)| Interface     |Image and link |
 |:--------------------:|:-------------------------------:|:------------------------:|:---------------------------:|:-------------:|:--------------:|
