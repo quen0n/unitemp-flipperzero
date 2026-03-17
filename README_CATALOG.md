@@ -1,8 +1,6 @@
 ![Flipper usage](https://user-images.githubusercontent.com/10090793/211182642-e41919c5-3091-4125-815a-2d6a77a859f6.png)
 # 🌡️ Unitemp - Universal temperature sensor reader
-[![GitHub release](https://img.shields.io/github/release/quen0n/unitemp-flipperzero?include_prereleases=&sort=semver&color=blue)](https://github.com/quen0n/unitemp-flipperzero/releases/)
 [![License](https://img.shields.io/github/license/quen0n/unitemp-flipperzero)](https://github.com/quen0n/unitemp-flipperzero/blob/dev/LICENSE.md)
-[![Build dev](https://github.com/quen0n/unitemp-flipperzero/actions/workflows/build_dev.yml/badge.svg?branch=dev)](https://github.com/quen0n/unitemp-flipperzero/actions/workflows/build_dev.yml)
 
 An app for [Flipper Zero](https://flipper.net/products/flipper-zero) that turns your gadget into a multifunctional environmental sensor. It can read data from various sensors you connect to Flipper Zero, for example, temperature, humidity, atmospheric pressure, and even CO₂ levels. You can assess the climate at home or in the office, or simply use Flipper Zero as a portable thermometer.
 
@@ -14,14 +12,6 @@ An app for [Flipper Zero](https://flipper.net/products/flipper-zero) that turns 
 - Support for a [wide range of digital sensors](README.md#list-of-supported-sensors) with [I²C](README.md#ic), [SPI](README.md#1-wire-ds18b20-and-etc), [1-Wire](README.md#1-wire-ds18b20-and-etc), and [Single Wire](README.md#single-wire-dht11-and-etc) connectivity.
 - User-friendly and intuitive interface.
 
-## Installation
-Use the [ufbt](https://github.com/flipperdevices/flipperzero-ufbt) to compile and install the development version directly to Flipper.
-
-    git clone https://github.com/quen0n/unitemp-flipperzero.git
-    cd unitemp-flipperzero
-    git checkout -b dev
-    ufbt update
-    ufbt && ufbt launch 
 
 ## Connecting sensors
 To connect, you will need a supported sensor and [Dupont male-female](https://www.aliexpress.com/w/wholesale-Dupont-male-female.html) wires. The connection method depends on the interface.
@@ -70,7 +60,7 @@ You can write a driver for your favorite sensor and submit it in pull requests. 
 ## Gratitudes
 - Special thanks [xMasterX](https://github.com/xMasterX), [vladin79](https://github.com/vladin79), [divinebird](https://github.com/divinebird), [jamisonderek](https://github.com/jamisonderek), [kaklik](https://github.com/kaklik)
 - [Svaarich](https://github.com/Svaarich) for the UI design 
-- [Unleashed firmware](https://github.com/DarkFlippers/unleashed-firmware) community for sensors testing and feedbacks
+- Unleashed firmware community for sensors testing and feedbacks
 - ...and everyone who helped with development and testing
 
 
