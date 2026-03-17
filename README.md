@@ -8,7 +8,7 @@ An app for [Flipper Zero](https://flipper.net/products/flipper-zero) that turns 
 
 ## Features
 - Real-time display of temperature, humidity, pressure, and CO₂ concentration.
-- Heat index and dew point temperature display.
+- [Heat index](https://en.wikipedia.org/wiki/Heat_index) and [dew point](https://en.wikipedia.org/wiki/Dew_point) temperature display.
 - Environmental quality analysis and visual and audible indicators (good 🟢, normal 🟡, poor 🟠, dangerous 🔴)
 - Automatic and manual selection of temperature (degrees Celsius/Fahrenheit) and pressure (mmHg/inHg/kPa/hPa) units.
 - Support for a [wide range of digital sensors](README.md#list-of-supported-sensors) with [I²C](README.md#ic), [SPI](README.md#1-wire-ds18b20-and-etc), [1-Wire](README.md#1-wire-ds18b20-and-etc), and [Single Wire](README.md#single-wire-dht11-and-etc) connectivity.
