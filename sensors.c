@@ -451,14 +451,17 @@ bool unitemp_sensors_save(void* context) {
     for(uint8_t i = 0; i < unitemp_sensors_get_count(); i++) {
         Sensor* sensor = unitemp_sensors_get(i);
         //Replacing a space with ?
+
+        char tmp_sensor_name[11];
+        strcpy(tmp_sensor_name, sensor->name);
         for(uint8_t i = 0; i < 10; i++) {
-            if(sensor->name[i] == ' ') sensor->name[i] = '?';
+            if(tmp_sensor_name[i] == ' ') tmp_sensor_name[i] = '?';
         }
 
         stream_write_format(
             app->file_stream,
             "%s %s %d ",
-            sensor->name,
+            tmp_sensor_name,
             sensor->model->modelname,
             sensor->temperature_offset);
 
