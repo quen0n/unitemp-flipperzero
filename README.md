@@ -2,7 +2,7 @@
 # 🌡️ Unitemp - Universal temperature sensor reader
 [![GitHub release](https://img.shields.io/github/release/quen0n/unitemp-flipperzero?include_prereleases=&sort=semver&color=blue)](https://github.com/quen0n/unitemp-flipperzero/releases/)
 [![License](https://img.shields.io/github/license/quen0n/unitemp-flipperzero)](https://github.com/quen0n/unitemp-flipperzero/blob/release/LICENSE.md)
-[![Build release](https://github.com/quen0n/unitemp-flipperzero/actions/workflows/build_release.yml/badge.svg?branch=release)](https://github.com/quen0n/unitemp-flipperzero/actions/workflows/build_release.yml)
+[![Build release](https://github.com/quen0n/unitemp-flipperzero/actions/workflows/build_release.yml/badge.svg?branch=master)](https://github.com/quen0n/unitemp-flipperzero/actions/workflows/build_release.yml)
 
 An app for [Flipper Zero](https://flipper.net/products/flipper-zero) that turns your gadget into a multifunctional environmental sensor. It can read data from various sensors you connect to Flipper Zero, for example, temperature, humidity, atmospheric pressure, and even CO₂ levels. You can assess the climate at home or in the office, or simply use Flipper Zero as a portable thermometer.
 
