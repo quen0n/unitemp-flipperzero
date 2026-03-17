@@ -1,4 +1,4 @@
-name: "FAP: Build Unitemp dev"
+name: "FAP: Build Unitemp release"
 on: [push, pull_request]
 jobs:
   ufbt-build-action:
