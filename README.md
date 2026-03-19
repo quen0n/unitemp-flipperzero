@@ -117,5 +117,6 @@ You can write a driver for your favorite sensor and submit it in pull requests. 
 |SHT43                 |-40...125°C<br>(±0.2°C, 0.01°C)  |0...100%<br>(±1.8%, 0.01%)|                             |[I²C](README.md#ic)|[<img src=".github\images\sensors\SHT4x\SHT43.png" height="150"/>](https://www.aliexpress.com/w/wholesale-SHT43-module.html)|
 |SHT45                 |-40...125°C<br>(±0.1°C, 0.01°C)  |0...100%<br>(±1%, 0.01%)  |                             |[I²C](README.md#ic)|[<img src=".github\images\sensors\SHT4x\SHT45.png" height="150"/>](https://www.aliexpress.com/w/wholesale-SHT45-module.html)|
 |Si7021                |-40...125°C<br>(±0.3°C, 0.01°C)  |0...100%<br>(±2%, 0.025%) |                             |[I²C](README.md#ic)|[<img src=".github\images\sensors\Si7021\general.png" height="150"/>](https://www.aliexpress.com/w/wholesale-Si7021-module.html)|
+|TMP102                |-40...125°C<br>(±0.5°C, 0.06°C)  |                          |                             |[I²C](README.md#ic)|[<img src=".github\images\sensors\TMP102\general.png" height="150"/>](https://www.aliexpress.com/w/wholesale-Si7021-module.html)|
 
 A comprehensive overview of the sensors can be found here (RU): https://kotyara12.ru/iot/th_sensors/
