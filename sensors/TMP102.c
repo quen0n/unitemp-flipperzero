@@ -80,9 +80,8 @@ SensorStatus unitemp_TMP102_update(Sensor* sensor) {
     I2CSensor* i2c_sensor = (I2CSensor*)sensor->instance;
 
     uint8_t buff[2] = {TEMP_REG};
-    if(!unitemp_i2c_write_array(i2c_sensor, 1, buff)) return false;
-    furi_delay_ms(30);
-    if(!unitemp_i2c_read_array(i2c_sensor, 2, buff)) return false;
+    if(!unitemp_i2c_write_array(i2c_sensor, 1, buff)) return UT_SENSORSTATUS_TIMEOUT;
+    if(!unitemp_i2c_read_array(i2c_sensor, 2, buff)) return UT_SENSORSTATUS_TIMEOUT;
 
     uint16_t temp_reg = (((buff[0] << 8) | buff[1]) >> 4) & 0b011111111111;
     bool temp_is_negative = (buff[0] & 0b10000000) ? true : false;
