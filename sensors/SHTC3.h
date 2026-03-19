@@ -20,7 +20,7 @@
 #define UNITEMP_SHTC3_H_
 
 #include "../unitemp.h"
-#include "../Sensors.h"
+#include "../sensors.h"
 extern const SensorModel SHTC3;
 
 /**
