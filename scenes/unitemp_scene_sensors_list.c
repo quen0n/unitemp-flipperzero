@@ -26,6 +26,7 @@
 #include "./interfaces/onewire_sensor.h"
 #include "./interfaces/singlewire_sensor.h"
 #include "./interfaces/spi_sensor.h"
+#include "./sensors/MHZ19C_PWM.h"
 
 void unitemp_scene_sensors_list_on_enter(void* context) {
     UnitempApp* app = context;
@@ -91,6 +92,16 @@ bool unitemp_scene_sensors_list_on_event(void* context, SceneManagerEvent event)
                         AlignCenter,
                         AlignCenter);
                     UNITEMP_DEBUG("Unable to add a sensor. GPIOs 15 or 16 are busy");
+                } else if(model->interface == &unitemp_mhz19c_pwm) {
+                    dialog_message_set_text(
+                        message,
+                        "GPIO 3 (A6) is busy",
+                        (128 - icon_get_width(&I_confused_dolph_43x31)) / 2 +
+                            icon_get_width(&I_confused_dolph_43x31),
+                        36,
+                        AlignCenter,
+                        AlignCenter);
+                    UNITEMP_DEBUG("Unable to add a sensor. GPIO 3 (A6) is busy");
                 } else if(model->interface == &unitemp_spi) {
                     dialog_message_set_text(
                         message,
@@ -130,6 +141,7 @@ bool unitemp_scene_sensors_list_on_event(void* context, SceneManagerEvent event)
                 snprintf(name, 11, "%s_%d%c", model->modelname, sensor_current_model_count, 0);
 
             char* args = malloc(21);
+            args[0] = '\0';
             //Selecting the first available port for single wire and SPI sensor
             if(model->interface == &unitemp_singlewire || model->interface == &unitemp_spi) {
                 snprintf(

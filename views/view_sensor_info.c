@@ -25,6 +25,7 @@
 #include "../interfaces/i2c_sensor.h"
 #include "../interfaces/spi_sensor.h"
 #include "../interfaces/onewire_sensor.h"
+#include "../sensors/MHZ19C_PWM.h"
 
 extern const Icon I_ButtonRight_4x7;
 extern const Icon I_ButtonLeft_4x7;
@@ -91,6 +92,11 @@ static void sensor_info_draw_callback(Canvas* canvas, void* model) {
 
         canvas_set_font(canvas, FontSecondary);
         canvas_draw_str(canvas, 57, 34, s->data_pin->name);
+    } else if(sensor->model->interface == &unitemp_mhz19c_pwm) {
+        canvas_draw_str(canvas, 10, 34, "Data pin: ");
+
+        canvas_set_font(canvas, FontSecondary);
+        canvas_draw_str(canvas, 57, 34, "3 (A6)");
     } else if(sensor->model->interface == &unitemp_i2c) {
         I2CSensor* s = sensor->instance;
         canvas_set_font(canvas, FontPrimary);
