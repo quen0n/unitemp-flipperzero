@@ -182,5 +182,12 @@ void temp_overview_refresh_data(TempOverview* instance) {
     furi_assert(instance);
 
     //Вызываем перерисовку вида псевдообновлением модели. Вызывается по таймеру каждую секнуду
-    with_view_model(instance->view, TempOverviewViewModel * model, { UNUSED(model); }, true);
+    with_view_model(
+        instance->view,
+        TempOverviewViewModel * model,
+        {
+            //CO2 alerts are active only on carousel pages where CO2 is shown
+            unitemp_co2_alerts_stop(model->context);
+        },
+        true);
 }

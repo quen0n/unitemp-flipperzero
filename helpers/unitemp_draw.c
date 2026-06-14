@@ -18,6 +18,7 @@
 
 #include "unitemp_draw.h"
 #include "unitemp_icons.h"
+#include "unitemp_co2_font.h"
 
 #include <stdlib.h>
 #include <inttypes.h>
@@ -28,6 +29,11 @@
 
 #define TEMP_STR_SIZE 32
 static char temp_str[TEMP_STR_SIZE];
+
+static bool unitemp_draw_value_valid(Sensor* sensor, float value) {
+    return ((sensor->status == UT_SENSORSTATUS_OK || sensor->status == UT_SENSORSTATUS_POLLING) &&
+            value != -128.0f);
+}
 
 void unitemp_draw_temperature(
     Canvas* canvas,
@@ -111,7 +117,11 @@ void unitemp_draw_sensor_single(
     }
 
     canvas_draw_str_aligned(canvas, x + 27, y + 3, AlignCenter, AlignCenter, sensor_name);
-    unitemp_draw_temperature(canvas, sensor, temperature_unit, x, y + 8);
+    if(sensor->model->data_type == UT_DATA_TYPE_CO2) {
+        unitemp_draw_co2(canvas, sensor, x, y + 8, ColorWhite, true);
+    } else {
+        unitemp_draw_temperature(canvas, sensor, temperature_unit, x, y + 8);
+    }
 }
 
 void unitemp_draw_humidity(
@@ -130,7 +140,12 @@ void unitemp_draw_humidity(
     if(hum_unit == UT_HUMIDITY_RELATIVE) {
         // Drawing the icon
         canvas_draw_icon(canvas, x + 3, y + 2, &I_hum_relative_9x15);
-        // Relative humidity
+        if(!unitemp_draw_value_valid(sensor, sensor->humidity)) {
+            canvas_set_font(canvas, FontBigNumbers);
+            canvas_draw_str_aligned(canvas, x + 27, y + 10, AlignCenter, AlignCenter, "--");
+            return;
+        }
+
         snprintf(temp_str, TEMP_STR_SIZE, "%d", (uint8_t)sensor->humidity);
         canvas_set_font(canvas, FontBigNumbers);
         canvas_draw_str_aligned(canvas, x + 27, y + 10, AlignCenter, AlignCenter, temp_str);
@@ -139,6 +154,13 @@ void unitemp_draw_humidity(
         canvas_set_font(canvas, FontPrimary);
         canvas_draw_str(canvas, x + 27 + int_len / 2 + 4, y + 10 + 7, "%");
     } else if(hum_unit == UT_HUMIDITY_DEW_POINT) {
+        if(!unitemp_draw_value_valid(sensor, sensor->humidity) ||
+           !unitemp_draw_value_valid(sensor, sensor->temperature)) {
+            canvas_set_font(canvas, FontBigNumbers);
+            canvas_draw_str_aligned(canvas, x + 27, y + 10, AlignCenter, AlignCenter, "--");
+            return;
+        }
+
         float dew_point = unitemp_calculate_dew_point(sensor->temperature, sensor->humidity);
 
         if(temperature_unit == UT_TEMP_CELSIUS) {
@@ -174,6 +196,12 @@ void unitemp_draw_pressure(
 
     //Drawing icon
     canvas_draw_icon(canvas, x + 3, y + 4, &I_pressure_7x13);
+
+    if(!unitemp_draw_value_valid(sensor, sensor->pressure)) {
+        canvas_set_font(canvas, FontBigNumbers);
+        canvas_draw_str_aligned(canvas, x + 28, y + 10, AlignCenter, AlignCenter, "--");
+        return;
+    }
 
     float pressure = sensor->pressure;
 
@@ -282,26 +310,29 @@ void unitemp_draw_co2(Canvas* canvas, Sensor* sensor, uint8_t x, uint8_t y, Colo
     //Drawing icon
     canvas_draw_icon(canvas, x + 3, y + 3, &I_co2_11x14);
 
-    uint32_t concentration_int = (uint32_t)sensor->co2;
+    bool valid = unitemp_draw_value_valid(sensor, sensor->co2) && sensor->co2 > 0.0f &&
+                 sensor->co2 <= 40000.0f;
+    uint32_t concentration_int = valid ? (uint32_t)sensor->co2 : 0;
 
     if(mini) {
-        if(concentration_int > 40000u || concentration_int == 0) {
+        /* Center for the digit slot to the right of the icon. */
+        const uint8_t center_x = x + 33;
+
+        if(concentration_int == 0) {
             snprintf(temp_str, TEMP_STR_SIZE, "--");
             canvas_set_font(canvas, FontBigNumbers);
-            canvas_draw_str_aligned(canvas, x + 34, y + 10, AlignCenter, AlignCenter, temp_str);
-        } else if(concentration_int <= 999) {
+            canvas_draw_str_aligned(canvas, center_x, y + 10, AlignCenter, AlignCenter, temp_str);
+        } else if(concentration_int <= 9999) {
             snprintf(temp_str, TEMP_STR_SIZE, "%ld", concentration_int);
-            canvas_set_font(canvas, FontBigNumbers);
-            canvas_draw_str_aligned(canvas, x + 34, y + 10, AlignCenter, AlignCenter, temp_str);
-        } else if(concentration_int > 999 && concentration_int <= 9999) {
-            snprintf(temp_str, TEMP_STR_SIZE, "%ld", concentration_int / 1000);
-            canvas_set_font(canvas, FontBigNumbers);
-            canvas_draw_str_aligned(canvas, x + 32, y + 10, AlignRight, AlignCenter, temp_str);
-            uint8_t a = concentration_int % 1000 / 100;
-            snprintf(temp_str, TEMP_STR_SIZE, ".%dk", a);
-            canvas_set_font(canvas, FontPrimary);
-            canvas_draw_str(canvas, x + 34, y + 10 + 7, temp_str);
+            /* Unified helvB12_tn for 1..9999. FontBigNumbers is 12px wide per
+               digit; at 3 digits the leftmost digit lands on X=82 and collides
+               with the ₂ subscript of the CO₂ icon (X=81..82). helvB12_tn is
+               ~8px wide per digit and keeps ≥1px clearance on both sides. */
+            canvas_set_custom_u8g2_font(canvas, unitemp_co2_font_helvB12_tn);
+            canvas_draw_str_aligned(
+                canvas, center_x + 1, y + 10, AlignCenter, AlignCenter, temp_str);
         } else {
+            /* ≥10000 → "Nk" compact form. */
             snprintf(temp_str, TEMP_STR_SIZE, "%ld", concentration_int / 1000);
             canvas_set_font(canvas, FontBigNumbers);
             canvas_draw_str_aligned(canvas, x + 41, y + 10, AlignRight, AlignCenter, temp_str);
@@ -309,7 +340,7 @@ void unitemp_draw_co2(Canvas* canvas, Sensor* sensor, uint8_t x, uint8_t y, Colo
             canvas_draw_str(canvas, x + 43, y + 17, "k");
         }
     } else {
-        if(concentration_int > 40000u || concentration_int == 0) {
+        if(concentration_int == 0) {
             snprintf(temp_str, TEMP_STR_SIZE, "--");
         } else {
             snprintf(temp_str, TEMP_STR_SIZE, "%ld", concentration_int);
@@ -318,4 +349,40 @@ void unitemp_draw_co2(Canvas* canvas, Sensor* sensor, uint8_t x, uint8_t y, Colo
         canvas_set_font(canvas, FontBigNumbers);
         canvas_draw_str_aligned(canvas, x + 49, y + 10, AlignCenter, AlignCenter, temp_str);
     }
+}
+
+void unitemp_draw_freeze_snowflake(Canvas* canvas, uint8_t x, uint8_t y) {
+    canvas_draw_dot(canvas, x + 0, y + 0);
+    canvas_draw_dot(canvas, x + 3, y + 0);
+    canvas_draw_dot(canvas, x + 6, y + 0);
+    canvas_draw_dot(canvas, x + 1, y + 1);
+    canvas_draw_dot(canvas, x + 3, y + 1);
+    canvas_draw_dot(canvas, x + 5, y + 1);
+    canvas_draw_dot(canvas, x + 2, y + 2);
+    canvas_draw_dot(canvas, x + 3, y + 2);
+    canvas_draw_dot(canvas, x + 4, y + 2);
+    canvas_draw_line(canvas, x + 0, y + 3, x + 6, y + 3);
+    canvas_draw_dot(canvas, x + 2, y + 4);
+    canvas_draw_dot(canvas, x + 3, y + 4);
+    canvas_draw_dot(canvas, x + 4, y + 4);
+    canvas_draw_dot(canvas, x + 1, y + 5);
+    canvas_draw_dot(canvas, x + 3, y + 5);
+    canvas_draw_dot(canvas, x + 5, y + 5);
+    canvas_draw_dot(canvas, x + 0, y + 6);
+    canvas_draw_dot(canvas, x + 3, y + 6);
+    canvas_draw_dot(canvas, x + 6, y + 6);
+}
+
+uint8_t unitemp_draw_pair_header(Canvas* canvas, const char* left_name, const char* right_name) {
+    canvas_set_font(canvas, FontPrimary);
+
+    char label[24] = {0};
+    snprintf(label, sizeof(label), "%s + %s", left_name, right_name);
+
+    while(canvas_string_width(canvas, label) > 116 && strlen(label) > 2) {
+        label[strlen(label) - 1] = '\0';
+    }
+
+    canvas_draw_str_aligned(canvas, 64, 7, AlignCenter, AlignCenter, label);
+    return canvas_string_width(canvas, label);
 }
