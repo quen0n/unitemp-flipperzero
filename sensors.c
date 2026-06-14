@@ -21,6 +21,7 @@
 #include "./sensors/MAX31855.h"
 #include "./sensors/MAX6675.h"
 #include "./sensors/DS18x2x.h"
+#include "./sensors/MHZ19C_PWM.h"
 #include "./sensors/SCD30.h"
 #include "./sensors/MAX31725.h"
 #include "./sensors/SCD4x.h"
@@ -56,6 +57,7 @@ static const SensorModel* sensor_model_list[] = {
     &MAX6675, //tested
     &MAX31725,
     &MAX31855, //tested
+    &MHZ19C_PWM, //tested
     &SCD30, //tested
     &SCD4x, //tested
     &SHT2x, //tested
@@ -264,7 +266,15 @@ SensorStatus unitemp_sensor_update(Sensor* sensor, void* context) {
     }
 
     if(sensor->status == UT_SENSORSTATUS_OK) {
-        sensor->temperature += sensor->temperature_offset / 10.f;
+        if(sensor->model->data_type == UT_DATA_TYPE_CO2) {
+            //For CO2-only sensors the offset field stores a CO2 correction in 50 ppm steps
+            if(sensor->co2 > 0.0f) {
+                sensor->co2 += sensor->temperature_offset * 50.f;
+                if(sensor->co2 < 1.0f) sensor->co2 = 1.0f;
+            }
+        } else {
+            sensor->temperature += sensor->temperature_offset / 10.f;
+        }
     }
     return sensor->status;
 }
@@ -482,6 +492,17 @@ bool unitemp_sensors_save(void* context) {
             stream_write_format(
                 app->file_stream, "%X\n", ((I2CSensor*)sensor->instance)->current_i2c_adress);
         }
+        if(sensor->model->interface == &unitemp_mhz19c_pwm) {
+            //Fixed pin; args = avg window, range, alert threshold, led/sound switches
+            stream_write_format(
+                app->file_stream,
+                "%d %d %d %d %d\n",
+                mhz19c_pwm_get_avg(sensor),
+                mhz19c_pwm_get_range(sensor),
+                mhz19c_pwm_get_alert(sensor),
+                mhz19c_pwm_get_led(sensor) ? 1 : 0,
+                mhz19c_pwm_get_sound(sensor) ? 1 : 0);
+        }
         if(sensor->model->interface == &unitemp_1w) {
             stream_write_format(
                 app->file_stream,
@@ -561,6 +582,17 @@ bool unitemp_sensors_deinit(void* context) {
 
 Sensor* unitemp_sensors_get(uint8_t index) {
     return sensors_list[index];
+}
+
+Sensor* unitemp_sensor_find_co2_source(Sensor* exclude) {
+    for(uint8_t i = 0; i < unitemp_sensors_get_count(); i++) {
+        Sensor* sensor = sensors_list[i];
+        if(sensor == exclude) continue;
+        if(sensor->model->data_type == UT_DATA_TYPE_CO2) {
+            return sensor;
+        }
+    }
+    return NULL;
 }
 
 void unitemp_sensors_reload(void* context) {

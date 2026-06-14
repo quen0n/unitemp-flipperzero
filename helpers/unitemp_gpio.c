@@ -20,6 +20,10 @@
 #include "./interfaces/onewire_sensor.h"
 #include "./interfaces/singlewire_sensor.h"
 #include "./interfaces/spi_sensor.h"
+#include "../sensors/MHZ19C_PWM.h"
+
+//Index of pin 3 (A6) in gpio_list — the only pin used by the DirectGPIO (MH-Z19C PWM) interface
+#define MHZ19C_PWM_PIN_INDEX 1
 
 //List of available GPIO pins with their numbers and names
 #define SENSOR_PINS_COUNT (int)(sizeof(gpio_list) / sizeof(const SensorGpioPin))
@@ -107,6 +111,15 @@ const SensorGpioPin* unitemp_gpio_get_aviable_pin(
             return NULL;
         }
     }
+    //Check for DirectGPIO (MH-Z19C PWM): fixed pin 3 (A6), single sensor
+    if(interface == &unitemp_mhz19c_pwm) {
+        if(index == 0 &&
+           (gpio_interfaces_list[MHZ19C_PWM_PIN_INDEX] == NULL ||
+            unitemp_gpio_get_from_index(MHZ19C_PWM_PIN_INDEX) == extraport)) {
+            return unitemp_gpio_get_from_index(MHZ19C_PWM_PIN_INDEX);
+        }
+        return NULL;
+    }
 
     uint8_t aviable_index = 0;
     for(uint8_t i = 0; i < SENSOR_PINS_COUNT; i++) {
@@ -150,6 +163,14 @@ const SensorGpioPin* unitemp_gpio_get_aviable_pin(
 uint8_t unitemp_gpio_get_aviable_pin_count(
     const SensorConnectionInterface* interface,
     const SensorGpioPin* extraport) {
+    //DirectGPIO (MH-Z19C PWM): fixed pin 3 (A6)
+    if(interface == &unitemp_mhz19c_pwm) {
+        if(gpio_interfaces_list[MHZ19C_PWM_PIN_INDEX] == NULL ||
+           unitemp_gpio_get_from_index(MHZ19C_PWM_PIN_INDEX) == extraport) {
+            return 1;
+        }
+        return 0;
+    }
     uint8_t aviable_ports_count = 0;
     for(uint8_t i = 0; i < SENSOR_PINS_COUNT; i++) {
         //Check for one wire
