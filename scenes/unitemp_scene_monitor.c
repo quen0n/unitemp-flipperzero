@@ -40,6 +40,7 @@ void unitemp_scene_monitor_on_enter(void* context) {
     }
     /* Start the reader thread. It will talk to the thermometer in the background. */
     furi_thread_start(app->reader_thread);
+    unitemp_co2_alerts_reset();
     view_dispatcher_switch_to_view(app->view_dispatcher, view_mode);
 }
 
@@ -67,6 +68,8 @@ bool unitemp_scene_monitor_on_event(void* context, SceneManagerEvent event) {
             consumed = true;
         } else if(event.event == CustomEventSwitchToSensorInfoView) {
             view_mode = UnitempViewSensorInfo;
+            //Sensor info screen shows pinout, not CO2 — drop any CO2 LED/sound here
+            unitemp_co2_alerts_stop(app);
             view_dispatcher_switch_to_view(app->view_dispatcher, UnitempViewSensorInfo);
             consumed = true;
         }

@@ -18,6 +18,7 @@
 
 #include "../unitemp.h"
 #include "unitemp_utils.h"
+#include "../sensors/MHZ19C_PWM.h"
 #include <locale/locale.h>
 
 static EnvironmentState last_enviroment_state = EnvironmentStateUndefined;
@@ -198,6 +199,11 @@ EnvironmentState unitemp_determine_environment_state_from_co2(uint16_t ppm) {
 }
 
 EnvironmentState unitemp_determine_environment_state(Sensor* sensor) {
+    //CO2-only sensors are handled by unitemp_co2_alerts_tick (steady LED levels,
+    //one-shot sound), not by the environment state machinery
+    if(sensor->model->data_type == UT_DATA_TYPE_CO2) {
+        return EnvironmentStateUndefined;
+    }
     if(sensor->status != UT_SENSORSTATUS_OK) return EnvironmentStateUndefined;
     EnvironmentState gas_state = EnvironmentStateUndefined;
     EnvironmentState hi_state = EnvironmentStateUndefined;
@@ -249,4 +255,188 @@ void unitemp_reset_environment_state(NotificationApp* app) {
 
     notification_message(app, &sequence_blink_stop);
     notification_message(app, &sequence_reset_rgb);
+}
+
+/* ---- CO2 LED & sound alerts (logic ported from flipper-air-stats) ------ */
+
+//LED level boundaries, ppm
+#define UNITEMP_CO2_LED_YELLOW_PPM 800
+#define UNITEMP_CO2_LED_ORANGE_PPM 1000
+#define UNITEMP_CO2_LED_RED_PPM    1400
+//Sound alert hysteresis and cooldown
+#define UNITEMP_CO2_HYST_PPM    50
+#define UNITEMP_CO2_COOLDOWN_MS 60000UL
+
+/* Steady LED colors (do_not_reset = persists through other notifications).
+   Every sequence sets ALL three channels so no color leaks from the previous one. */
+static const NotificationSequence co2_seq_led_green = {
+    &message_red_0,
+    &message_green_255,
+    &message_blue_0,
+    &message_do_not_reset,
+    NULL,
+};
+static const NotificationSequence co2_seq_led_yellow = {
+    &message_red_255,
+    &message_green_255,
+    &message_blue_0,
+    &message_do_not_reset,
+    NULL,
+};
+static const NotificationMessage co2_led_green_80 = {
+    .type = NotificationMessageTypeLedGreen,
+    .data.led.value = 80,
+};
+static const NotificationSequence co2_seq_led_orange = {
+    &message_red_255,
+    &co2_led_green_80,
+    &message_blue_0,
+    &message_do_not_reset,
+    NULL,
+};
+static const NotificationSequence co2_seq_led_red = {
+    &message_red_255,
+    &message_green_0,
+    &message_blue_0,
+    &message_do_not_reset,
+    NULL,
+};
+static const NotificationSequence co2_seq_led_off = {
+    &message_red_0,
+    &message_green_0,
+    &message_blue_0,
+    NULL,
+};
+
+static const NotificationMessage co2_vol_msg = {
+    .type = NotificationMessageTypeForceSpeakerVolumeSetting,
+    .data.forced_settings.speaker_volume = 0.5f,
+};
+static const NotificationMessage co2_note_low = {
+    .type = NotificationMessageTypeSoundOn,
+    .data.sound = {.frequency = 880.0f, .volume = 1.0f},
+};
+static const NotificationMessage co2_note_high = {
+    .type = NotificationMessageTypeSoundOn,
+    .data.sound = {.frequency = 1174.7f, .volume = 1.0f},
+};
+static const NotificationMessage co2_delay_120 = {
+    .type = NotificationMessageTypeDelay,
+    .data.delay.length = 120,
+};
+static const NotificationMessage co2_sound_off = {
+    .type = NotificationMessageTypeSoundOff,
+};
+/* Alarm (OK→BAD): two rising notes */
+static const NotificationSequence co2_seq_alarm = {
+    &co2_vol_msg,
+    &co2_note_low,
+    &co2_delay_120,
+    &co2_note_high,
+    &co2_delay_120,
+    &co2_sound_off,
+    &message_do_not_reset,
+    NULL,
+};
+/* Relief (BAD→OK): two falling notes */
+static const NotificationSequence co2_seq_relief = {
+    &co2_vol_msg,
+    &co2_note_high,
+    &co2_delay_120,
+    &co2_note_low,
+    &co2_delay_120,
+    &co2_sound_off,
+    &message_do_not_reset,
+    NULL,
+};
+
+/* 0 = off, 1 = green, 2 = yellow, 3 = orange, 4 = red */
+static uint8_t co2_led_last_level = 0xFF;
+static bool co2_was_above = false;
+static uint32_t co2_last_alert_tick = 0;
+
+void unitemp_co2_alerts_reset(void) {
+    co2_led_last_level = 0xFF;
+}
+
+void unitemp_co2_alerts_stop(void* context) {
+    UnitempApp* app = context;
+    if(co2_led_last_level != 0) {
+        //Turn the LED off and reset the native indication cache so the stock
+        //logic re-applies its state after the CO2 page is left
+        unitemp_reset_environment_state(app->notifications);
+        co2_led_last_level = 0;
+    }
+}
+
+void unitemp_co2_alerts_tick(void* context) {
+    UnitempApp* app = context;
+    Sensor* sensor = unitemp_sensor_find_co2_source(NULL);
+    if(sensor == NULL) return;
+
+    bool has_data = (sensor->status == UT_SENSORSTATUS_OK ||
+                     sensor->status == UT_SENSORSTATUS_POLLING) &&
+                    sensor->co2 > 0.0f && !mhz19c_pwm_is_frozen(sensor);
+
+    //LED: steady color by level; off when no data or disabled
+    uint8_t level = 0;
+    if(app->settings->environment_state_led_indication && mhz19c_pwm_get_led(sensor) &&
+       has_data) {
+        if(sensor->co2 < (float)UNITEMP_CO2_LED_YELLOW_PPM) {
+            level = 1;
+        } else if(sensor->co2 < (float)UNITEMP_CO2_LED_ORANGE_PPM) {
+            level = 2;
+        } else if(sensor->co2 < (float)UNITEMP_CO2_LED_RED_PPM) {
+            level = 3;
+        } else {
+            level = 4;
+        }
+    }
+    if(level != co2_led_last_level) {
+        co2_led_last_level = level;
+        const NotificationSequence* seq;
+        switch(level) {
+        case 1:
+            seq = &co2_seq_led_green;
+            break;
+        case 2:
+            seq = &co2_seq_led_yellow;
+            break;
+        case 3:
+            seq = &co2_seq_led_orange;
+            break;
+        case 4:
+            seq = &co2_seq_led_red;
+            break;
+        default:
+            seq = &co2_seq_led_off;
+            break;
+        }
+        notification_message(app->notifications, seq);
+    }
+
+    //Sound: one-shot alerts on threshold crossings (hysteresis + cooldown)
+    if(!app->settings->environment_state_sound_and_vibro_indication) return;
+    if(!mhz19c_pwm_get_sound(sensor) || !has_data) return;
+
+    uint16_t alert = mhz19c_pwm_get_alert(sensor);
+    bool above = sensor->co2 >= (float)alert;
+    bool way_below = sensor->co2 < (float)(alert - UNITEMP_CO2_HYST_PPM);
+    bool cooldown_expired =
+        (furi_get_tick() - co2_last_alert_tick) >= furi_ms_to_ticks(UNITEMP_CO2_COOLDOWN_MS);
+
+    if(above && !co2_was_above) {
+        if(cooldown_expired) {
+            notification_message(app->notifications, &co2_seq_alarm);
+            co2_last_alert_tick = furi_get_tick();
+        }
+        co2_was_above = true;
+    }
+    if(way_below && co2_was_above) {
+        if(cooldown_expired) {
+            notification_message(app->notifications, &co2_seq_relief);
+            co2_last_alert_tick = furi_get_tick();
+        }
+        co2_was_above = false;
+    }
 }

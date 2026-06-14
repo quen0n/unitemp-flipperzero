@@ -110,4 +110,26 @@ void unitemp_display_environment_state(
     bool vibro_and_sound);
 
 void unitemp_reset_environment_state(NotificationApp* app);
+
+/**
+ * @brief CO2 LED & sound alerts (logic ported from flipper-air-stats)
+ *
+ * Steady LED color by CO2 level (green/yellow/orange/red), one-shot sound
+ * on crossing the per-sensor alert threshold (hysteresis + cooldown).
+ * Call periodically while the CO2 sensor is visible on the active screen.
+ * Does nothing when there is no CO2-only sensor in the list.
+ *
+ * @param context Pointer to UnitempApp
+ */
+void unitemp_co2_alerts_tick(void* context);
+
+/**
+ * @brief Turn the CO2 LED off (call when the CO2 sensor leaves the active screen)
+ */
+void unitemp_co2_alerts_stop(void* context);
+
+/**
+ * @brief Reset the CO2 alerts LED cache (call when (re)entering the monitor scene)
+ */
+void unitemp_co2_alerts_reset(void);
 #endif //#UNTIEMP_UTILS_H_
