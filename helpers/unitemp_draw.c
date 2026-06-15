@@ -26,6 +26,7 @@
 #include <gui/elements.h>
 #include <locale/locale.h>
 #include "../helpers/unitemp_utils.h"
+#include "../sensors/MHZ19C_PWM.h"
 
 #define TEMP_STR_SIZE 32
 static char temp_str[TEMP_STR_SIZE];
@@ -119,6 +120,12 @@ void unitemp_draw_sensor_single(
     canvas_draw_str_aligned(canvas, x + 27, y + 3, AlignCenter, AlignCenter, sensor_name);
     if(sensor->model->data_type == UT_DATA_TYPE_CO2) {
         unitemp_draw_co2(canvas, sensor, x, y + 8, ColorWhite, true);
+        //Freeze snowflake in the tile's top-left corner (above the CO2 box, left
+        //of the centred name) — the top-right edge collides with the name on the
+        //cramped 54px tile.
+        if(sensor->model == &MHZ19C_PWM && mhz19c_pwm_is_frozen(sensor)) {
+            unitemp_draw_freeze_snowflake(canvas, x + 1, y);
+        }
     } else {
         unitemp_draw_temperature(canvas, sensor, temperature_unit, x, y + 8);
     }
