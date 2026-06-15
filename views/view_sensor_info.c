@@ -232,3 +232,36 @@ View* sensor_info_get_view(SensorInfo* sensor_info) {
     furi_assert(sensor_info);
     return sensor_info->view;
 }
+
+void sensor_info_refresh_data(SensorInfo* instance) {
+    furi_assert(instance);
+    UnitempApp* app = instance->context;
+
+    //The pinout screen shows the carousel's current sensor; the lamp follows that
+    //same sensor, driven from the scene tick (like the carousel): a CO2 (or combo)
+    //sensor -> CO2 owns the lamp; a pure climate sensor -> stock heat-index.
+    uint8_t idx = 0;
+    with_view_model(
+        single_sensor_get_view(app->single_sensor),
+        SingleSensorViewModel * m,
+        { idx = m->sensor_index; },
+        false);
+
+    uint8_t count = unitemp_sensors_get_count();
+    Sensor* co2_sensor = NULL;
+    Sensor* climate_sensor = NULL;
+    if(count > 0) {
+        if(idx > count - 1) idx = count - 1;
+        Sensor* s = unitemp_sensors_get(idx);
+        SensorDataType dt = s->model->data_type;
+        if(dt == UT_DATA_TYPE_CO2 || dt == UT_DATA_TYPE_TEMP_HUM_CO2) {
+            co2_sensor = s; //CO2 visible on this pinout -> CO2 owns the lamp
+        } else {
+            climate_sensor = s; //pure climate -> stock heat-index
+        }
+    }
+    unitemp_indication_tick(app, co2_sensor, climate_sensor);
+
+    //Trigger a redraw of the pinout view.
+    with_view_model(instance->view, SensorInfoViewModel * model, { UNUSED(model); }, true);
+}

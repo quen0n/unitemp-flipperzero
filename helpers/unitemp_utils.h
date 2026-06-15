@@ -116,12 +116,14 @@ void unitemp_reset_environment_state(NotificationApp* app);
  *
  * Steady LED color by CO2 level (green/yellow/orange/red), one-shot sound
  * on crossing the per-sensor alert threshold (hysteresis + cooldown).
- * Call periodically while the CO2 sensor is visible on the active screen.
- * Does nothing when there is no CO2-only sensor in the list.
+ * Call periodically while CO2 is shown on the active screen. The lamp colour is
+ * driven by sensor->co2; with no data the lamp goes off (presence on screen
+ * matters, not whether the sensor currently reads).
  *
  * @param context Pointer to UnitempApp
+ * @param sensor CO2 (or combo) sensor shown on the active screen; NULL = no-op
  */
-void unitemp_co2_alerts_tick(void* context);
+void unitemp_co2_alerts_tick(void* context, Sensor* sensor);
 
 /**
  * @brief Turn the CO2 LED off (call when the CO2 sensor leaves the active screen)
@@ -132,4 +134,20 @@ void unitemp_co2_alerts_stop(void* context);
  * @brief Reset the CO2 alerts LED cache (call when (re)entering the monitor scene)
  */
 void unitemp_co2_alerts_reset(void);
+
+/**
+ * @brief Single indication rule: the lamp follows the CURRENT screen content.
+ *
+ * What is shown on the active screen decides the lamp, NOT what is plugged in:
+ *   - co2_sensor != NULL     -> CO2 is on screen, CO2 owns the lamp
+ *   - climate_sensor != NULL -> no CO2 on screen, stock heat-index LED
+ *   - both NULL              -> nothing to indicate, lamp off
+ * Each view passes the sensors it actually draws on the active page. On a mode
+ * change the LED caches are flushed so the new owner repaints immediately.
+ *
+ * @param context Pointer to UnitempApp
+ * @param co2_sensor CO2/combo sensor shown on the active screen, or NULL
+ * @param climate_sensor Climate sensor shown when no CO2 is on screen, or NULL
+ */
+void unitemp_indication_tick(void* context, Sensor* co2_sensor, Sensor* climate_sensor);
 #endif //#UNTIEMP_UTILS_H_

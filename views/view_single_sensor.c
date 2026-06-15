@@ -515,52 +515,25 @@ void single_sensor_refresh_data(SingleSensor* instance) {
                 model->sensor_index = pages - 1;
             }
 
-            UnitempApp* app = model->context;
-
-            //Indication ownership:
-            //  - No CO2 sensor in the system  -> stock unitemp behavior (native
-            //    heat-index environment state drives the LED, untouched).
-            //  - CO2 sensor present           -> the device is a CO2 monitor: all
-            //    LED/sound belong to CO2 and are shown ONLY while the CO2 sensor is
-            //    on the active screen (its own page or the mix page) AND connected.
-            //    Native heat-index indication is suppressed so it can't light up on
-            //    climate pages.
-            Sensor* co2_source = unitemp_sensor_find_co2_source(NULL);
-
-            if(co2_source != NULL) {
-                bool co2_on_screen = (model->sensor_index >= unitemp_sensors_get_count()) ||
-                                     (unitemp_sensors_get(model->sensor_index) == co2_source);
-                if(co2_on_screen) {
-                    unitemp_co2_alerts_tick(app);
-                } else {
-                    unitemp_co2_alerts_stop(app);
-                }
+            //The lamp follows THIS page's content: a CO2-only page, a combo
+            //(climate+CO2) page and the mix page all show CO2 -> CO2 owns the
+            //lamp; a pure climate page shows no CO2 -> stock heat-index.
+            uint8_t idx = model->sensor_index;
+            Sensor* co2_sensor = NULL;
+            Sensor* climate_sensor = NULL;
+            if(idx >= unitemp_sensors_get_count()) {
+                //Mix page draws the CO2-only source alongside a climate sensor
+                co2_sensor = unitemp_sensor_find_co2_source(NULL);
             } else {
-                //Native environment state indication, untouched stock behavior
-                EnvironmentState environment_state =
-                    unitemp_determine_environment_state(unitemp_sensors_get(model->sensor_index));
-
-                NotificationApp* notification_app = app->notifications;
-
-                if(environment_state == EnvironmentStateDangerous) {
-                    if(app->settings->infinity_backlight) {
-                        notification_message(
-                            app->notifications, &sequence_display_backlight_enforce_auto);
-                    }
-                }
-                unitemp_display_environment_state(
-                    notification_app,
-                    environment_state,
-                    app->settings->environment_state_led_indication,
-                    true);
-
-                if(environment_state == EnvironmentStateDangerous) {
-                    if(app->settings->infinity_backlight) {
-                        notification_message(
-                            app->notifications, &sequence_display_backlight_enforce_on);
-                    }
+                Sensor* s = unitemp_sensors_get(idx);
+                SensorDataType dt = s->model->data_type;
+                if(dt == UT_DATA_TYPE_CO2 || dt == UT_DATA_TYPE_TEMP_HUM_CO2) {
+                    co2_sensor = s; //CO2 visible on this page
+                } else {
+                    climate_sensor = s; //pure climate -> stock heat-index
                 }
             }
+            unitemp_indication_tick(model->context, co2_sensor, climate_sensor);
         },
         true);
 }
