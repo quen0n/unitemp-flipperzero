@@ -17,6 +17,17 @@
 #define MHZ19C_AVG_DEFAULT       5
 #define MHZ19C_ALERT_DEFAULT_PPM 1000
 #define MHZ19C_FREEZE_TIMEOUT_MS 5000
+/* Smart spike/glitch rejection on the output value (all tunable):
+   a jump bigger than (range_ppm / DIV) is held until it repeats CONFIRM cycles,
+   so a single PWM mis-decode is ignored while a real, sustained change is followed.
+   WARMUP_SAMPLES valid cycles must accumulate before the first value is shown
+   (suppresses the cold-buffer reading right after the sensor screen opens). */
+#define MHZ19C_DEGLITCH_DIV     32
+#define MHZ19C_DEGLITCH_CONFIRM 2
+#define MHZ19C_WARMUP_SAMPLES   3
+/* Dedicated PWM-pin sampling period, ms. Decoupled from the sensor-list reader
+   and the display — only the pulse timing needs this rate. */
+#define MHZ19C_SAMPLE_PERIOD_MS 20
 
 typedef struct {
     int32_t prev_value;
@@ -40,6 +51,19 @@ typedef struct {
     bool led_enabled;
     /* Sound alert on crossing the threshold */
     bool sound_enabled;
+    /* Smart de-glitch filter state */
+    int32_t co2_stable; /* last accepted value; <0 = not yet established */
+    int32_t pend_val;   /* candidate of a pending (unconfirmed) jump */
+    uint8_t pend_cnt;   /* consecutive cycles the pending jump has persisted */
+    /* Dedicated fast sampler, independent of the sensor-list reader/redraw */
+    FuriTimer* timer;
+    /* Raw per-cycle ppm handoff: the fast timer writes raw_ppm and bumps raw_seq;
+       the reader folds each new sequence into the average. The timer never writes
+       sensor->co2 — the reader is the sole writer of it (no fast-writer race). */
+    int32_t raw_ppm;
+    uint32_t raw_seq;
+    uint32_t raw_seq_seen;
+    int32_t agg_co2; /* latest aggregated value (no offset); <0 = not ready */
 } MHZ19CPwmInstance;
 
 static int32_t mhz19c_pwm_calculate_ppm(
@@ -78,6 +102,9 @@ static bool mhz19c_pwm_alloc(Sensor* sensor, char* args) {
     instance->alert_ppm = MHZ19C_ALERT_DEFAULT_PPM;
     instance->led_enabled = true;
     instance->sound_enabled = true;
+    instance->co2_stable = -1;
+    instance->agg_co2 = -1;
+    instance->timer = NULL;
     //Optional args: "<avg 1..30> <range 2000..10000> [<alert 800..5000> <led 0/1> <sound 0/1>]"
     if(args != NULL) {
         int avg = MHZ19C_AVG_DEFAULT;
@@ -103,10 +130,18 @@ static bool mhz19c_pwm_alloc(Sensor* sensor, char* args) {
 }
 
 static bool mhz19c_pwm_free(Sensor* sensor) {
+    MHZ19CPwmInstance* instance = sensor->instance;
+    if(instance != NULL && instance->timer != NULL) {
+        furi_timer_stop(instance->timer);
+        furi_timer_free(instance->timer);
+        instance->timer = NULL;
+    }
     free(sensor->instance);
     sensor->instance = NULL;
     return true;
 }
+
+static void mhz19c_pwm_timer_cb(void* context);
 
 static bool mhz19c_pwm_init(Sensor* sensor) {
     MHZ19CPwmInstance* instance = sensor->instance;
@@ -118,11 +153,23 @@ static bool mhz19c_pwm_init(Sensor* sensor) {
     }
 
     furi_hal_gpio_init(&gpio_ext_pa6, GpioModeInput, GpioPullUp, GpioSpeedVeryHigh);
+
+    //Sample the PWM pin on a dedicated 20 ms timer, independent of the sensor-list
+    //reader (250 ms) and the display — the ~1004 ms pulse must be timed finely.
+    if(instance->timer == NULL) {
+        instance->timer = furi_timer_alloc(mhz19c_pwm_timer_cb, FuriTimerTypePeriodic, sensor);
+    }
+    if(instance->timer != NULL) {
+        furi_timer_start(instance->timer, furi_ms_to_ticks(MHZ19C_SAMPLE_PERIOD_MS));
+    }
     return true;
 }
 
 static bool mhz19c_pwm_deinit(Sensor* sensor) {
     MHZ19CPwmInstance* instance = sensor->instance;
+    if(instance != NULL && instance->timer != NULL) {
+        furi_timer_stop(instance->timer); //stop sampling before releasing the pin
+    }
     furi_hal_gpio_init(&gpio_ext_pa6, GpioModeAnalog, GpioPullNo, GpioSpeedLow);
     if(instance != NULL && !instance->otg_was_enabled) {
         furi_hal_power_disable_otg();
@@ -130,23 +177,54 @@ static bool mhz19c_pwm_deinit(Sensor* sensor) {
     return true;
 }
 
-static SensorStatus mhz19c_pwm_update(Sensor* sensor) {
-    MHZ19CPwmInstance* instance = sensor->instance;
-    if(instance == NULL) return UT_SENSORSTATUS_ERROR;
-
-    if(instance->needs_reset) {
-        instance->needs_reset = false;
-        sensor->co2 = -1.0f;
-        instance->buf_idx = 0;
-        instance->buf_count = 0;
-        instance->prev_value = 0;
-        instance->high_ms = 0;
-        instance->low_ms = 0;
-        instance->high_tick = 0;
-        instance->low_tick = 0;
-        instance->last_edge_tick = 0;
-        memset(instance->co2_buf, 0, sizeof(instance->co2_buf));
+/* Smart de-glitch: hold through single spikes, follow sustained changes.
+   Returns the value to display, or -1 while still warming up. */
+static int32_t mhz19c_pwm_deglitch(MHZ19CPwmInstance* in, int32_t candidate, bool ready) {
+    if(in->co2_stable < 0) {
+        //No stable value yet: wait for warmup, then seed from the first candidate
+        if(!ready) return -1;
+        in->co2_stable = candidate;
+        in->pend_cnt = 0;
+        return in->co2_stable;
     }
+
+    int32_t band = in->range_ppm / MHZ19C_DEGLITCH_DIV;
+    int32_t d = candidate - in->co2_stable;
+    if(d < 0) d = -d;
+    if(d <= band) {
+        //Within the noise band: track it, clear any pending jump
+        in->co2_stable = candidate;
+        in->pend_cnt = 0;
+        return in->co2_stable;
+    }
+
+    //Big jump: provisional. Accept only once it repeats CONFIRM cycles in the new region.
+    int32_t pd = candidate - in->pend_val;
+    if(pd < 0) pd = -pd;
+    if(in->pend_cnt > 0 && pd <= band) {
+        in->pend_cnt++;
+    } else {
+        in->pend_val = candidate;
+        in->pend_cnt = 1;
+    }
+    if(in->pend_cnt >= MHZ19C_DEGLITCH_CONFIRM) {
+        in->co2_stable = candidate;
+        in->pend_cnt = 0;
+    }
+    //Otherwise keep showing the previous stable value (single spike suppressed)
+    return in->co2_stable;
+}
+
+/* Fast PWM sampler: own 20 ms timer, independent of the sensor-list reader and
+   the display. It ONLY times the pulse and publishes the raw per-cycle ppm to a
+   private slot — no averaging, de-glitch or correction here, and it never writes
+   sensor->co2. All the "cooking" and the single write of the on-screen value
+   happen in the reader thread (mhz19c_pwm_update), like every other sensor, so
+   nothing fast races the value the screen reads. */
+static void mhz19c_pwm_timer_cb(void* context) {
+    Sensor* sensor = context;
+    MHZ19CPwmInstance* instance = sensor->instance;
+    if(instance == NULL) return;
 
     int32_t old_prev = instance->prev_value;
     int32_t ppm = mhz19c_pwm_calculate_ppm(
@@ -162,43 +240,91 @@ static SensorStatus mhz19c_pwm_update(Sensor* sensor) {
         instance->last_edge_tick = furi_get_tick();
     }
 
-    if(ppm <= 0) return UT_SENSORSTATUS_POLLING;
+    //A full pulse decoded -> hand the raw ppm to the reader as one new sample.
+    if(ppm > 0) {
+        instance->raw_ppm = ppm;
+        instance->raw_seq++;
+    }
+}
 
-    uint8_t win = instance->avg_win;
-    if(win < 1) win = 1;
-    if(win > MHZ19C_CO2_BUF_MAX) win = MHZ19C_CO2_BUF_MAX;
+/* Reader thread (slow cadence): folds each freshly measured cycle into the
+   average + de-glitch and is the SOLE writer of sensor->co2. Raw values arrive
+   once per ~1 s pulse while the reader runs faster, so most calls just re-publish
+   the current aggregate. The aggregate carries NO offset — the reader's generic
+   post-step (sensors.c) adds the CO2 correction once on this fresh base, so the
+   correction is never accumulated across calls. */
+static SensorStatus mhz19c_pwm_update(Sensor* sensor) {
+    MHZ19CPwmInstance* instance = sensor->instance;
+    if(instance == NULL) return UT_SENSORSTATUS_ERROR;
 
-    if(win == 1) {
-        sensor->co2 = (float)ppm;
-        return UT_SENSORSTATUS_OK;
+    if(instance->needs_reset) {
+        instance->needs_reset = false;
+        instance->buf_idx = 0;
+        instance->buf_count = 0;
+        memset(instance->co2_buf, 0, sizeof(instance->co2_buf));
+        instance->co2_stable = -1;
+        instance->pend_val = 0;
+        instance->pend_cnt = 0;
+        instance->agg_co2 = -1;
+        instance->raw_seq_seen = instance->raw_seq; //drop raw produced before reset
     }
 
-    instance->co2_buf[instance->buf_idx] = ppm;
-    instance->buf_idx = (instance->buf_idx + 1) % win;
-    if(instance->buf_count < win) instance->buf_count++;
+    //Fold a freshly measured cycle (if any) into the average + de-glitch.
+    if(instance->raw_seq != instance->raw_seq_seen) {
+        instance->raw_seq_seen = instance->raw_seq;
+        int32_t ppm = instance->raw_ppm;
+        if(ppm > 0) {
+            uint8_t win = instance->avg_win;
+            if(win < 1) win = 1;
+            if(win > MHZ19C_CO2_BUF_MAX) win = MHZ19C_CO2_BUF_MAX;
 
-    int32_t sorted[MHZ19C_CO2_BUF_MAX];
-    memcpy(sorted, instance->co2_buf, instance->buf_count * sizeof(int32_t));
-    for(uint8_t i = 1; i < instance->buf_count; i++) {
-        int32_t key = sorted[i];
-        int8_t j = (int8_t)i - 1;
-        while(j >= 0 && sorted[j] > key) {
-            sorted[j + 1] = sorted[j];
-            j--;
+            int32_t candidate;
+            bool ready;
+            if(win == 1) {
+                //Raw mode: no averaging, but the de-glitch filter still suppresses spikes
+                candidate = ppm;
+                ready = true;
+            } else {
+                instance->co2_buf[instance->buf_idx] = ppm;
+                instance->buf_idx = (instance->buf_idx + 1) % win;
+                if(instance->buf_count < win) instance->buf_count++;
+
+                int32_t sorted[MHZ19C_CO2_BUF_MAX];
+                memcpy(sorted, instance->co2_buf, instance->buf_count * sizeof(int32_t));
+                for(uint8_t i = 1; i < instance->buf_count; i++) {
+                    int32_t key = sorted[i];
+                    int8_t j = (int8_t)i - 1;
+                    while(j >= 0 && sorted[j] > key) {
+                        sorted[j + 1] = sorted[j];
+                        j--;
+                    }
+                    sorted[j + 1] = key;
+                }
+
+                //Trimmed mean (drop min+max), kept identical to air_stats
+                if(instance->buf_count < 3) {
+                    candidate = sorted[instance->buf_count / 2];
+                } else {
+                    int32_t sum = 0;
+                    for(uint8_t i = 1; i < instance->buf_count - 1; i++) sum += sorted[i];
+                    candidate = sum / (int32_t)(instance->buf_count - 2);
+                }
+                ready = (instance->buf_count >= MHZ19C_WARMUP_SAMPLES);
+            }
+
+            //Smart spike/glitch rejection on top of the average
+            int32_t out = mhz19c_pwm_deglitch(instance, candidate, ready);
+            if(out >= 0) instance->agg_co2 = out;
         }
-        sorted[j + 1] = key;
     }
 
-    int32_t filtered = 0;
-    if(instance->buf_count < 3) {
-        filtered = sorted[instance->buf_count / 2];
-    } else {
-        int32_t sum = 0;
-        for(uint8_t i = 1; i < instance->buf_count - 1; i++) sum += sorted[i];
-        filtered = sum / (int32_t)(instance->buf_count - 2);
+    //Re-publish the aggregate every call so the screen and the offset step always
+    //read a complete, freshly written value (no cross-call accumulation).
+    if(instance->agg_co2 < 0) {
+        sensor->co2 = -1.0f;
+        return UT_SENSORSTATUS_POLLING;
     }
-
-    sensor->co2 = (float)filtered;
+    sensor->co2 = (float)instance->agg_co2;
     return UT_SENSORSTATUS_OK;
 }
 
