@@ -215,6 +215,17 @@ Sensor* unitemp_sensors_get(uint8_t index);
 Sensor* unitemp_sensor_find_co2_source(Sensor* exclude);
 
 /**
+ * @brief Find the first sensor that reports CO2 in ANY form
+ *        (UT_DATA_TYPE_CO2 or combo UT_DATA_TYPE_TEMP_HUM_CO2)
+ *
+ * Used by the indication logic: if this returns non-NULL, the system has a CO2
+ * source and CO2 owns the lamp on every screen.
+ *
+ * @return Pointer to the first CO2-reporting sensor, or NULL if there is none
+ */
+Sensor* unitemp_sensor_find_any_co2(void);
+
+/**
 * @brief Get a list of available sensor types
 * @return Pointer to a list of sensors
 */

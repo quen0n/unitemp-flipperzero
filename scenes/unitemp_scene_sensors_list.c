@@ -27,6 +27,7 @@
 #include "./interfaces/singlewire_sensor.h"
 #include "./interfaces/spi_sensor.h"
 #include "./sensors/MHZ19C_PWM.h"
+#include "./sensors/MHZ19C_UART.h"
 
 void unitemp_scene_sensors_list_on_enter(void* context) {
     UnitempApp* app = context;
@@ -102,6 +103,16 @@ bool unitemp_scene_sensors_list_on_event(void* context, SceneManagerEvent event)
                         AlignCenter,
                         AlignCenter);
                     UNITEMP_DEBUG("Unable to add a sensor. GPIO 3 (A6) is busy");
+                } else if(model->interface == &unitemp_mhz19c_uart) {
+                    dialog_message_set_text(
+                        message,
+                        "GPIO's 15 or 16\nare busy",
+                        (128 - icon_get_width(&I_confused_dolph_43x31)) / 2 +
+                            icon_get_width(&I_confused_dolph_43x31),
+                        36,
+                        AlignCenter,
+                        AlignCenter);
+                    UNITEMP_DEBUG("Unable to add a sensor. GPIOs 15 or 16 are busy");
                 } else if(model->interface == &unitemp_spi) {
                     dialog_message_set_text(
                         message,

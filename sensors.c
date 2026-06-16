@@ -22,12 +22,16 @@
 #include "./sensors/MAX6675.h"
 #include "./sensors/DS18x2x.h"
 #include "./sensors/MHZ19C_PWM.h"
+#include "./sensors/MHZ19C_UART.h"
 #include "./sensors/SCD30.h"
 #include "./sensors/MAX31725.h"
 #include "./sensors/SCD4x.h"
 #include "./sensors/TMP102.h"
 #include "./sensors/SHTC3.h"
 
+/* Stock sensor-list reader / redraw period. The MH-Z19C PWM pin is NOT sampled
+   here — it has its own dedicated 20 ms timer (see MHZ19C_PWM.c), so this stays
+   at the stock value and the display is untouched. */
 #define DISPLAY_UPDATE_PERIOD_MS 250UL
 #define APP_SENSORS_FILENAME     "sensors.list"
 
@@ -58,6 +62,7 @@ static const SensorModel* sensor_model_list[] = {
     &MAX31725,
     &MAX31855, //tested
     &MHZ19C_PWM, //tested
+    &MHZ19C_UART,
     &SCD30, //tested
     &SCD4x, //tested
     &SHT2x, //tested
@@ -505,6 +510,15 @@ bool unitemp_sensors_save(void* context) {
                 mhz19c_pwm_get_led(sensor) ? 1 : 0,
                 mhz19c_pwm_get_sound(sensor) ? 1 : 0);
         }
+        if(sensor->model->interface == &unitemp_mhz19c_uart) {
+            //Serial sensor; args = alert threshold, led/sound switches
+            stream_write_format(
+                app->file_stream,
+                "%d %d %d\n",
+                mhz19c_uart_get_alert(sensor),
+                mhz19c_uart_get_led(sensor) ? 1 : 0,
+                mhz19c_uart_get_sound(sensor) ? 1 : 0);
+        }
         if(sensor->model->interface == &unitemp_1w) {
             stream_write_format(
                 app->file_stream,
@@ -591,6 +605,17 @@ Sensor* unitemp_sensor_find_co2_source(Sensor* exclude) {
         Sensor* sensor = sensors_list[i];
         if(sensor == exclude) continue;
         if(sensor->model->data_type == UT_DATA_TYPE_CO2) {
+            return sensor;
+        }
+    }
+    return NULL;
+}
+
+Sensor* unitemp_sensor_find_any_co2(void) {
+    for(uint8_t i = 0; i < unitemp_sensors_get_count(); i++) {
+        Sensor* sensor = sensors_list[i];
+        if(sensor->model->data_type == UT_DATA_TYPE_CO2 ||
+           sensor->model->data_type == UT_DATA_TYPE_TEMP_HUM_CO2) {
             return sensor;
         }
     }

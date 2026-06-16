@@ -21,9 +21,13 @@
 #include "./interfaces/singlewire_sensor.h"
 #include "./interfaces/spi_sensor.h"
 #include "../sensors/MHZ19C_PWM.h"
+#include "../sensors/MHZ19C_UART.h"
 
 //Index of pin 3 (A6) in gpio_list — the only pin used by the DirectGPIO (MH-Z19C PWM) interface
 #define MHZ19C_PWM_PIN_INDEX 1
+//Indices of pins 15 (C1) and 16 (C0) in gpio_list — the LPUART pins (MH-Z19C UART)
+#define MHZ19C_UART_PIN_C1_INDEX 10
+#define MHZ19C_UART_PIN_C0_INDEX 11
 
 //List of available GPIO pins with their numbers and names
 #define SENSOR_PINS_COUNT (int)(sizeof(gpio_list) / sizeof(const SensorGpioPin))
@@ -120,6 +124,19 @@ const SensorGpioPin* unitemp_gpio_get_aviable_pin(
         }
         return NULL;
     }
+    //Check for DirectUART (MH-Z19C UART): fixed LPUART pins 15 (C1) and 16 (C0).
+    //The serial driver arbitrates the hardware itself, so the pins are not locked
+    //here; only block when another interface holds pin 15 or 16.
+    if(interface == &unitemp_mhz19c_uart) {
+        if(index == 0 &&
+           (gpio_interfaces_list[MHZ19C_UART_PIN_C1_INDEX] == NULL ||
+            gpio_interfaces_list[MHZ19C_UART_PIN_C1_INDEX] == &unitemp_mhz19c_uart) &&
+           (gpio_interfaces_list[MHZ19C_UART_PIN_C0_INDEX] == NULL ||
+            gpio_interfaces_list[MHZ19C_UART_PIN_C0_INDEX] == &unitemp_mhz19c_uart)) {
+            return unitemp_gpio_get_from_index(0);
+        }
+        return NULL;
+    }
 
     uint8_t aviable_index = 0;
     for(uint8_t i = 0; i < SENSOR_PINS_COUNT; i++) {
@@ -167,6 +184,16 @@ uint8_t unitemp_gpio_get_aviable_pin_count(
     if(interface == &unitemp_mhz19c_pwm) {
         if(gpio_interfaces_list[MHZ19C_PWM_PIN_INDEX] == NULL ||
            unitemp_gpio_get_from_index(MHZ19C_PWM_PIN_INDEX) == extraport) {
+            return 1;
+        }
+        return 0;
+    }
+    //DirectUART (MH-Z19C UART): fixed LPUART pins 15 (C1) and 16 (C0)
+    if(interface == &unitemp_mhz19c_uart) {
+        if((gpio_interfaces_list[MHZ19C_UART_PIN_C1_INDEX] == NULL ||
+            gpio_interfaces_list[MHZ19C_UART_PIN_C1_INDEX] == &unitemp_mhz19c_uart) &&
+           (gpio_interfaces_list[MHZ19C_UART_PIN_C0_INDEX] == NULL ||
+            gpio_interfaces_list[MHZ19C_UART_PIN_C0_INDEX] == &unitemp_mhz19c_uart)) {
             return 1;
         }
         return 0;
