@@ -23,6 +23,7 @@
 #include "./interfaces/singlewire_sensor.h"
 #include "./interfaces/spi_sensor.h"
 #include "./sensors/MHZ19C_PWM.h"
+#include "./sensors/MHZ19C_UART.h"
 #include "scenes/unitemp_scene.h"
 
 static bool name_edit = false;
@@ -200,6 +201,30 @@ static void _co2_sound_change_callback(VariableItem* item) {
     variable_item_set_current_value_text(item, enabled ? "On" : "Off");
 }
 
+//MH-Z19C UART has its own alert/LED/sound storage (no avg/range), so it needs
+//its own change callbacks parallel to the PWM ones above
+static void _co2_uart_alert_change_callback(VariableItem* item) {
+    UnitempApp* app = variable_item_get_context(item);
+    uint16_t alert = 800 + variable_item_get_current_value_index(item) * 50;
+    mhz19c_uart_set_alert(app->editable_sensor, alert);
+    snprintf(app->txt_buff, 10, "%d ppm", alert);
+    variable_item_set_current_value_text(item, app->txt_buff);
+}
+
+static void _co2_uart_led_change_callback(VariableItem* item) {
+    UnitempApp* app = variable_item_get_context(item);
+    bool enabled = variable_item_get_current_value_index(item) == 1;
+    mhz19c_uart_set_led(app->editable_sensor, enabled);
+    variable_item_set_current_value_text(item, enabled ? "On" : "Off");
+}
+
+static void _co2_uart_sound_change_callback(VariableItem* item) {
+    UnitempApp* app = variable_item_get_context(item);
+    bool enabled = variable_item_get_current_value_index(item) == 1;
+    mhz19c_uart_set_sound(app->editable_sensor, enabled);
+    variable_item_set_current_value_text(item, enabled ? "On" : "Off");
+}
+
 static void _gpio_change_callback(VariableItem* item) {
     UnitempApp* app = variable_item_get_context(item);
     view_dispatcher_send_custom_event(app->view_dispatcher, CustomEventGPIOChanged);
@@ -236,12 +261,14 @@ static void _enter_callback(void* context, uint32_t index) {
     }
 
     //Save
-    //Item count differs per interface: MH-Z19C has CO2 offset/Avg/Range/Alert/LED/Sound
-    //(Save at 9), one wire has the Device ID scan (Save at 5), the rest have Save at 4
+    //Item count differs per interface: MH-Z19C PWM has CO2 offset/Avg/Range/Alert/
+    //LED/Sound (Save at 9), MH-Z19C UART has CO2 offset/Alert/LED/Sound (Save at 6),
+    //one wire has the Device ID scan (Save at 5), the rest have Save at 4
     if((index == 4 && sensor_interface != &unitemp_1w &&
-        sensor_interface != &unitemp_mhz19c_pwm) ||
+        sensor_interface != &unitemp_mhz19c_pwm && sensor_interface != &unitemp_mhz19c_uart) ||
        (index == 5 && sensor_interface == &unitemp_1w) ||
-       (index == 9 && sensor_interface == &unitemp_mhz19c_pwm)) {
+       (index == 9 && sensor_interface == &unitemp_mhz19c_pwm) ||
+       (index == 6 && sensor_interface == &unitemp_mhz19c_uart)) {
         //Exit if the one wire sensor does not have an ID
         if(sensor_interface == &unitemp_1w &&
            ((OneWireSensor*)(app->editable_sensor->instance))->family_code == 0) {
@@ -420,6 +447,38 @@ void unitemp_scene_sensor_edit_on_enter(void* context) {
         //Sound alert switch
         item = variable_item_list_add(var_item_list, "Sound", 2, _co2_sound_change_callback, app);
         bool sound = mhz19c_pwm_get_sound(sensor);
+        variable_item_set_current_value_index(item, sound ? 1 : 0);
+        variable_item_set_current_value_text(item, sound ? "On" : "Off");
+    } else if(sensor->model->interface == &unitemp_mhz19c_uart) {
+        //CO2 correction in ppm (50 ppm steps), reuses the offset field
+        item = variable_item_list_add(
+            var_item_list, "CO2 offset", 41, _co2_offset_change_callback, app);
+        variable_item_set_current_value_index(item, sensor->temperature_offset + 20);
+        if(sensor->temperature_offset == 0) {
+            snprintf(app->txt_buff, 8, "0");
+        } else {
+            snprintf(app->txt_buff, 8, "%+d", sensor->temperature_offset * 50);
+        }
+        variable_item_set_current_value_text(item, app->txt_buff);
+
+        //Sound alert threshold
+        item = variable_item_list_add(
+            var_item_list, "CO2 Alert", 85, _co2_uart_alert_change_callback, app);
+        uint16_t alert = mhz19c_uart_get_alert(sensor);
+        variable_item_set_current_value_index(item, (alert - 800) / 50);
+        snprintf(app->txt_buff, 10, "%d ppm", alert);
+        variable_item_set_current_value_text(item, app->txt_buff);
+
+        //LED indication switch
+        item = variable_item_list_add(var_item_list, "LED", 2, _co2_uart_led_change_callback, app);
+        bool led = mhz19c_uart_get_led(sensor);
+        variable_item_set_current_value_index(item, led ? 1 : 0);
+        variable_item_set_current_value_text(item, led ? "On" : "Off");
+
+        //Sound alert switch
+        item =
+            variable_item_list_add(var_item_list, "Sound", 2, _co2_uart_sound_change_callback, app);
+        bool sound = mhz19c_uart_get_sound(sensor);
         variable_item_set_current_value_index(item, sound ? 1 : 0);
         variable_item_set_current_value_text(item, sound ? "On" : "Off");
     } else {

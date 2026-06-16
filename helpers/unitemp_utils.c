@@ -19,6 +19,7 @@
 #include "../unitemp.h"
 #include "unitemp_utils.h"
 #include "../sensors/MHZ19C_PWM.h"
+#include "../sensors/MHZ19C_UART.h"
 #include <locale/locale.h>
 
 static EnvironmentState last_enviroment_state = EnvironmentStateUndefined;
@@ -393,13 +394,34 @@ void unitemp_co2_alerts_stop(void* context) {
     unitemp_reset_environment_state(app->notifications);
 }
 
+/* CO2 indication reads each sensor's own LED / sound / alert through these small
+   dispatchers, so the PWM and the UART MH-Z19C each honour their per-sensor
+   settings; any other model (e.g. a climate + CO2 combo) falls back to the PWM
+   getters, which self-guard to safe defaults. */
+static bool unitemp_co2_led_enabled(Sensor* sensor) {
+    if(sensor->model == &MHZ19C_UART) return mhz19c_uart_get_led(sensor);
+    return mhz19c_pwm_get_led(sensor);
+}
+static bool unitemp_co2_sound_enabled(Sensor* sensor) {
+    if(sensor->model == &MHZ19C_UART) return mhz19c_uart_get_sound(sensor);
+    return mhz19c_pwm_get_sound(sensor);
+}
+static uint16_t unitemp_co2_alert_ppm(Sensor* sensor) {
+    if(sensor->model == &MHZ19C_UART) return mhz19c_uart_get_alert(sensor);
+    return mhz19c_pwm_get_alert(sensor);
+}
+static bool unitemp_co2_frozen(Sensor* sensor) {
+    if(sensor->model == &MHZ19C_UART) return false; //UART has no PWM-edge freeze
+    return mhz19c_pwm_is_frozen(sensor);
+}
+
 /* One-shot CO2 sound on threshold crossings (hysteresis + cooldown). Stateful by
    nature (edge detection on the CO2 value), separate from the LED dedup cache. */
 static void unitemp_co2_sound_tick(UnitempApp* app, Sensor* sensor, bool has_data) {
     if(!app->settings->environment_state_sound_and_vibro_indication) return;
-    if(!mhz19c_pwm_get_sound(sensor) || !has_data) return;
+    if(!unitemp_co2_sound_enabled(sensor) || !has_data) return;
 
-    uint16_t alert = mhz19c_pwm_get_alert(sensor);
+    uint16_t alert = unitemp_co2_alert_ppm(sensor);
     bool above = sensor->co2 >= (float)alert;
     bool way_below = sensor->co2 < (float)(alert - UNITEMP_CO2_HYST_PPM);
     bool cooldown_expired =
@@ -423,9 +445,10 @@ static void unitemp_co2_sound_tick(UnitempApp* app, Sensor* sensor, bool has_dat
 
 void unitemp_co2_alerts_tick(void* context, Sensor* sensor) {
     UnitempApp* app = context;
-    //sensor is the CO2 source shown on the active screen. The mhz19c_pwm_*
-    //getters self-guard (model != MHZ19C_PWM -> defaults), so a combo/UART
-    //source safely runs the LED/sound on default settings.
+    //sensor is the CO2 source shown on the active screen. Per-sensor LED / sound /
+    //alert are read through the unitemp_co2_* dispatchers, so the PWM and the UART
+    //MH-Z19C each honour their own settings; a climate + CO2 combo falls back to
+    //safe defaults.
     if(sensor == NULL) {
         unitemp_apply_led(app->notifications, 0);
         return;
@@ -433,11 +456,11 @@ void unitemp_co2_alerts_tick(void* context, Sensor* sensor) {
 
     bool has_data = (sensor->status == UT_SENSORSTATUS_OK ||
                      sensor->status == UT_SENSORSTATUS_POLLING) &&
-                    sensor->co2 > 0.0f && !mhz19c_pwm_is_frozen(sensor);
+                    sensor->co2 > 0.0f && !unitemp_co2_frozen(sensor);
 
     //LED: steady colour by level; off when no data or disabled
     int16_t code = 0;
-    if(app->settings->environment_state_led_indication && mhz19c_pwm_get_led(sensor) &&
+    if(app->settings->environment_state_led_indication && unitemp_co2_led_enabled(sensor) &&
        has_data) {
         if(sensor->co2 < (float)UNITEMP_CO2_LED_YELLOW_PPM) {
             code = 0x11;
