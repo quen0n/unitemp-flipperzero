@@ -169,7 +169,8 @@ void single_sensor_draw_sensor(Canvas* canvas, Sensor* sensor, SingleSensorViewM
         _draw_carousel_arrows(canvas, view_model);
         uint8_t line_len = _draw_sensor_name_header(canvas, sensor);
         if(sensor->model == &MHZ19C_PWM && mhz19c_pwm_is_frozen(sensor)) {
-            unitemp_draw_freeze_snowflake(canvas, 64 + line_len / 2 + 3, 4);
+            //Snowflake left of the name, matching the grid tile (uniform placement)
+            unitemp_draw_freeze_snowflake(canvas, 64 - line_len / 2 - 9, 4);
         }
         if(sensor->status == UT_SENSORSTATUS_OK ||
            (sensor->status == UT_SENSORSTATUS_POLLING && sensor->co2 > 0.0f)) {
@@ -331,7 +332,8 @@ static void single_sensor_draw_mix_page(Canvas* canvas, SingleSensorViewModel* v
 
     uint8_t header_w = unitemp_draw_pair_header(canvas, climate->name, co2_source->name);
     if(co2_source->model == &MHZ19C_PWM && mhz19c_pwm_is_frozen(co2_source)) {
-        unitemp_draw_freeze_snowflake(canvas, 64 + header_w / 2 + 2, 4);
+        //Snowflake left of the name, matching the grid tile (uniform placement)
+        unitemp_draw_freeze_snowflake(canvas, 64 - header_w / 2 - 8, 4);
     }
 
     switch(climate->model->data_type) {
