@@ -141,6 +141,11 @@ bool unitemp_scene_sensors_list_on_event(void* context, SceneManagerEvent event)
                 snprintf(name, 11, "%s_%d%c", model->modelname, sensor_current_model_count, 0);
 
             char* args = malloc(21);
+            if(args == NULL) {
+                FURI_LOG_E(APP_NAME, "Sensor %s args allocation error", model->modelname);
+                free(name);
+                break;
+            }
             args[0] = '\0';
             //Selecting the first available port for single wire and SPI sensor
             if(model->interface == &unitemp_singlewire || model->interface == &unitemp_spi) {

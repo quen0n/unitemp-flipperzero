@@ -87,6 +87,7 @@ Sensor* unitemp_sensor_alloc(char* name, const SensorModel* model, char* args) {
     sensor->name = malloc(11);
     if(sensor->name == NULL) {
         FURI_LOG_E(APP_NAME, "Sensor %s name allocation error", name);
+        free(sensor);
         return NULL;
     }
     //Recording the sensor name
