@@ -408,11 +408,12 @@ bool unitemp_sensors_load(void* context) {
                         sensor_model->modelname);
                 }
             } else {
+                //Skip an unrecognised line and keep loading the rest. Do NOT free/close
+                //here: the post-loop cleanup owns `line` and the stream, so doing it here
+                //caused a double-free + double-close (heap corruption) on any bad model.
                 FURI_LOG_E(
                     APP_NAME, "Unsupported sensor name (%s) or sensor model (%s)", name, model);
-                furi_string_free(line);
-                file_stream_close(app->file_stream);
-                break;
+                continue;
             }
         }
         file_stream_close(app->file_stream);
