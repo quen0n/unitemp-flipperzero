@@ -181,9 +181,14 @@ uint8_t unitemp_gpio_get_aviable_pin_count(
             }
         }
 
-        //Check for single wire
+        //Check for single wire / SPI CS. For SPI the bus pins (indices 0,1,3 =
+        //MISO/MOSI/SCK) are NOT valid CS candidates — exclude them so the count
+        //matches unitemp_gpio_get_aviable_pin; otherwise the picker shows a phantom
+        //slot that returns NULL and crashes on select.
         if(interface == &unitemp_singlewire || interface == &unitemp_spi) {
-            if(gpio_interfaces_list[i] == NULL || (unitemp_gpio_get_from_index(i) == extraport)) {
+            bool spi_bus_pin = (interface == &unitemp_spi) && (i == 0 || i == 1 || i == 3);
+            if(!spi_bus_pin &&
+               (gpio_interfaces_list[i] == NULL || (unitemp_gpio_get_from_index(i) == extraport))) {
                 UNITEMP_DEBUG("%s pin is aviable", unitemp_gpio_get_from_index(i)->name);
                 aviable_ports_count++;
             }
