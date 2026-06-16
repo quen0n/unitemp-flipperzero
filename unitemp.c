@@ -221,8 +221,6 @@ static UnitempApp* unitemp_app_alloc(void) {
 static void unitemp_app_free(UnitempApp* app) {
     furi_check(app);
 
-    unitemp_sensors_free();
-
     view_dispatcher_remove_view(app->view_dispatcher, UnitempViewTextInput);
     text_input_free(app->text_input);
     view_dispatcher_remove_view(app->view_dispatcher, UnitempViewSensorInfo);
@@ -244,6 +242,10 @@ static void unitemp_app_free(UnitempApp* app) {
 
     view_dispatcher_free(app->view_dispatcher);
     scene_manager_free(app->scene_manager);
+
+    //Free the sensors only after the view dispatcher is detached from the GUI, so a
+    //late draw callback can no longer dereference a freed sensor (intermittent exit crash).
+    unitemp_sensors_free();
 
     furi_thread_free(app->reader_thread);
 

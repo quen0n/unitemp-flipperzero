@@ -132,4 +132,25 @@ void unitemp_draw_heat_index(
     uint8_t y);
 
 void unitemp_draw_co2(Canvas* canvas, Sensor* sensor, uint8_t x, uint8_t y, Color color, bool mini);
+
+/**
+ * @brief Draws a 7x7 snowflake indicator (stale/frozen sensor data)
+ *
+ * @param canvas Pointer to the Canvas object
+ * @param x The X coordinate of the top-left corner
+ * @param y The Y coordinate of the top-left corner
+ */
+void unitemp_draw_freeze_snowflake(Canvas* canvas, uint8_t x, uint8_t y);
+
+/**
+ * @brief Draws a "<left> + <right>" pair header centered at the top of the screen
+ *
+ * The combined string is truncated character by character until it fits 116 px.
+ *
+ * @param canvas Pointer to the Canvas object
+ * @param left_name Name of the climate sensor
+ * @param right_name Name of the CO2 sensor
+ * @return Width of the drawn string in pixels
+ */
+uint8_t unitemp_draw_pair_header(Canvas* canvas, const char* left_name, const char* right_name);
 #endif //UNITEMP_DRAW_H_

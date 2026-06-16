@@ -6,3 +6,4 @@ dist/*
 .editorconfig
 .env
 .ufbt
+.idea

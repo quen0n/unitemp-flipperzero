@@ -28,6 +28,7 @@ typedef enum {
     UT_DATA_TYPE_TEMP_PRESS,
     UT_DATA_TYPE_TEMP_HUM_PRESS,
     UT_DATA_TYPE_TEMP_HUM_CO2,
+    UT_DATA_TYPE_CO2,
 
     UT_DATA_TYPE_COUNT
 } SensorDataType;
@@ -204,6 +205,25 @@ SensorStatus unitemp_sensor_update(Sensor* sensor, void* ctx);
  * @return Pointer to the Sensor structure at the specified index, or NULL if index is out of bounds.
  */
 Sensor* unitemp_sensors_get(uint8_t index);
+
+/**
+ * @brief Find the first CO2-only sensor (UT_DATA_TYPE_CO2) in the list
+ *
+ * @param exclude Sensor to skip (may be NULL)
+ * @return Pointer to the CO2 source sensor, or NULL if there is none
+ */
+Sensor* unitemp_sensor_find_co2_source(Sensor* exclude);
+
+/**
+ * @brief Find the first sensor that reports CO2 in ANY form
+ *        (UT_DATA_TYPE_CO2 or combo UT_DATA_TYPE_TEMP_HUM_CO2)
+ *
+ * Used by the indication logic: if this returns non-NULL, the system has a CO2
+ * source and CO2 owns the lamp on every screen.
+ *
+ * @return Pointer to the first CO2-reporting sensor, or NULL if there is none
+ */
+Sensor* unitemp_sensor_find_any_co2(void);
 
 /**
 * @brief Get a list of available sensor types

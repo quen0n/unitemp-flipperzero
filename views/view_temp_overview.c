@@ -18,6 +18,7 @@
 #include "view_temp_overview.h"
 #include "../unitemp.h"
 #include "../helpers/unitemp_draw.h"
+#include "../helpers/unitemp_utils.h"
 
 #include <stdlib.h>
 #include <gui/elements.h>
@@ -25,6 +26,22 @@
 
 extern const Icon I_ButtonRight_4x7;
 extern const Icon I_ButtonLeft_4x7;
+
+/* Picks the CO2 (or combo) sensor shown on the given overview page, or NULL. */
+static Sensor* overview_page_co2_sensor(uint8_t sensors_page) {
+    uint8_t count = unitemp_sensors_get_count();
+    uint8_t pages = count / 4 + (count % 4 ? 1 : 0);
+    if(pages == 0) return NULL;
+    if(sensors_page >= pages) sensors_page = 0;
+    uint8_t base = sensors_page * 4;
+    uint8_t on_page = ((count - base) / 4) ? 4 : ((count - base) % 4);
+    for(uint8_t i = 0; i < on_page; i++) {
+        Sensor* s = unitemp_sensors_get(base + i);
+        SensorDataType dt = s->model->data_type;
+        if(dt == UT_DATA_TYPE_CO2 || dt == UT_DATA_TYPE_TEMP_HUM_CO2) return s;
+    }
+    return NULL;
+}
 
 struct TempOverview {
     View* view;
@@ -181,6 +198,16 @@ View* temp_overview_get_view(TempOverview* temp_overview) {
 void temp_overview_refresh_data(TempOverview* instance) {
     furi_assert(instance);
 
-    //Вызываем перерисовку вида псевдообновлением модели. Вызывается по таймеру каждую секнуду
-    with_view_model(instance->view, TempOverviewViewModel * model, { UNUSED(model); }, true);
+    //Lamp follows THIS page's tiles, driven from the scene tick like the carousel
+    //(not from the draw callback): a CO2 tile present -> CO2 owns the lamp;
+    //otherwise no CO2 on screen -> lamp off. overview_page_co2_sensor self-guards
+    //the page bounds. The `true` also marks the model dirty to trigger a redraw.
+    with_view_model(
+        instance->view,
+        TempOverviewViewModel * model,
+        {
+            unitemp_indication_tick(
+                model->context, overview_page_co2_sensor(model->sensors_page), NULL);
+        },
+        true);
 }

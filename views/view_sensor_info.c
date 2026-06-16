@@ -25,6 +25,7 @@
 #include "../interfaces/i2c_sensor.h"
 #include "../interfaces/spi_sensor.h"
 #include "../interfaces/onewire_sensor.h"
+#include "../sensors/MHZ19C_PWM.h"
 
 extern const Icon I_ButtonRight_4x7;
 extern const Icon I_ButtonLeft_4x7;
@@ -91,6 +92,11 @@ static void sensor_info_draw_callback(Canvas* canvas, void* model) {
 
         canvas_set_font(canvas, FontSecondary);
         canvas_draw_str(canvas, 57, 34, s->data_pin->name);
+    } else if(sensor->model->interface == &unitemp_mhz19c_pwm) {
+        canvas_draw_str(canvas, 10, 34, "Data pin: ");
+
+        canvas_set_font(canvas, FontSecondary);
+        canvas_draw_str(canvas, 57, 34, "3 (A6)");
     } else if(sensor->model->interface == &unitemp_i2c) {
         I2CSensor* s = sensor->instance;
         canvas_set_font(canvas, FontPrimary);
@@ -225,4 +231,37 @@ void sensor_info_free(SensorInfo* sensor_info) {
 View* sensor_info_get_view(SensorInfo* sensor_info) {
     furi_assert(sensor_info);
     return sensor_info->view;
+}
+
+void sensor_info_refresh_data(SensorInfo* instance) {
+    furi_assert(instance);
+    UnitempApp* app = instance->context;
+
+    //The pinout screen shows the carousel's current sensor; the lamp follows that
+    //same sensor, driven from the scene tick (like the carousel): a CO2 (or combo)
+    //sensor -> CO2 owns the lamp; a pure climate sensor -> stock heat-index.
+    uint8_t idx = 0;
+    with_view_model(
+        single_sensor_get_view(app->single_sensor),
+        SingleSensorViewModel * m,
+        { idx = m->sensor_index; },
+        false);
+
+    uint8_t count = unitemp_sensors_get_count();
+    Sensor* co2_sensor = NULL;
+    Sensor* climate_sensor = NULL;
+    if(count > 0) {
+        if(idx > count - 1) idx = count - 1;
+        Sensor* s = unitemp_sensors_get(idx);
+        SensorDataType dt = s->model->data_type;
+        if(dt == UT_DATA_TYPE_CO2 || dt == UT_DATA_TYPE_TEMP_HUM_CO2) {
+            co2_sensor = s; //CO2 visible on this pinout -> CO2 owns the lamp
+        } else {
+            climate_sensor = s; //pure climate -> stock heat-index
+        }
+    }
+    unitemp_indication_tick(app, co2_sensor, climate_sensor);
+
+    //Trigger a redraw of the pinout view.
+    with_view_model(instance->view, SensorInfoViewModel * model, { UNUSED(model); }, true);
 }

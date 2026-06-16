@@ -40,6 +40,7 @@ void unitemp_scene_monitor_on_enter(void* context) {
     }
     /* Start the reader thread. It will talk to the thermometer in the background. */
     furi_thread_start(app->reader_thread);
+    unitemp_co2_alerts_reset();
     view_dispatcher_switch_to_view(app->view_dispatcher, view_mode);
 }
 
@@ -53,6 +54,8 @@ bool unitemp_scene_monitor_on_event(void* context, SceneManagerEvent event) {
             single_sensor_refresh_data(app->single_sensor);
         } else if(view_mode == UnitempViewTempOverview) {
             temp_overview_refresh_data(app->temp_overview);
+        } else if(view_mode == UnitempViewSensorInfo) {
+            sensor_info_refresh_data(app->sensor_info);
         }
         consumed = true;
     }
@@ -67,6 +70,8 @@ bool unitemp_scene_monitor_on_event(void* context, SceneManagerEvent event) {
             consumed = true;
         } else if(event.event == CustomEventSwitchToSensorInfoView) {
             view_mode = UnitempViewSensorInfo;
+            //The pinout lamp is driven each scene tick by sensor_info_refresh_data,
+            //following the shown sensor (CO2 -> CO2 lamp, climate -> heat-index).
             view_dispatcher_switch_to_view(app->view_dispatcher, UnitempViewSensorInfo);
             consumed = true;
         }

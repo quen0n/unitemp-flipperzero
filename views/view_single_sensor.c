@@ -23,6 +23,7 @@
 #include "../interfaces/i2c_sensor.h"
 #include "../interfaces/spi_sensor.h"
 #include "../interfaces/onewire_sensor.h"
+#include "../sensors/MHZ19C_PWM.h"
 
 #include <stdlib.h>
 #include <gui/elements.h>
@@ -52,6 +53,7 @@ static const uint8_t data_types_values_count[UT_DATA_TYPE_COUNT] = {
     2, //UT_DATA_TYPE_TEMP_PRESS
     3, //UT_DATA_TYPE_TEMP_HUM_PRESS
     3, //UT_DATA_TYPE_TEMP_HUM_CO2
+    1, //UT_DATA_TYPE_CO2
 };
 //Массив содержит координаты для отображения одного, двух и более элементов
 static const uint8_t values_positions[4][4][2] = {
@@ -77,6 +79,8 @@ static void _draw_sensor_not_responding(Canvas* canvas, Sensor* sensor) {
             TEMP_STR_SIZE,
             "Sensor waiting on %s",
             ((SingleWireSensor*)sensor->instance)->data_pin->name);
+    } else if(sensor->model->interface == &unitemp_mhz19c_pwm) {
+        snprintf(temp_str, TEMP_STR_SIZE, "Sensor waiting on 3 (A6)");
     } else if(sensor->model->interface == &unitemp_i2c) {
         snprintf(temp_str, TEMP_STR_SIZE, "Sensor waiting on SDA & SCL");
     } else if(sensor->model->interface == &unitemp_spi) {
@@ -101,6 +105,54 @@ static void _draw_sensor_polling(Canvas* canvas, Sensor* sensor) {
     canvas_draw_str_aligned(canvas, 65, 19, AlignCenter, AlignCenter, "Reading values...");
 }
 
+/* The carousel keeps every native sensor page untouched and appends ONE extra
+   "mix" page (climate + CO2, accepted demo layouts) when both a CO2-only
+   source and a climate sensor are present. */
+
+/* First non-CO2 sensor with live values, falling back to the first non-CO2 one. */
+static Sensor* _mix_climate_sensor(void) {
+    Sensor* first = NULL;
+    for(uint8_t i = 0; i < unitemp_sensors_get_count(); i++) {
+        Sensor* sensor = unitemp_sensors_get(i);
+        if(sensor->model->data_type == UT_DATA_TYPE_CO2) continue;
+        if(first == NULL) first = sensor;
+        if(sensor->status == UT_SENSORSTATUS_OK ||
+           (sensor->status == UT_SENSORSTATUS_POLLING && sensor->temperature != -128.0f)) {
+            return sensor;
+        }
+    }
+    return first;
+}
+
+static bool _mix_page_available(void) {
+    return unitemp_sensor_find_co2_source(NULL) != NULL && _mix_climate_sensor() != NULL;
+}
+
+/* Carousel length: native sensor pages + the optional mix page. */
+static uint8_t _carousel_pages_count(void) {
+    return unitemp_sensors_get_count() + (_mix_page_available() ? 1 : 0);
+}
+
+static void _draw_carousel_arrows(Canvas* canvas, SingleSensorViewModel* view_model) {
+    //Right arrow
+    if(_carousel_pages_count() > 0 && view_model->sensor_index < _carousel_pages_count() - 1) {
+        canvas_draw_icon(canvas, 122, 29, &I_ButtonRight_4x7);
+    }
+    //Left arrow
+    if(view_model->sensor_index > 0) {
+        canvas_draw_icon(canvas, 2, 29, &I_ButtonLeft_4x7);
+    }
+}
+
+/* Draws the sensor name with the underscore, returns the underscore length. */
+static uint8_t _draw_sensor_name_header(Canvas* canvas, Sensor* sensor) {
+    canvas_set_font(canvas, FontPrimary);
+    canvas_draw_str_aligned(canvas, 64, 7, AlignCenter, AlignCenter, sensor->name);
+    uint8_t line_len = canvas_string_width(canvas, sensor->name) + 2;
+    canvas_draw_line(canvas, 64 - line_len / 2, 12, 64 + line_len / 2, 12);
+    return line_len;
+}
+
 void single_sensor_draw_sensor(Canvas* canvas, Sensor* sensor, SingleSensorViewModel* view_model) {
     UnitempSettings* settings = ((UnitempApp*)(view_model->context))->settings;
 
@@ -110,24 +162,33 @@ void single_sensor_draw_sensor(Canvas* canvas, Sensor* sensor, SingleSensorViewM
     canvas_draw_rframe(canvas, 0, 0, 128, 63, 7);
     canvas_draw_rframe(canvas, 0, 0, 128, 64, 7);
 
-    //Right arrow
-    if(unitemp_sensors_get_count() > 0 &&
-       view_model->sensor_index < unitemp_sensors_get_count() - 1) {
-        canvas_draw_icon(canvas, 122, 29, &I_ButtonRight_4x7);
-    }
-    //Left arrow
-    if(view_model->sensor_index > 0) {
-        canvas_draw_icon(canvas, 2, 29, &I_ButtonLeft_4x7);
-    }
-
-    //Name stamp
-    canvas_set_font(canvas, FontPrimary);
-    canvas_draw_str_aligned(canvas, 64, 7, AlignCenter, AlignCenter, sensor->name);
-    //Underscore
-    uint8_t line_len = canvas_string_width(canvas, sensor->name) + 2;
-    canvas_draw_line(canvas, 64 - line_len / 2, 12, 64 + line_len / 2, 12);
-
     SensorDataType data_type = sensor->model->data_type;
+
+    //Solo page of a CO2-only sensor: big CO2 box in the center (accepted demo design)
+    if(data_type == UT_DATA_TYPE_CO2) {
+        _draw_carousel_arrows(canvas, view_model);
+        uint8_t line_len = _draw_sensor_name_header(canvas, sensor);
+        if(sensor->model == &MHZ19C_PWM && mhz19c_pwm_is_frozen(sensor)) {
+            //Snowflake left of the name, matching the grid tile (uniform placement)
+            unitemp_draw_freeze_snowflake(canvas, 64 - line_len / 2 - 9, 4);
+        }
+        if(sensor->status == UT_SENSORSTATUS_OK ||
+           (sensor->status == UT_SENSORSTATUS_POLLING && sensor->co2 > 0.0f)) {
+            unitemp_draw_co2(canvas, sensor, 22, 23, ColorWhite, false);
+        } else if(
+            sensor->status == UT_SENSORSTATUS_POLLING ||
+            sensor->status == UT_SENSORSTATUS_INITIALIZED) {
+            _draw_sensor_polling(canvas, sensor);
+        } else {
+            _draw_sensor_not_responding(canvas, sensor);
+        }
+        return;
+    }
+
+    _draw_carousel_arrows(canvas, view_model);
+
+    //Name stamp with underscore
+    _draw_sensor_name_header(canvas, sensor);
 
     if(sensor->status == UT_SENSORSTATUS_OK ||
        (sensor->status == UT_SENSORSTATUS_POLLING && sensor->temperature != -128.0f)) {
@@ -255,11 +316,74 @@ void single_sensor_draw_sensor(Canvas* canvas, Sensor* sensor, SingleSensorViewM
     }
 }
 
+/* Extra carousel page: climate + CO2 mix (accepted demo layouts). Native sensor
+   pages stay exactly as in stock unitemp; this page is appended after them. */
+static void single_sensor_draw_mix_page(Canvas* canvas, SingleSensorViewModel* view_model) {
+    UnitempSettings* settings = ((UnitempApp*)(view_model->context))->settings;
+    Sensor* climate = _mix_climate_sensor();
+    Sensor* co2_source = unitemp_sensor_find_co2_source(NULL);
+    if(climate == NULL || co2_source == NULL) return;
+
+    //Drawing a frame
+    canvas_draw_rframe(canvas, 0, 0, 128, 63, 7);
+    canvas_draw_rframe(canvas, 0, 0, 128, 64, 7);
+
+    _draw_carousel_arrows(canvas, view_model);
+
+    uint8_t header_w = unitemp_draw_pair_header(canvas, climate->name, co2_source->name);
+    if(co2_source->model == &MHZ19C_PWM && mhz19c_pwm_is_frozen(co2_source)) {
+        //Snowflake left of the name, matching the grid tile (uniform placement)
+        unitemp_draw_freeze_snowflake(canvas, 64 - header_w / 2 - 8, 4);
+    }
+
+    switch(climate->model->data_type) {
+    case UT_DATA_TYPE_TEMP_HUM_PRESS:
+        unitemp_draw_temperature(canvas, climate, settings->temperature_unit, 7, 14);
+        unitemp_draw_humidity(
+            canvas, climate, settings->humidity_unit, settings->temperature_unit, 67, 14);
+        unitemp_draw_pressure(canvas, climate, settings->pressure_unit, 7, 41, true);
+        unitemp_draw_co2(canvas, co2_source, 67, 41, ColorWhite, true);
+        break;
+    case UT_DATA_TYPE_TEMP_HUM:
+        unitemp_draw_temperature(canvas, climate, settings->temperature_unit, 7, 14);
+        unitemp_draw_humidity(
+            canvas, climate, settings->humidity_unit, settings->temperature_unit, 67, 14);
+        unitemp_draw_co2(canvas, co2_source, 37, 41, ColorWhite, true);
+        break;
+    case UT_DATA_TYPE_TEMP_PRESS:
+        unitemp_draw_temperature(canvas, climate, settings->temperature_unit, 7, 14);
+        unitemp_draw_pressure(canvas, climate, settings->pressure_unit, 67, 14, true);
+        unitemp_draw_co2(canvas, co2_source, 37, 41, ColorWhite, true);
+        break;
+    case UT_DATA_TYPE_TEMP:
+        unitemp_draw_temperature(canvas, climate, settings->temperature_unit, 7, 26);
+        unitemp_draw_co2(canvas, co2_source, 67, 26, ColorWhite, true);
+        break;
+    case UT_DATA_TYPE_TEMP_HUM_CO2:
+        //SwapClimate: climate T/RH on top, CO2 of the external source below (big box)
+        unitemp_draw_temperature(canvas, climate, settings->temperature_unit, 7, 14);
+        unitemp_draw_humidity(
+            canvas, climate, settings->humidity_unit, settings->temperature_unit, 67, 14);
+        unitemp_draw_co2(canvas, co2_source, 22, 41, ColorWhite, false);
+        break;
+    default:
+        break;
+    }
+}
+
 static void single_sensor_draw_callback(Canvas* canvas, void* model) {
     SingleSensorViewModel* view_model = model;
 
-    if(view_model->sensor_index > unitemp_sensors_get_count() - 1) {
-        view_model->sensor_index = unitemp_sensors_get_count() - 1;
+    uint8_t pages = _carousel_pages_count();
+    if(pages == 0) return;
+    if(view_model->sensor_index > pages - 1) {
+        view_model->sensor_index = pages - 1;
+    }
+
+    //The appended mix page lives after the native sensor pages
+    if(view_model->sensor_index >= unitemp_sensors_get_count()) {
+        single_sensor_draw_mix_page(canvas, view_model);
+        return;
     }
 
     Sensor* sensor = unitemp_sensors_get(view_model->sensor_index);
@@ -273,16 +397,24 @@ static bool single_sensor_input_callback(InputEvent* event, void* context) {
     bool consumed = false;
 
     if(event->key == InputKeyOk && event->type == InputTypeShort) {
+        bool mix_page = false;
         with_view_model(
             single_sensor->view,
             SingleSensorViewModel * model,
             {
-                Sensor* sensor = unitemp_sensors_get(model->sensor_index);
-                app->editable_sensor = sensor;
+                if(model->sensor_index >= unitemp_sensors_get_count()) {
+                    //Mix page: open the menu of the climate sensor shown on it
+                    app->editable_sensor = _mix_climate_sensor();
+                    mix_page = true;
+                } else {
+                    app->editable_sensor = unitemp_sensors_get(model->sensor_index);
+                }
             },
             false);
 
-        scene_manager_next_scene(app->scene_manager, UnitempSceneSensorMenu);
+        if(!mix_page || app->editable_sensor != NULL) {
+            scene_manager_next_scene(app->scene_manager, UnitempSceneSensorMenu);
+        }
         consumed = true;
     } else if(event->key == InputKeyOk && event->type == InputTypeLong) {
         if(++app->settings->temperature_unit >= UT_TEMP_COUNT) app->settings->temperature_unit = 0;
@@ -292,8 +424,8 @@ static bool single_sensor_input_callback(InputEvent* event, void* context) {
             single_sensor->view,
             SingleSensorViewModel * model,
             {
-                if(--model->sensor_index >= unitemp_sensors_get_count()) {
-                    model->sensor_index = unitemp_sensors_get_count() - 1;
+                if(--model->sensor_index >= _carousel_pages_count()) {
+                    model->sensor_index = _carousel_pages_count() - 1;
                 }
             },
             true);
@@ -303,7 +435,7 @@ static bool single_sensor_input_callback(InputEvent* event, void* context) {
             single_sensor->view,
             SingleSensorViewModel * model,
             {
-                if(++model->sensor_index >= unitemp_sensors_get_count()) {
+                if(++model->sensor_index >= _carousel_pages_count()) {
                     model->sensor_index = 0;
                 }
             },
@@ -317,7 +449,17 @@ static bool single_sensor_input_callback(InputEvent* event, void* context) {
 
         consumed = true;
     } else if(event->key == InputKeyDown && event->type == InputTypeShort) {
-        view_dispatcher_send_custom_event(app->view_dispatcher, CustomEventSwitchToSensorInfoView);
+        bool mix_page = false;
+        with_view_model(
+            single_sensor->view,
+            SingleSensorViewModel * model,
+            { mix_page = model->sensor_index >= unitemp_sensors_get_count(); },
+            false);
+        //Sensor info makes no sense for the composite mix page
+        if(!mix_page) {
+            view_dispatcher_send_custom_event(
+                app->view_dispatcher, CustomEventSwitchToSensorInfoView);
+        }
         consumed = true;
     }
 
@@ -370,34 +512,30 @@ void single_sensor_refresh_data(SingleSensor* instance) {
         instance->view,
         SingleSensorViewModel * model,
         {
-            if(model->sensor_index > unitemp_sensors_get_count() - 1) {
-                model->sensor_index = unitemp_sensors_get_count() - 1;
+            uint8_t pages = _carousel_pages_count();
+            if(pages > 0 && model->sensor_index > pages - 1) {
+                model->sensor_index = pages - 1;
             }
 
-            EnvironmentState environment_state =
-                unitemp_determine_environment_state(unitemp_sensors_get(model->sensor_index));
-
-            UnitempApp* app = model->context;
-            NotificationApp* notification_app = app->notifications;
-
-            if(environment_state == EnvironmentStateDangerous) {
-                if(app->settings->infinity_backlight) {
-                    notification_message(
-                        app->notifications, &sequence_display_backlight_enforce_auto);
+            //The lamp follows THIS page's content: a CO2-only page, a combo
+            //(climate+CO2) page and the mix page all show CO2 -> CO2 owns the
+            //lamp; a pure climate page shows no CO2 -> stock heat-index.
+            uint8_t idx = model->sensor_index;
+            Sensor* co2_sensor = NULL;
+            Sensor* climate_sensor = NULL;
+            if(idx >= unitemp_sensors_get_count()) {
+                //Mix page draws the CO2-only source alongside a climate sensor
+                co2_sensor = unitemp_sensor_find_co2_source(NULL);
+            } else {
+                Sensor* s = unitemp_sensors_get(idx);
+                SensorDataType dt = s->model->data_type;
+                if(dt == UT_DATA_TYPE_CO2 || dt == UT_DATA_TYPE_TEMP_HUM_CO2) {
+                    co2_sensor = s; //CO2 visible on this page
+                } else {
+                    climate_sensor = s; //pure climate -> stock heat-index
                 }
             }
-            unitemp_display_environment_state(
-                notification_app,
-                environment_state,
-                app->settings->environment_state_led_indication,
-                true);
-
-            if(environment_state == EnvironmentStateDangerous) {
-                if(app->settings->infinity_backlight) {
-                    notification_message(
-                        app->notifications, &sequence_display_backlight_enforce_on);
-                }
-            }
+            unitemp_indication_tick(model->context, co2_sensor, climate_sensor);
         },
         true);
 }

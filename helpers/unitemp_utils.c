@@ -18,9 +18,16 @@
 
 #include "../unitemp.h"
 #include "unitemp_utils.h"
+#include "../sensors/MHZ19C_PWM.h"
+#include "../sensors/MHZ19C_UART.h"
 #include <locale/locale.h>
 
 static EnvironmentState last_enviroment_state = EnvironmentStateUndefined;
+/* Unified "what the lamp currently shows" dedup cache (see unitemp_apply_led):
+   the single source of truth for BOTH the heat-index and the CO2 indication, so
+   the two can never desync and the lamp on any screen is a pure function of that
+   screen's content — not of how you navigated to it. -1 = unknown. */
+static int16_t led_shown = -1;
 
 static const NotificationMessage message_green_128 = {
     .type = NotificationMessageTypeLedGreen,
@@ -198,28 +205,25 @@ EnvironmentState unitemp_determine_environment_state_from_co2(uint16_t ppm) {
 }
 
 EnvironmentState unitemp_determine_environment_state(Sensor* sensor) {
+    //CO2-only sensors are handled by unitemp_co2_alerts_tick (steady LED levels,
+    //one-shot sound), not by the environment state machinery
+    if(sensor->model->data_type == UT_DATA_TYPE_CO2) {
+        return EnvironmentStateUndefined;
+    }
     if(sensor->status != UT_SENSORSTATUS_OK) return EnvironmentStateUndefined;
-    EnvironmentState gas_state = EnvironmentStateUndefined;
+    //Combo sensor (climate + CO2): if it has CO2, the lamp follows CO2 ONLY,
+    //not the heat-index. CO2 takes over the indication whenever it is present.
+    if(sensor->model->data_type == UT_DATA_TYPE_TEMP_HUM_CO2) {
+        return unitemp_determine_environment_state_from_co2(sensor->co2);
+    }
+    //Climate-only sensors: heat-index from temperature + humidity
     EnvironmentState hi_state = EnvironmentStateUndefined;
-    EnvironmentState result_state = EnvironmentStateUndefined;
     if(sensor->model->data_type == UT_DATA_TYPE_TEMP_HUM ||
-       sensor->model->data_type == UT_DATA_TYPE_TEMP_HUM_PRESS ||
-       sensor->model->data_type == UT_DATA_TYPE_TEMP_HUM_CO2) {
+       sensor->model->data_type == UT_DATA_TYPE_TEMP_HUM_PRESS) {
         hi_state = unitemp_determine_environment_state_from_hi(unitemp_calculate_heat_index(
             locale_celsius_to_fahrenheit(sensor->temperature), sensor->humidity));
     }
-    if(sensor->model->data_type == UT_DATA_TYPE_TEMP_HUM_CO2) {
-        gas_state = unitemp_determine_environment_state_from_co2(sensor->co2);
-    }
-    UNITEMP_DEBUG("gas state: %d, hi_state: %d", gas_state, hi_state);
-    //Choosing the worst option
-    if(gas_state > result_state) {
-        result_state = gas_state;
-    }
-    if(hi_state > result_state) {
-        result_state = hi_state;
-    }
-    return result_state;
+    return hi_state;
 }
 
 void unitemp_display_environment_state(
@@ -246,7 +250,269 @@ void unitemp_display_environment_state(
 }
 void unitemp_reset_environment_state(NotificationApp* app) {
     last_enviroment_state = EnvironmentStateUndefined;
+    led_shown = 0; //LED is now physically off — keep the unified cache in sync
 
     notification_message(app, &sequence_blink_stop);
     notification_message(app, &sequence_reset_rgb);
+}
+
+/* ---- CO2 LED & sound alerts (logic ported from flipper-air-stats) ------ */
+
+//LED level boundaries, ppm
+#define UNITEMP_CO2_LED_YELLOW_PPM 800
+#define UNITEMP_CO2_LED_ORANGE_PPM 1000
+#define UNITEMP_CO2_LED_RED_PPM    1400
+//Sound alert hysteresis and cooldown
+#define UNITEMP_CO2_HYST_PPM    50
+#define UNITEMP_CO2_COOLDOWN_MS 60000UL
+
+/* Steady LED colors (do_not_reset = persists through other notifications).
+   Every sequence sets ALL three channels so no color leaks from the previous one. */
+static const NotificationSequence co2_seq_led_green = {
+    &message_red_0,
+    &message_green_255,
+    &message_blue_0,
+    &message_do_not_reset,
+    NULL,
+};
+static const NotificationSequence co2_seq_led_yellow = {
+    &message_red_255,
+    &message_green_255,
+    &message_blue_0,
+    &message_do_not_reset,
+    NULL,
+};
+static const NotificationMessage co2_led_green_80 = {
+    .type = NotificationMessageTypeLedGreen,
+    .data.led.value = 80,
+};
+static const NotificationSequence co2_seq_led_orange = {
+    &message_red_255,
+    &co2_led_green_80,
+    &message_blue_0,
+    &message_do_not_reset,
+    NULL,
+};
+static const NotificationSequence co2_seq_led_red = {
+    &message_red_255,
+    &message_green_0,
+    &message_blue_0,
+    &message_do_not_reset,
+    NULL,
+};
+static const NotificationSequence co2_seq_led_off = {
+    &message_red_0,
+    &message_green_0,
+    &message_blue_0,
+    NULL,
+};
+
+static const NotificationMessage co2_vol_msg = {
+    .type = NotificationMessageTypeForceSpeakerVolumeSetting,
+    .data.forced_settings.speaker_volume = 0.5f,
+};
+static const NotificationMessage co2_note_low = {
+    .type = NotificationMessageTypeSoundOn,
+    .data.sound = {.frequency = 880.0f, .volume = 1.0f},
+};
+static const NotificationMessage co2_note_high = {
+    .type = NotificationMessageTypeSoundOn,
+    .data.sound = {.frequency = 1174.7f, .volume = 1.0f},
+};
+static const NotificationMessage co2_delay_120 = {
+    .type = NotificationMessageTypeDelay,
+    .data.delay.length = 120,
+};
+static const NotificationMessage co2_sound_off = {
+    .type = NotificationMessageTypeSoundOff,
+};
+/* Alarm (OK→BAD): two rising notes */
+static const NotificationSequence co2_seq_alarm = {
+    &co2_vol_msg,
+    &co2_note_low,
+    &co2_delay_120,
+    &co2_note_high,
+    &co2_delay_120,
+    &co2_sound_off,
+    &message_do_not_reset,
+    NULL,
+};
+/* Relief (BAD→OK): two falling notes */
+static const NotificationSequence co2_seq_relief = {
+    &co2_vol_msg,
+    &co2_note_high,
+    &co2_delay_120,
+    &co2_note_low,
+    &co2_delay_120,
+    &co2_sound_off,
+    &message_do_not_reset,
+    NULL,
+};
+
+static bool co2_was_above = false;
+static uint32_t co2_last_alert_tick = 0;
+
+/* Apply an LED code idempotently: touch the hardware ONLY when the code actually
+   changes. This dedup is the only retained state — the decision itself is fully
+   recomputed from the current screen every tick, so the lamp is path-independent.
+   Codes: 0..5 = heat-index EnvironmentState (0 = Undefined = off); 0x11..0x14 =
+   CO2 level green/yellow/orange/red. */
+static void unitemp_apply_led(NotificationApp* notifications, int16_t code) {
+    if(code == led_shown) return;
+    led_shown = code;
+    if(code & 0x10) {
+        const NotificationSequence* seq;
+        switch(code & 0x0F) {
+        case 1:
+            seq = &co2_seq_led_green;
+            break;
+        case 2:
+            seq = &co2_seq_led_yellow;
+            break;
+        case 3:
+            seq = &co2_seq_led_orange;
+            break;
+        case 4:
+            seq = &co2_seq_led_red;
+            break;
+        default:
+            seq = &co2_seq_led_off;
+            break;
+        }
+        notification_message(notifications, seq);
+    } else {
+        notification_message(notifications, notification_sequences[code]);
+    }
+}
+
+void unitemp_co2_alerts_reset(void) {
+    led_shown = -1; //force the lamp to repaint from the current screen next tick
+}
+
+void unitemp_co2_alerts_stop(void* context) {
+    UnitempApp* app = context;
+    unitemp_reset_environment_state(app->notifications);
+}
+
+/* CO2 indication reads each sensor's own LED / sound / alert through these small
+   dispatchers, so the PWM and the UART MH-Z19C each honour their per-sensor
+   settings; any other model (e.g. a climate + CO2 combo) falls back to the PWM
+   getters, which self-guard to safe defaults. */
+static bool unitemp_co2_led_enabled(Sensor* sensor) {
+    if(sensor->model == &MHZ19C_UART) return mhz19c_uart_get_led(sensor);
+    return mhz19c_pwm_get_led(sensor);
+}
+static bool unitemp_co2_sound_enabled(Sensor* sensor) {
+    if(sensor->model == &MHZ19C_UART) return mhz19c_uart_get_sound(sensor);
+    return mhz19c_pwm_get_sound(sensor);
+}
+static uint16_t unitemp_co2_alert_ppm(Sensor* sensor) {
+    if(sensor->model == &MHZ19C_UART) return mhz19c_uart_get_alert(sensor);
+    return mhz19c_pwm_get_alert(sensor);
+}
+static bool unitemp_co2_frozen(Sensor* sensor) {
+    if(sensor->model == &MHZ19C_UART) return false; //UART has no PWM-edge freeze
+    return mhz19c_pwm_is_frozen(sensor);
+}
+
+/* One-shot CO2 sound on threshold crossings (hysteresis + cooldown). Stateful by
+   nature (edge detection on the CO2 value), separate from the LED dedup cache. */
+static void unitemp_co2_sound_tick(UnitempApp* app, Sensor* sensor, bool has_data) {
+    if(!app->settings->environment_state_sound_and_vibro_indication) return;
+    if(!unitemp_co2_sound_enabled(sensor) || !has_data) return;
+
+    uint16_t alert = unitemp_co2_alert_ppm(sensor);
+    bool above = sensor->co2 >= (float)alert;
+    bool way_below = sensor->co2 < (float)(alert - UNITEMP_CO2_HYST_PPM);
+    bool cooldown_expired =
+        (furi_get_tick() - co2_last_alert_tick) >= furi_ms_to_ticks(UNITEMP_CO2_COOLDOWN_MS);
+
+    if(above && !co2_was_above) {
+        if(cooldown_expired) {
+            notification_message(app->notifications, &co2_seq_alarm);
+            co2_last_alert_tick = furi_get_tick();
+        }
+        co2_was_above = true;
+    }
+    if(way_below && co2_was_above) {
+        if(cooldown_expired) {
+            notification_message(app->notifications, &co2_seq_relief);
+            co2_last_alert_tick = furi_get_tick();
+        }
+        co2_was_above = false;
+    }
+}
+
+void unitemp_co2_alerts_tick(void* context, Sensor* sensor) {
+    UnitempApp* app = context;
+    //sensor is the CO2 source shown on the active screen. Per-sensor LED / sound /
+    //alert are read through the unitemp_co2_* dispatchers, so the PWM and the UART
+    //MH-Z19C each honour their own settings; a climate + CO2 combo falls back to
+    //safe defaults.
+    if(sensor == NULL) {
+        unitemp_apply_led(app->notifications, 0);
+        return;
+    }
+
+    bool has_data = (sensor->status == UT_SENSORSTATUS_OK ||
+                     sensor->status == UT_SENSORSTATUS_POLLING) &&
+                    sensor->co2 > 0.0f && !unitemp_co2_frozen(sensor);
+
+    //LED: steady colour by level; off when no data or disabled
+    int16_t code = 0;
+    if(app->settings->environment_state_led_indication && unitemp_co2_led_enabled(sensor) &&
+       has_data) {
+        if(sensor->co2 < (float)UNITEMP_CO2_LED_YELLOW_PPM) {
+            code = 0x11;
+        } else if(sensor->co2 < (float)UNITEMP_CO2_LED_ORANGE_PPM) {
+            code = 0x12;
+        } else if(sensor->co2 < (float)UNITEMP_CO2_LED_RED_PPM) {
+            code = 0x13;
+        } else {
+            code = 0x14;
+        }
+    }
+    unitemp_apply_led(app->notifications, code);
+
+    unitemp_co2_sound_tick(app, sensor, has_data);
+}
+
+void unitemp_indication_tick(void* context, Sensor* co2_sensor, Sensor* climate_sensor) {
+    UnitempApp* app = context;
+    NotificationApp* notifications = app->notifications;
+
+    //The lamp is a pure function of the CURRENT screen, recomputed every tick and
+    //applied through ONE unified cache (unitemp_apply_led). No mode-reset and no
+    //path-dependent second cache, so the same screen always yields the same lamp,
+    //regardless of which screen you came from.
+
+    //CO2 on screen -> CO2 owns the lamp (colour by ppm, off when it has no data)
+    if(co2_sensor != NULL) {
+        //CO2 path: arm the heat-index danger-edge so a later climate Dangerous re-alerts
+        last_enviroment_state = EnvironmentStateUndefined;
+        unitemp_co2_alerts_tick(app, co2_sensor);
+        return;
+    }
+
+    //No CO2 on screen -> stock heat-index of the shown climate sensor (off when
+    //there is no climate sensor, or it has no heat-index: no humidity / no data)
+    EnvironmentState state = climate_sensor != NULL ?
+                                 unitemp_determine_environment_state(climate_sensor) :
+                                 EnvironmentStateUndefined;
+    bool dangerous = (state == EnvironmentStateDangerous);
+    bool entering_danger = dangerous && (last_enviroment_state != EnvironmentStateDangerous);
+    last_enviroment_state = state; //tracked only for the Dangerous one-shot edge
+
+    int16_t code = app->settings->environment_state_led_indication ? (int16_t)state : 0;
+
+    if(dangerous && app->settings->infinity_backlight) {
+        notification_message(notifications, &sequence_display_backlight_enforce_auto);
+    }
+    unitemp_apply_led(notifications, code);
+    if(dangerous && app->settings->infinity_backlight) {
+        notification_message(notifications, &sequence_display_backlight_enforce_on);
+    }
+    if(entering_danger) {
+        notification_message(notifications, &sequence_audiovisual_alert);
+    }
 }

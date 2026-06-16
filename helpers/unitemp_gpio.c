@@ -20,6 +20,14 @@
 #include "./interfaces/onewire_sensor.h"
 #include "./interfaces/singlewire_sensor.h"
 #include "./interfaces/spi_sensor.h"
+#include "../sensors/MHZ19C_PWM.h"
+#include "../sensors/MHZ19C_UART.h"
+
+//Index of pin 3 (A6) in gpio_list — the only pin used by the DirectGPIO (MH-Z19C PWM) interface
+#define MHZ19C_PWM_PIN_INDEX 1
+//Indices of pins 15 (C1) and 16 (C0) in gpio_list — the LPUART pins (MH-Z19C UART)
+#define MHZ19C_UART_PIN_C1_INDEX 10
+#define MHZ19C_UART_PIN_C0_INDEX 11
 
 //List of available GPIO pins with their numbers and names
 #define SENSOR_PINS_COUNT (int)(sizeof(gpio_list) / sizeof(const SensorGpioPin))
@@ -107,6 +115,28 @@ const SensorGpioPin* unitemp_gpio_get_aviable_pin(
             return NULL;
         }
     }
+    //Check for DirectGPIO (MH-Z19C PWM): fixed pin 3 (A6), single sensor
+    if(interface == &unitemp_mhz19c_pwm) {
+        if(index == 0 &&
+           (gpio_interfaces_list[MHZ19C_PWM_PIN_INDEX] == NULL ||
+            unitemp_gpio_get_from_index(MHZ19C_PWM_PIN_INDEX) == extraport)) {
+            return unitemp_gpio_get_from_index(MHZ19C_PWM_PIN_INDEX);
+        }
+        return NULL;
+    }
+    //Check for DirectUART (MH-Z19C UART): fixed LPUART pins 15 (C1) and 16 (C0).
+    //The serial driver arbitrates the hardware itself, so the pins are not locked
+    //here; only block when another interface holds pin 15 or 16.
+    if(interface == &unitemp_mhz19c_uart) {
+        if(index == 0 &&
+           (gpio_interfaces_list[MHZ19C_UART_PIN_C1_INDEX] == NULL ||
+            gpio_interfaces_list[MHZ19C_UART_PIN_C1_INDEX] == &unitemp_mhz19c_uart) &&
+           (gpio_interfaces_list[MHZ19C_UART_PIN_C0_INDEX] == NULL ||
+            gpio_interfaces_list[MHZ19C_UART_PIN_C0_INDEX] == &unitemp_mhz19c_uart)) {
+            return unitemp_gpio_get_from_index(0);
+        }
+        return NULL;
+    }
 
     uint8_t aviable_index = 0;
     for(uint8_t i = 0; i < SENSOR_PINS_COUNT; i++) {
@@ -150,6 +180,24 @@ const SensorGpioPin* unitemp_gpio_get_aviable_pin(
 uint8_t unitemp_gpio_get_aviable_pin_count(
     const SensorConnectionInterface* interface,
     const SensorGpioPin* extraport) {
+    //DirectGPIO (MH-Z19C PWM): fixed pin 3 (A6)
+    if(interface == &unitemp_mhz19c_pwm) {
+        if(gpio_interfaces_list[MHZ19C_PWM_PIN_INDEX] == NULL ||
+           unitemp_gpio_get_from_index(MHZ19C_PWM_PIN_INDEX) == extraport) {
+            return 1;
+        }
+        return 0;
+    }
+    //DirectUART (MH-Z19C UART): fixed LPUART pins 15 (C1) and 16 (C0)
+    if(interface == &unitemp_mhz19c_uart) {
+        if((gpio_interfaces_list[MHZ19C_UART_PIN_C1_INDEX] == NULL ||
+            gpio_interfaces_list[MHZ19C_UART_PIN_C1_INDEX] == &unitemp_mhz19c_uart) &&
+           (gpio_interfaces_list[MHZ19C_UART_PIN_C0_INDEX] == NULL ||
+            gpio_interfaces_list[MHZ19C_UART_PIN_C0_INDEX] == &unitemp_mhz19c_uart)) {
+            return 1;
+        }
+        return 0;
+    }
     uint8_t aviable_ports_count = 0;
     for(uint8_t i = 0; i < SENSOR_PINS_COUNT; i++) {
         //Check for one wire
@@ -160,9 +208,14 @@ uint8_t unitemp_gpio_get_aviable_pin_count(
             }
         }
 
-        //Check for single wire
+        //Check for single wire / SPI CS. For SPI the bus pins (indices 0,1,3 =
+        //MISO/MOSI/SCK) are NOT valid CS candidates — exclude them so the count
+        //matches unitemp_gpio_get_aviable_pin; otherwise the picker shows a phantom
+        //slot that returns NULL and crashes on select.
         if(interface == &unitemp_singlewire || interface == &unitemp_spi) {
-            if(gpio_interfaces_list[i] == NULL || (unitemp_gpio_get_from_index(i) == extraport)) {
+            bool spi_bus_pin = (interface == &unitemp_spi) && (i == 0 || i == 1 || i == 3);
+            if(!spi_bus_pin &&
+               (gpio_interfaces_list[i] == NULL || (unitemp_gpio_get_from_index(i) == extraport))) {
                 UNITEMP_DEBUG("%s pin is aviable", unitemp_gpio_get_from_index(i)->name);
                 aviable_ports_count++;
             }

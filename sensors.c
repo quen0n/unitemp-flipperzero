@@ -21,12 +21,17 @@
 #include "./sensors/MAX31855.h"
 #include "./sensors/MAX6675.h"
 #include "./sensors/DS18x2x.h"
+#include "./sensors/MHZ19C_PWM.h"
+#include "./sensors/MHZ19C_UART.h"
 #include "./sensors/SCD30.h"
 #include "./sensors/MAX31725.h"
 #include "./sensors/SCD4x.h"
 #include "./sensors/TMP102.h"
 #include "./sensors/SHTC3.h"
 
+/* Stock sensor-list reader / redraw period. The MH-Z19C PWM pin is NOT sampled
+   here — it has its own dedicated 20 ms timer (see MHZ19C_PWM.c), so this stays
+   at the stock value and the display is untouched. */
 #define DISPLAY_UPDATE_PERIOD_MS 250UL
 #define APP_SENSORS_FILENAME     "sensors.list"
 
@@ -56,6 +61,8 @@ static const SensorModel* sensor_model_list[] = {
     &MAX6675, //tested
     &MAX31725,
     &MAX31855, //tested
+    &MHZ19C_PWM, //tested
+    &MHZ19C_UART,
     &SCD30, //tested
     &SCD4x, //tested
     &SHT2x, //tested
@@ -85,6 +92,7 @@ Sensor* unitemp_sensor_alloc(char* name, const SensorModel* model, char* args) {
     sensor->name = malloc(11);
     if(sensor->name == NULL) {
         FURI_LOG_E(APP_NAME, "Sensor %s name allocation error", name);
+        free(sensor);
         return NULL;
     }
     //Recording the sensor name
@@ -264,7 +272,15 @@ SensorStatus unitemp_sensor_update(Sensor* sensor, void* context) {
     }
 
     if(sensor->status == UT_SENSORSTATUS_OK) {
-        sensor->temperature += sensor->temperature_offset / 10.f;
+        if(sensor->model->data_type == UT_DATA_TYPE_CO2) {
+            //For CO2-only sensors the offset field stores a CO2 correction in 50 ppm steps
+            if(sensor->co2 > 0.0f) {
+                sensor->co2 += sensor->temperature_offset * 50.f;
+                if(sensor->co2 < 1.0f) sensor->co2 = 1.0f;
+            }
+        } else {
+            sensor->temperature += sensor->temperature_offset / 10.f;
+        }
     }
     return sensor->status;
 }
@@ -398,11 +414,12 @@ bool unitemp_sensors_load(void* context) {
                         sensor_model->modelname);
                 }
             } else {
+                //Skip an unrecognised line and keep loading the rest. Do NOT free/close
+                //here: the post-loop cleanup owns `line` and the stream, so doing it here
+                //caused a double-free + double-close (heap corruption) on any bad model.
                 FURI_LOG_E(
                     APP_NAME, "Unsupported sensor name (%s) or sensor model (%s)", name, model);
-                furi_string_free(line);
-                file_stream_close(app->file_stream);
-                break;
+                continue;
             }
         }
         file_stream_close(app->file_stream);
@@ -481,6 +498,26 @@ bool unitemp_sensors_save(void* context) {
         if(sensor->model->interface == &unitemp_i2c) {
             stream_write_format(
                 app->file_stream, "%X\n", ((I2CSensor*)sensor->instance)->current_i2c_adress);
+        }
+        if(sensor->model->interface == &unitemp_mhz19c_pwm) {
+            //Fixed pin; args = avg window, range, alert threshold, led/sound switches
+            stream_write_format(
+                app->file_stream,
+                "%d %d %d %d %d\n",
+                mhz19c_pwm_get_avg(sensor),
+                mhz19c_pwm_get_range(sensor),
+                mhz19c_pwm_get_alert(sensor),
+                mhz19c_pwm_get_led(sensor) ? 1 : 0,
+                mhz19c_pwm_get_sound(sensor) ? 1 : 0);
+        }
+        if(sensor->model->interface == &unitemp_mhz19c_uart) {
+            //Serial sensor; args = alert threshold, led/sound switches
+            stream_write_format(
+                app->file_stream,
+                "%d %d %d\n",
+                mhz19c_uart_get_alert(sensor),
+                mhz19c_uart_get_led(sensor) ? 1 : 0,
+                mhz19c_uart_get_sound(sensor) ? 1 : 0);
         }
         if(sensor->model->interface == &unitemp_1w) {
             stream_write_format(
@@ -561,6 +598,28 @@ bool unitemp_sensors_deinit(void* context) {
 
 Sensor* unitemp_sensors_get(uint8_t index) {
     return sensors_list[index];
+}
+
+Sensor* unitemp_sensor_find_co2_source(Sensor* exclude) {
+    for(uint8_t i = 0; i < unitemp_sensors_get_count(); i++) {
+        Sensor* sensor = sensors_list[i];
+        if(sensor == exclude) continue;
+        if(sensor->model->data_type == UT_DATA_TYPE_CO2) {
+            return sensor;
+        }
+    }
+    return NULL;
+}
+
+Sensor* unitemp_sensor_find_any_co2(void) {
+    for(uint8_t i = 0; i < unitemp_sensors_get_count(); i++) {
+        Sensor* sensor = sensors_list[i];
+        if(sensor->model->data_type == UT_DATA_TYPE_CO2 ||
+           sensor->model->data_type == UT_DATA_TYPE_TEMP_HUM_CO2) {
+            return sensor;
+        }
+    }
+    return NULL;
 }
 
 void unitemp_sensors_reload(void* context) {
