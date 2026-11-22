@@ -67,7 +67,7 @@ Pin 17 (1W) is preferred. You can also connect multiple sensors in parallel usin
 The BME680 also measures the resistance of a heated metal-oxide layer, which drops when volatile organic compounds (VOC: alcohol, solvents, cooking...) are in the air. Unitemp turns it into a relative index displayed next to the pressure: **100 = clean air**.
 - The index is shown after a 3 minutes warm-up of the heater (`--` with a progress bar meanwhile). A new sensor gets more stable after 24-48 h of use (burn-in).
 - It is **relative**: the clean air reference is the highest resistance seen since the app was started, so start the app in fresh air. 75 points come from the gas resistance, 25 from the humidity (best at 40 %). It is not the Bosch IAQ index, which needs the closed-source BSEC library.
-- It is not shown when "Disp. heat index" is on (no room left on the screen), and can be turned off with the "Air quality" setting.
+- It can be turned off with the "Air quality" setting.
 - On 6 pins modules, connect CS to 3V3 (I²C mode) and SDO to GND (address 0x76) or 3V3 (address 0x77).
 
 ## Need help? Discussions?
