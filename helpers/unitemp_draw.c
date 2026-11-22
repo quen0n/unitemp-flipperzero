@@ -172,9 +172,6 @@ void unitemp_draw_pressure(
     canvas_draw_rframe(canvas, x, y, mini ? 54 : 76, 20, 3);
     canvas_draw_rframe(canvas, x, y, mini ? 54 : 76, 19, 3);
 
-    //Drawing icon
-    canvas_draw_icon(canvas, x + 3, y + 4, &I_pressure_7x13);
-
     float pressure = sensor->pressure;
 
     if(pressure_unit == UT_PRESSURE_MM_HG) {
@@ -190,12 +187,19 @@ void unitemp_draw_pressure(
     int16_t press_int = pressure;
     int8_t press_dec = (int16_t)(pressure * 10) % 10;
 
+    //4 digits (hPa) do not fit next to the icon in the mini frame: digits only, centered
+    bool no_icon = mini && press_int > 999;
+    if(!no_icon) {
+        //Drawing icon
+        canvas_draw_icon(canvas, x + 3, y + 4, &I_pressure_7x13);
+    }
+
     //Whole part of the pressure
     snprintf(temp_str, TEMP_STR_SIZE, "%d", press_int);
     canvas_set_font(canvas, FontBigNumbers);
     canvas_draw_str_aligned(
         canvas,
-        x + 28 + ((press_int > 99) ? 5 : 0) - ((press_int > 999 && mini) ? 3 : 0),
+        no_icon ? x + 27 : x + 28 + ((press_int > 99) ? 5 : 0),
         y + 10,
         AlignCenter,
         AlignCenter,
