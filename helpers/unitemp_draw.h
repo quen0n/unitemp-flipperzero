@@ -132,4 +132,22 @@ void unitemp_draw_heat_index(
     uint8_t y);
 
 void unitemp_draw_co2(Canvas* canvas, Sensor* sensor, uint8_t x, uint8_t y, Color color, bool mini);
+
+/**
+ * @brief Pressure without icon, unit on the right, in a frame of the given width
+ * (fits 4 digits + unit in 70 px)
+ */
+void unitemp_draw_pressure_compact(
+    Canvas* canvas,
+    Sensor* sensor,
+    PressureMeasureUnit pressure_unit,
+    uint8_t x,
+    uint8_t y,
+    uint8_t width);
+
+/**
+ * @brief Air quality index 0-100, "--" with a progress bar during warm-up
+ * (fits "100" in 49 px)
+ */
+void unitemp_draw_air_quality(Canvas* canvas, Sensor* sensor, uint8_t x, uint8_t y, uint8_t width);
 #endif //UNITEMP_DRAW_H_

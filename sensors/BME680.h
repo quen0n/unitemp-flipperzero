@@ -72,6 +72,14 @@ typedef struct {
     uint8_t chip_id;
     //Temperature correction value
     int32_t t_fine;
+    //Gas heater calibration (registers 0x02, 0x00) and gas range switching error (0x04)
+    uint8_t res_heat_range;
+    int8_t res_heat_val;
+    int8_t range_sw_err;
+    //Air quality: start of warm-up, last gas measurement, clean air reference (Ohm)
+    uint32_t gas_start_time;
+    uint32_t last_gas_time;
+    float gas_baseline;
 } BME680_instance;
 
 extern const SensorModel BME680;

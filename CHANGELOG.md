@@ -1,4 +1,7 @@
 # Unitemp changelog
+## Unreleased
+- BME680: added the gas sensor measurement (heater 320 °C / 150 ms, every 3 s) and a relative air quality index from 0 to 100, displayed next to the pressure. The index is available after a 3 minutes warm-up, a progress bar is shown meanwhile.
+- Added the "Air quality" setting to turn the gas measurement off (the heater slightly warms the sensor up).
 ## Unitemp 2.1
 - Fixed AHT10 initialization
 ## Unitemp 2.0

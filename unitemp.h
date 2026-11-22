@@ -131,6 +131,8 @@ typedef struct {
     PressureMeasureUnit pressure_unit;
     // Do calculate and show heat index
     bool heat_index;
+    //Gas measurement and air quality index (BME680)
+    bool air_quality;
     // Automatic 5V power supply
     bool otg_auto_on;
     // Latest OTG status

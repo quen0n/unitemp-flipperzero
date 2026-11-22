@@ -181,6 +181,20 @@ void single_sensor_draw_sensor(Canvas* canvas, Sensor* sensor, SingleSensorViewM
                 false);
             break;
         case UT_DATA_TYPE_TEMP_HUM_PRESS:
+            if(sensor->air_quality != UT_AIR_QUALITY_NONE && !settings->heat_index) {
+                //Gas sensor (BME680): pressure and air quality side by side on the bottom row
+                unitemp_draw_temperature(
+                    canvas, sensor, settings->temperature_unit, UT_DATA_POS_UP_LEFT);
+                unitemp_draw_humidity(
+                    canvas,
+                    sensor,
+                    settings->humidity_unit,
+                    settings->temperature_unit,
+                    UT_DATA_POS_UP_RIGHT);
+                unitemp_draw_pressure_compact(canvas, sensor, settings->pressure_unit, 4, 39, 70);
+                unitemp_draw_air_quality(canvas, sensor, 75, 39, 49);
+                break;
+            }
             values_count_index += (settings->heat_index ? 1 : 0);
             unitemp_draw_temperature(
                 canvas,

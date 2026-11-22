@@ -319,3 +319,101 @@ void unitemp_draw_co2(Canvas* canvas, Sensor* sensor, uint8_t x, uint8_t y, Colo
         canvas_draw_str_aligned(canvas, x + 49, y + 10, AlignCenter, AlignCenter, temp_str);
     }
 }
+
+void unitemp_draw_pressure_compact(
+    Canvas* canvas,
+    Sensor* sensor,
+    PressureMeasureUnit pressure_unit,
+    uint8_t x,
+    uint8_t y,
+    uint8_t width) {
+    //Drawing a frame
+    canvas_draw_rframe(canvas, x, y, width, 20, 3);
+    canvas_draw_rframe(canvas, x, y, width, 19, 3);
+
+    float pressure = sensor->pressure;
+    if(pressure_unit == UT_PRESSURE_MM_HG) {
+        pressure = unitemp_convert_pa_to_mm_hg(pressure);
+    } else if(pressure_unit == UT_PRESSURE_IN_HG) {
+        pressure = unitemp_convert_pa_to_in_hg(pressure);
+    } else if(pressure_unit == UT_PRESSURE_KPA) {
+        pressure = unitemp_convert_pa_to_kpa(pressure);
+    } else if(pressure_unit == UT_PRESSURE_HPA) {
+        pressure = unitemp_convert_pa_to_hpa(pressure);
+    }
+
+    //Unit on the right (15 px wide)
+    uint8_t unit_x = x + width - 17;
+    canvas_set_font(canvas, FontSecondary);
+    if(pressure_unit == UT_PRESSURE_MM_HG) {
+        canvas_draw_icon(canvas, unit_x, y + 2, &I_mm_hg_15x15);
+    } else if(pressure_unit == UT_PRESSURE_IN_HG) {
+        canvas_draw_icon(canvas, unit_x, y + 2, &I_in_hg_15x15);
+    } else if(pressure_unit == UT_PRESSURE_KPA) {
+        canvas_draw_str(canvas, unit_x, y + 13, "kPa");
+    } else if(pressure_unit == UT_PRESSURE_HPA) {
+        canvas_draw_str(canvas, unit_x, y + 13, "hPa");
+    }
+
+    int16_t press_int = pressure;
+    int8_t press_dec = (int16_t)(pressure * 10) % 10;
+    char dec_str[4] = {0};
+
+    //Whole part, plus the fractional part when there are two digits at most (inHg)
+    snprintf(temp_str, TEMP_STR_SIZE, "%d", press_int);
+    canvas_set_font(canvas, FontBigNumbers);
+    uint8_t int_len = canvas_string_width(canvas, temp_str);
+    uint8_t total_len = int_len;
+    if(press_int <= 99) {
+        snprintf(dec_str, sizeof(dec_str), ".%d", press_dec);
+        canvas_set_font(canvas, FontPrimary);
+        total_len += 2 + canvas_string_width(canvas, dec_str);
+    }
+
+    //Centered between the left of the frame and the unit
+    uint8_t area_left = x + 2;
+    uint8_t area_right = unit_x - 2;
+    uint8_t left = area_left;
+    if(total_len < area_right - area_left) left += (area_right - area_left - total_len) / 2;
+
+    canvas_set_font(canvas, FontBigNumbers);
+    canvas_draw_str_aligned(canvas, left, y + 10, AlignLeft, AlignCenter, temp_str);
+    if(press_int <= 99) {
+        canvas_set_font(canvas, FontPrimary);
+        canvas_draw_str(canvas, left + int_len + 2, y + 10 + 7, dec_str);
+    }
+}
+
+void unitemp_draw_air_quality(Canvas* canvas, Sensor* sensor, uint8_t x, uint8_t y, uint8_t width) {
+    //Drawing a frame
+    canvas_draw_rframe(canvas, x, y, width, 20, 3);
+    canvas_draw_rframe(canvas, x, y, width, 19, 3);
+
+    //Drawing icon
+    canvas_draw_icon(canvas, x + 2, y + 3, &I_air_quality_7x13);
+
+    bool ready = (sensor->air_quality >= 0);
+    if(ready) {
+        snprintf(temp_str, TEMP_STR_SIZE, "%d", sensor->air_quality);
+    } else {
+        snprintf(temp_str, TEMP_STR_SIZE, "--");
+    }
+
+    //Centered after the icon
+    uint8_t area_left = x + 10;
+    uint8_t area_right = x + width - 3;
+    canvas_set_font(canvas, FontBigNumbers);
+    uint8_t len = canvas_string_width(canvas, temp_str);
+    uint8_t left = area_left;
+    if(len < area_right - area_left) left += (area_right - area_left - len) / 2;
+    canvas_draw_str_aligned(canvas, left, y + 10, AlignLeft, AlignCenter, temp_str);
+
+    if(!ready) {
+        //Warm-up progress: solid part done, dotted part remaining
+        uint8_t bar_len = area_right - area_left;
+        uint8_t filled = bar_len * sensor->air_quality_warmup / 100;
+        for(uint8_t i = 0; i < bar_len; i++) {
+            if(i < filled || (i % 2) == 0) canvas_draw_dot(canvas, area_left + i, y + 16);
+        }
+    }
+}
