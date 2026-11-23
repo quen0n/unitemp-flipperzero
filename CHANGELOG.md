@@ -4,6 +4,7 @@
 - Added the "Air quality" setting to turn the gas measurement off (the heater slightly warms the sensor up).
 - Heat index: instead of a separate frame (which changed the layout), the temperature frame shows the heat index for 2 s every 15 s, when it is defined (from 21 °C).
 - Fixed a 4-digit pressure (hPa) drawn over the pressure icon in the small frame.
+- Fixed the "Env. state LED" and "Env. state sound" settings not being saved: they were read from the settings file but never written, so they were back ON at every launch.
 ## Unitemp 2.1
 - Fixed AHT10 initialization
 ## Unitemp 2.0

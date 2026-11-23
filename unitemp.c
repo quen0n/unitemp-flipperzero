@@ -105,8 +105,10 @@ bool unitemp_settings_load(void* context) {
         uint32_value = 1;
         flipper_format_read_uint32(file, "air_quality", &uint32_value, 1);
         app->settings->air_quality = (bool)uint32_value;
+        uint32_value = 1;
         flipper_format_read_uint32(file, "environment_state_led_indication", &uint32_value, 1);
         app->settings->environment_state_led_indication = (bool)uint32_value;
+        uint32_value = 1;
         flipper_format_read_uint32(
             file, "environment_state_sound_and_vibro_indication", &uint32_value, 1);
         app->settings->environment_state_sound_and_vibro_indication = (bool)uint32_value;
@@ -147,6 +149,13 @@ bool unitemp_settings_save(void* context) {
         if(!flipper_format_write_uint32(file, "otg_auto_on", &buff, 1)) break;
         buff = app->settings->air_quality;
         if(!flipper_format_write_uint32(file, "air_quality", &buff, 1)) break;
+        buff = app->settings->environment_state_led_indication;
+        if(!flipper_format_write_uint32(file, "environment_state_led_indication", &buff, 1))
+            break;
+        buff = app->settings->environment_state_sound_and_vibro_indication;
+        if(!flipper_format_write_uint32(
+               file, "environment_state_sound_and_vibro_indication", &buff, 1))
+            break;
 
         result = true;
     } while(0);
