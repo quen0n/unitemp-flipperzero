@@ -12,7 +12,24 @@ An app for [Flipper Zero](https://flipper.net/products/flipper-zero) that turns 
 - Environmental quality analysis and visual and audible indicators (good 🟢, normal 🟡, poor 🟠, dangerous 🔴)
 - Automatic and manual selection of temperature (degrees Celsius/Fahrenheit) and pressure (mmHg/inHg/kPa/hPa) units.
 - Support for a [wide range of digital sensors](README.md#list-of-supported-sensors) with [I²C](README.md#ic), [SPI](README.md#1-wire-ds18b20-and-etc), [1-Wire](README.md#1-wire-ds18b20-and-etc), and [Single Wire](README.md#single-wire-dht11-and-etc) connectivity.
+- Data logging to the SD card (CSV), with a selectable interval.
 - User-friendly and intuitive interface.
+
+## Data logging
+Turn on **Log to SD** in the settings and choose the **Log interval** (10 s, 30 s, 1, 5, 15 or 30 min, 1 h; 1 min by default). While the sensor values are displayed, every sensor is recorded to a CSV file on the SD card, one file per day:
+
+    /ext/apps_data/temp_sensors_reader/logs/YYYY-MM-DD.csv
+
+```
+date;time;sensor;model;temperature_C;humidity_pct;pressure_hPa;co2_ppm
+2026-11-26;10:24:30;Room;BME280;19,56;52,8;1008,1;
+```
+
+- Fixed units (°C, %, hPa, ppm) whatever the display settings, `;` separator and `,` decimal mark: the file opens directly in a spreadsheet. A value the sensor does not measure is left empty.
+- Samples are aligned on the clock (10:05:00, 10:06:00... for 1 min). The first one is written as soon as every sensor has answered.
+- Logging keeps running when the Flipper screen turns off, as long as the app stays on the sensor values screen (it pauses in the menus).
+- A blinking dot in the top left corner shows that logging is on; a steady empty circle means the last write failed (SD card missing or full).
+- The file is opened and closed for each sample: removing the SD card or a power loss costs at most one sample.
 
 ## Installation
 Just install from the application catalog https://lab.flipper.net/apps/unitemp or the mobile application

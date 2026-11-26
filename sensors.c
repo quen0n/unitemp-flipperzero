@@ -1,5 +1,6 @@
 #include "sensors.h"
 #include "unitemp.h"
+#include "helpers/unitemp_logger.h"
 
 #include "./interfaces/i2c_sensor.h"
 #include "./interfaces/onewire_sensor.h"
@@ -287,6 +288,7 @@ int32_t unitemp_sensors_update_callback(void* context) {
             Sensor* sensor = unitemp_sensors_get(i);
             unitemp_sensor_update(sensor, app);
         }
+        unitemp_logger_tick(app);
 
         const uint32_t flags = furi_thread_flags_wait(
             UnitempThreadFlagExit, FuriFlagWaitAny, DISPLAY_UPDATE_PERIOD_MS);

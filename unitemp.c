@@ -77,6 +77,8 @@ bool unitemp_settings_load(void* context) {
     app->settings->otg_latest_state = power_is_otg_enabled(app->power);
     app->settings->environment_state_led_indication = true;
     app->settings->environment_state_sound_and_vibro_indication = true;
+    app->settings->logging = false;
+    app->settings->log_interval = UNITEMP_LOG_INTERVAL_DEFAULT;
 
     bool result = false;
     FlipperFormat* file = flipper_format_file_alloc(app->storage);
@@ -105,6 +107,14 @@ bool unitemp_settings_load(void* context) {
         flipper_format_read_uint32(
             file, "environment_state_sound_and_vibro_indication", &uint32_value, 1);
         app->settings->environment_state_sound_and_vibro_indication = (bool)uint32_value;
+        uint32_value = 0;
+        flipper_format_read_uint32(file, "logging", &uint32_value, 1);
+        app->settings->logging = (bool)uint32_value;
+        uint32_value = UNITEMP_LOG_INTERVAL_DEFAULT;
+        flipper_format_read_uint32(file, "log_interval", &uint32_value, 1);
+        app->settings->log_interval = uint32_value < UNITEMP_LOG_INTERVAL_COUNT ?
+                                          uint32_value :
+                                          UNITEMP_LOG_INTERVAL_DEFAULT;
         result = true;
     } while(0);
 
@@ -140,6 +150,10 @@ bool unitemp_settings_save(void* context) {
         if(!flipper_format_write_uint32(file, "heat_index", &buff, 1)) break;
         buff = app->settings->otg_auto_on;
         if(!flipper_format_write_uint32(file, "otg_auto_on", &buff, 1)) break;
+        buff = app->settings->logging;
+        if(!flipper_format_write_uint32(file, "logging", &buff, 1)) break;
+        buff = app->settings->log_interval;
+        if(!flipper_format_write_uint32(file, "log_interval", &buff, 1)) break;
 
         result = true;
     } while(0);
@@ -166,7 +180,8 @@ static UnitempApp* unitemp_app_alloc(void) {
     app->reader_thread = furi_thread_alloc();
     furi_thread_set_priority(app->reader_thread, FuriThreadPriorityHigh);
     furi_thread_set_name(app->reader_thread, "Sensors poller");
-    furi_thread_set_stack_size(app->reader_thread, 2048U);
+    //Extra stack for the SD card logger (file and string handling)
+    furi_thread_set_stack_size(app->reader_thread, 3072U);
     furi_thread_set_context(app->reader_thread, app);
     furi_thread_set_callback(app->reader_thread, unitemp_sensors_update_callback);
 

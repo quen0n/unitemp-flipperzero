@@ -17,6 +17,7 @@
 */
 
 #include "../unitemp.h"
+#include "../helpers/unitemp_logger.h"
 
 static const char unitemp_scene_settings_backlight_text[2][9] = {"System", "Infinity"};
 static const char unitemp_scene_settings_temperature_units_text[UT_TEMP_COUNT][3] = {"*C", "*F"};
@@ -101,6 +102,24 @@ static void unitemp_scene_settings_otg_auto_on_change_callback(VariableItem* ite
     variable_item_set_current_value_text(item, unitemp_scene_settings_off_on_text[index]);
     app->settings->otg_auto_on = (bool)index;
     UNITEMP_DEBUG("5V auto on set to %s", unitemp_scene_settings_off_on_text[index]);
+}
+
+static void unitemp_scene_settings_logging_change_callback(VariableItem* item) {
+    UnitempApp* app = variable_item_get_context(item);
+    const uint8_t index = variable_item_get_current_value_index(item);
+
+    variable_item_set_current_value_text(item, unitemp_scene_settings_off_on_text[index]);
+    app->settings->logging = (bool)index;
+    UNITEMP_DEBUG("Logging set to %s", unitemp_scene_settings_off_on_text[index]);
+}
+
+static void unitemp_scene_settings_log_interval_change_callback(VariableItem* item) {
+    UnitempApp* app = variable_item_get_context(item);
+    const uint8_t index = variable_item_get_current_value_index(item);
+
+    variable_item_set_current_value_text(item, unitemp_logger_interval_text[index]);
+    app->settings->log_interval = index;
+    UNITEMP_DEBUG("Log interval set to %s", unitemp_logger_interval_text[index]);
 }
 
 void unitemp_scene_settings_on_enter(void* context) {
@@ -192,6 +211,26 @@ void unitemp_scene_settings_on_enter(void* context) {
     value_index = app->settings->otg_auto_on;
     variable_item_set_current_value_index(item, value_index);
     variable_item_set_current_value_text(item, unitemp_scene_settings_off_on_text[value_index]);
+
+    item = variable_item_list_add(
+        var_item_list,
+        "Log to SD",
+        COUNT_OF(unitemp_scene_settings_off_on_text),
+        unitemp_scene_settings_logging_change_callback,
+        app);
+    value_index = app->settings->logging;
+    variable_item_set_current_value_index(item, value_index);
+    variable_item_set_current_value_text(item, unitemp_scene_settings_off_on_text[value_index]);
+
+    item = variable_item_list_add(
+        var_item_list,
+        "Log interval",
+        UNITEMP_LOG_INTERVAL_COUNT,
+        unitemp_scene_settings_log_interval_change_callback,
+        app);
+    value_index = app->settings->log_interval;
+    variable_item_set_current_value_index(item, value_index);
+    variable_item_set_current_value_text(item, unitemp_logger_interval_text[value_index]);
 
     variable_item_list_set_selected_item(app->var_item_list, 0);
 

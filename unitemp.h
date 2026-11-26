@@ -57,6 +57,10 @@
 #define APP_SETTINGS_FILENAME "unitemp.settings"
 #define APP_SETTINGS_VERSION  (1)
 
+//Logging intervals: 10 s, 30 s, 1 min, 5 min, 15 min, 30 min, 1 h (default 1 min)
+#define UNITEMP_LOG_INTERVAL_COUNT   7
+#define UNITEMP_LOG_INTERVAL_DEFAULT 2
+
 //Text buffer size
 #define TEXT_STORE_SIZE 32
 
@@ -139,6 +143,10 @@ typedef struct {
     bool environment_state_led_indication;
     // Sound and vibro indication of the environment state
     bool environment_state_sound_and_vibro_indication;
+    // Data logging to the SD card
+    bool logging;
+    // Logging interval (index in unitemp_logger_interval_s)
+    uint8_t log_interval;
 } UnitempSettings;
 
 typedef struct {
