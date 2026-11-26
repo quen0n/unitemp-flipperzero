@@ -38,6 +38,36 @@ const SensorModel BME680 = {
 #define BME680_I2C_ADDR_MAX (0x77 << 1)
 
 #define BME680_REG_STATUS              0x1D
+#define BME680_REG_CTRL_GAS_1          0x71
+#define BME680_REG_GAS_WAIT_0          0x64
+#define BME680_REG_RES_HEAT_0          0x5A
+#define BME680_REG_RES_HEAT_VAL        0x00
+#define BME680_REG_RES_HEAT_RANGE      0x02
+#define BME680_REG_RANGE_SW_ERR        0x04
+#define BME680_REG_GAS_R_MSB           0x2A
+//ctrl_gas_1: run_gas, heater set-point 0
+#define BME680_RUN_GAS                 0x10
+//Status bits: measuring, gas_measuring
+#define BME680_STATUS_MEASURING        0x20
+#define BME680_STATUS_GAS_MEASURING    0x40
+//gas_r_lsb bits
+#define BME680_GAS_VALID               0x20
+#define BME680_HEAT_STAB               0x10
+
+//Gas heater: 320 degC for 150 ms (gas_wait = 37 x 4 ms = 0x65), one measurement every 3 s
+#define BME680_HEATER_TEMP     320
+#define BME680_GAS_WAIT_150MS  0x65
+#define BME680_GAS_PERIOD      3000
+//Air quality is shown after this warm-up of the heater
+#define BME680_GAS_WARMUP_TIME (3 * 60 * 1000)
+//TPH measurement takes ~20 ms, with the gas heater ~170 ms
+#define BME680_TPH_TIMEOUT     100
+#define BME680_GAS_TIMEOUT     400
+
+//Air quality score: humidity part (ideal 40 %) and gas part (resistance vs clean air)
+#define BME680_HUM_REFERENCE 40.0f
+#define BME680_HUM_WEIGHT    25.0f
+#define BME680_GAS_WEIGHT    75.0f
 #define BME680_REG_CTRL_MEAS           0x74
 #define BME680_REG_CONFIG              0x75
 #define BME680_REG_CTRL_HUM            0x72
@@ -170,6 +200,83 @@ static float BME680_compensate_humidity(I2CSensor* i2c_sensor, int32_t hum_adc) 
     }
 
     return calc_hum;
+}
+
+/* Heater resistance set-point, Bosch BME68x API (calc_res_heat, float version) */
+static uint8_t BME680_calc_res_heat(I2CSensor* i2c_sensor, uint16_t target_temp, float amb_temp) {
+    BME680_instance* bme680_instance = (BME680_instance*)i2c_sensor->sensor_instance;
+    if(target_temp > 400) target_temp = 400;
+
+    float var1 = ((float)(int8_t)bme680_instance->gas_cal.dig_GH1 / 16.0f) + 49.0f;
+    float var2 = (((float)bme680_instance->gas_cal.dig_GH2 / 32768.0f) * 0.0005f) + 0.00235f;
+    float var3 = (float)(int8_t)bme680_instance->gas_cal.dig_GH3 / 1024.0f;
+    float var4 = var1 * (1.0f + (var2 * (float)target_temp));
+    float var5 = var4 + (var3 * amb_temp);
+    float res_heat = 3.4f * ((var5 * (4.0f / (4.0f + (float)bme680_instance->res_heat_range)) *
+                              (1.0f / (1.0f + ((float)bme680_instance->res_heat_val * 0.002f)))) -
+                             25.0f);
+
+    if(res_heat < 0.0f) return 0;
+    if(res_heat > 255.0f) return 255;
+    return (uint8_t)res_heat;
+}
+
+/* Gas resistance in Ohm, Bosch BME680 API (calc_gas_resistance, float version) */
+static float
+    BME680_calc_gas_resistance(I2CSensor* i2c_sensor, uint16_t gas_adc, uint8_t gas_range) {
+    BME680_instance* bme680_instance = (BME680_instance*)i2c_sensor->sensor_instance;
+    static const float lookup_k1_range[16] = {
+        0.0f, 0.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, -0.8f,
+        0.0f, 0.0f, -0.2f, -0.5f, 0.0f, -1.0f, 0.0f, 0.0f};
+    static const float lookup_k2_range[16] = {
+        0.0f, 0.0f, 0.0f, 0.0f, 0.1f, 0.7f, 0.0f, -0.8f,
+        -0.1f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f};
+
+    float var1 = 1340.0f + (5.0f * (float)bme680_instance->range_sw_err);
+    float var2 = var1 * (1.0f + lookup_k1_range[gas_range] / 100.0f);
+    float var3 = 1.0f + (lookup_k2_range[gas_range] / 100.0f);
+    return 1.0f / (var3 * 0.000000125f * (float)(1UL << gas_range) *
+                   ((((float)gas_adc - 512.0f) / var2) + 1.0f));
+}
+
+/* Relative air quality 0-100 from the gas resistance.
+   No absolute value (Bosch BSEC library is closed source): the clean air reference is the
+   highest resistance seen, which then follows slow drifts. Humidity away from 40 % lowers
+   the score (25 points), the gas resistance drop gives the rest (75 points). */
+static void BME680_update_air_quality(Sensor* sensor, float gas_res) {
+    I2CSensor* i2c_sensor = (I2CSensor*)sensor->instance;
+    BME680_instance* bme680_instance = (BME680_instance*)i2c_sensor->sensor_instance;
+
+    if(gas_res > bme680_instance->gas_baseline) {
+        bme680_instance->gas_baseline = gas_res;
+    } else {
+        //~1.7 h time constant with one measurement every 3 s
+        bme680_instance->gas_baseline += (gas_res - bme680_instance->gas_baseline) / 2048.0f;
+    }
+
+    uint32_t elapsed = furi_get_tick() - bme680_instance->gas_start_time;
+    if(elapsed < BME680_GAS_WARMUP_TIME) {
+        sensor->air_quality = UT_AIR_QUALITY_WARMUP;
+        sensor->air_quality_warmup = elapsed / (BME680_GAS_WARMUP_TIME / 100);
+        return;
+    }
+
+    float hum = sensor->humidity;
+    float hum_score;
+    if(hum > BME680_HUM_REFERENCE) {
+        hum_score = (100.0f - hum) / (100.0f - BME680_HUM_REFERENCE) * BME680_HUM_WEIGHT;
+    } else {
+        hum_score = hum / BME680_HUM_REFERENCE * BME680_HUM_WEIGHT;
+    }
+
+    float gas_ratio = gas_res / bme680_instance->gas_baseline;
+    if(gas_ratio > 1.0f) gas_ratio = 1.0f;
+    float score = hum_score + gas_ratio * BME680_GAS_WEIGHT;
+
+    if(score < 0.0f) score = 0.0f;
+    if(score > 100.0f) score = 100.0f;
+    sensor->air_quality = (int8_t)(score + 0.5f);
+    sensor->air_quality_warmup = 100;
 }
 
 /* https://github.com/boschsensortec/BME680_driver/blob/master/bme680_defs.h */
@@ -321,7 +428,8 @@ static bool BME680_readCalValues(I2CSensor* i2c_sensor) {
 }
 static bool BME680_isMeasuring(Sensor* sensor) {
     I2CSensor* i2c_sensor = (I2CSensor*)sensor->instance;
-    return (bool)(unitemp_i2c_read_reg(i2c_sensor, BME680_REG_STATUS) & 0x20);
+    return (bool)(unitemp_i2c_read_reg(i2c_sensor, BME680_REG_STATUS) &
+                  (BME680_STATUS_MEASURING | BME680_STATUS_GAS_MEASURING));
 }
 
 bool unitemp_BME680_alloc(Sensor* sensor, char* args) {
@@ -336,6 +444,10 @@ bool unitemp_BME680_alloc(Sensor* sensor, char* args) {
     if(sensor->model == &BME680) bme680_instance->chip_id = BME680_ID;
 
     i2c_sensor->sensor_instance = bme680_instance;
+
+    //This sensor has an air quality index (gas sensor)
+    sensor->air_quality = UT_AIR_QUALITY_WARMUP;
+    sensor->air_quality_warmup = 0;
 
     i2c_sensor->min_i2c_adress = BME680_I2C_ADDR_MIN;
     i2c_sensor->max_i2c_adress = BME680_I2C_ADDR_MAX;
@@ -374,6 +486,28 @@ bool unitemp_BME680_init(Sensor* sensor) {
         FURI_LOG_E(APP_NAME, "Failed to read calibration values sensor %s", sensor->name);
         return false;
     }
+
+    //Gas heater: calibration, set-point 0 (320 degC / 150 ms), gas measurement off until needed
+    BME680_instance* bme680_instance = (BME680_instance*)i2c_sensor->sensor_instance;
+    bme680_instance->res_heat_range =
+        (unitemp_i2c_read_reg(i2c_sensor, BME680_REG_RES_HEAT_RANGE) & 0x30) >> 4;
+    bme680_instance->res_heat_val =
+        (int8_t)unitemp_i2c_read_reg(i2c_sensor, BME680_REG_RES_HEAT_VAL);
+    bme680_instance->range_sw_err =
+        ((int8_t)unitemp_i2c_read_reg(i2c_sensor, BME680_REG_RANGE_SW_ERR) & (int8_t)0xF0) / 16;
+    unitemp_i2c_write_reg(i2c_sensor, BME680_REG_GAS_WAIT_0, BME680_GAS_WAIT_150MS);
+    unitemp_i2c_write_reg(
+        i2c_sensor,
+        BME680_REG_RES_HEAT_0,
+        BME680_calc_res_heat(i2c_sensor, BME680_HEATER_TEMP, 25.0f));
+    unitemp_i2c_write_reg(i2c_sensor, BME680_REG_CTRL_GAS_1, 0);
+
+    //Warm-up starts again after each initialization
+    bme680_instance->gas_start_time = furi_get_tick();
+    bme680_instance->last_gas_time = furi_get_tick() - BME680_GAS_PERIOD;
+    bme680_instance->gas_baseline = 0.0f;
+    sensor->air_quality = UT_AIR_QUALITY_WARMUP;
+    sensor->air_quality_warmup = 0;
     return true;
 }
 
@@ -398,13 +532,43 @@ SensorStatus unitemp_BME680_update(Sensor* sensor) {
         return UT_SENSORSTATUS_UNINITIALIZED;
     }
 
+    //Gas measurement can be switched off in the settings: the heater warms the sensor up a bit
+    if(!sensor->air_quality_enabled) {
+        sensor->air_quality = UT_AIR_QUALITY_NONE;
+    } else if(sensor->air_quality == UT_AIR_QUALITY_NONE) {
+        //Switched on again: new warm-up and clean air reference
+        instance->gas_start_time = t;
+        instance->last_gas_time = t - BME680_GAS_PERIOD;
+        instance->gas_baseline = 0.0f;
+        sensor->air_quality = UT_AIR_QUALITY_WARMUP;
+        sensor->air_quality_warmup = 0;
+    }
+
+    //Gas measurement only every BME680_GAS_PERIOD
+    bool gas_cycle = sensor->air_quality_enabled &&
+                     (t - instance->last_gas_time >= BME680_GAS_PERIOD);
+    if(gas_cycle) {
+        float amb_temp = (sensor->temperature > -40.0f && sensor->temperature < 85.0f) ?
+                             sensor->temperature :
+                             25.0f;
+        unitemp_i2c_write_reg(
+            i2c_sensor,
+            BME680_REG_RES_HEAT_0,
+            BME680_calc_res_heat(i2c_sensor, BME680_HEATER_TEMP, amb_temp));
+        unitemp_i2c_write_reg(i2c_sensor, BME680_REG_CTRL_GAS_1, BME680_RUN_GAS);
+        instance->last_gas_time = t;
+    } else {
+        unitemp_i2c_write_reg(i2c_sensor, BME680_REG_CTRL_GAS_1, 0);
+    }
+
     unitemp_i2c_write_reg(
         i2c_sensor,
         BME680_REG_CTRL_MEAS,
         unitemp_i2c_read_reg(i2c_sensor, BME680_REG_CTRL_MEAS) | 1);
 
+    uint32_t timeout = gas_cycle ? BME680_GAS_TIMEOUT : BME680_TPH_TIMEOUT;
     while(BME680_isMeasuring(sensor)) {
-        if(furi_get_tick() - t > 100) {
+        if(furi_get_tick() - t > timeout) {
             return UT_SENSORSTATUS_TIMEOUT;
         }
     }
@@ -423,6 +587,17 @@ SensorStatus unitemp_BME680_update(Sensor* sensor) {
     sensor->temperature = BME680_compensate_temperature(i2c_sensor, adc_T);
     sensor->pressure = BME680_compensate_pressure(i2c_sensor, adc_P);
     sensor->humidity = BME680_compensate_humidity(i2c_sensor, adc_H);
+
+    if(gas_cycle) {
+        if(!unitemp_i2c_read_reg_array(i2c_sensor, BME680_REG_GAS_R_MSB, 2, buff))
+            return UT_SENSORSTATUS_TIMEOUT;
+        //Result is used only if the heater reached its temperature
+        if((buff[1] & BME680_GAS_VALID) && (buff[1] & BME680_HEAT_STAB)) {
+            uint16_t gas_adc = ((uint16_t)buff[0] << 2) | (buff[1] >> 6);
+            float gas_res = BME680_calc_gas_resistance(i2c_sensor, gas_adc, buff[1] & 0x0F);
+            BME680_update_air_quality(sensor, gas_res);
+        }
+    }
 
     return UT_SENSORSTATUS_OK;
 }

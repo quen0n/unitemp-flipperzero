@@ -47,6 +47,11 @@ typedef enum {
 
 typedef struct Sensor Sensor;
 
+//Sensor has no air quality measurement
+#define UT_AIR_QUALITY_NONE   (-1)
+//Air quality is not available yet (gas sensor warm-up)
+#define UT_AIR_QUALITY_WARMUP (-2)
+
 /**
  * @brief Function pointer to allocate memory and prepare a sensor instance
  */
@@ -116,6 +121,12 @@ typedef struct Sensor {
     float pressure;
     //CO2 concentration
     float co2;
+    //Air quality index 0-100 (100 = clean air), or UT_AIR_QUALITY_NONE / UT_AIR_QUALITY_WARMUP
+    int8_t air_quality;
+    //Gas sensor warm-up progress, 0-100 %
+    uint8_t air_quality_warmup;
+    //Air quality measurement allowed (copy of the app setting, updated before each poll)
+    bool air_quality_enabled;
     //Temperature offset (x10)
     int8_t temperature_offset;
     //Sensor type

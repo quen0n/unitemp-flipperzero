@@ -8,6 +8,7 @@ An app for [Flipper Zero](https://flipper.net/products/flipper-zero) that turns 
 
 ## Features
 - Real-time display of temperature, humidity, pressure, and CO₂ concentration.
+- Relative air quality index (0-100) from the BME680 gas sensor.
 - [Heat index](https://en.wikipedia.org/wiki/Heat_index) and [dew point](https://en.wikipedia.org/wiki/Dew_point) temperature display.
 - Environmental quality analysis and visual and audible indicators (good 🟢, normal 🟡, poor 🟠, dangerous 🔴)
 - Automatic and manual selection of temperature (degrees Celsius/Fahrenheit) and pressure (mmHg/inHg/kPa/hPa) units.
@@ -61,6 +62,13 @@ Pin 17 (1W) is preferred. You can also connect multiple sensors in parallel usin
 |GND       |any GND (8,11 or 18)|
 |SDA       |15 (C1)             |
 |SCL       |16 (C2)             |
+
+#### BME680 air quality
+The BME680 also measures the resistance of a heated metal-oxide layer, which drops when volatile organic compounds (VOC: alcohol, solvents, cooking...) are in the air. Unitemp turns it into a relative index displayed next to the pressure: **100 = clean air**.
+- The index is shown after a 3 minutes warm-up of the heater (`--` with a progress bar meanwhile). A new sensor gets more stable after 24-48 h of use (burn-in).
+- It is **relative**: the clean air reference is the highest resistance seen since the app was started, so start the app in fresh air. 75 points come from the gas resistance, 25 from the humidity (best at 40 %). It is not the Bosch IAQ index, which needs the closed-source BSEC library.
+- It can be turned off with the "Air quality" setting.
+- On 6 pins modules, connect CS to 3V3 (I²C mode) and SDO to GND (address 0x76) or 3V3 (address 0x77).
 
 ## Need help? Discussions?
 

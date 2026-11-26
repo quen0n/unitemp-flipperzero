@@ -101,6 +101,27 @@ static void _draw_sensor_polling(Canvas* canvas, Sensor* sensor) {
     canvas_draw_str_aligned(canvas, 65, 19, AlignCenter, AlignCenter, "Reading values...");
 }
 
+//Heat index replaces the temperature for HEAT_INDEX_SHOW_TIME every HEAT_INDEX_PERIOD,
+//when it is enabled in the settings and defined (from 21 degC)
+#define HEAT_INDEX_PERIOD    15000
+#define HEAT_INDEX_SHOW_TIME 2000
+
+static void single_sensor_draw_temperature_or_heat_index(
+    Canvas* canvas,
+    Sensor* sensor,
+    UnitempSettings* settings,
+    uint8_t x,
+    uint8_t y) {
+    bool show_heat_index = settings->heat_index && sensor->temperature >= 21.0f &&
+                           (furi_get_tick() % HEAT_INDEX_PERIOD) >=
+                               (HEAT_INDEX_PERIOD - HEAT_INDEX_SHOW_TIME);
+    if(show_heat_index) {
+        unitemp_draw_heat_index(canvas, sensor, settings->temperature_unit, x, y);
+    } else {
+        unitemp_draw_temperature(canvas, sensor, settings->temperature_unit, x, y);
+    }
+}
+
 void single_sensor_draw_sensor(Canvas* canvas, Sensor* sensor, SingleSensorViewModel* view_model) {
     UnitempSettings* settings = ((UnitempApp*)(view_model->context))->settings;
 
@@ -142,11 +163,10 @@ void single_sensor_draw_sensor(Canvas* canvas, Sensor* sensor, SingleSensorViewM
                 values_positions[values_count_index][0][1]);
             break;
         case UT_DATA_TYPE_TEMP_HUM:
-            values_count_index += (settings->heat_index ? 1 : 0);
-            unitemp_draw_temperature(
+            single_sensor_draw_temperature_or_heat_index(
                 canvas,
                 sensor,
-                settings->temperature_unit,
+                settings,
                 values_positions[values_count_index][0][0],
                 values_positions[values_count_index][0][1]);
             unitemp_draw_humidity(
@@ -154,16 +174,8 @@ void single_sensor_draw_sensor(Canvas* canvas, Sensor* sensor, SingleSensorViewM
                 sensor,
                 settings->humidity_unit,
                 settings->temperature_unit,
-                values_positions[values_count_index][settings->heat_index ? 2 : 1][0],
-                values_positions[values_count_index][settings->heat_index ? 2 : 1][1]);
-            if(settings->heat_index) {
-                unitemp_draw_heat_index(
-                    canvas,
-                    sensor,
-                    settings->temperature_unit,
-                    values_positions[values_count_index][1][0],
-                    values_positions[values_count_index][1][1]);
-            }
+                values_positions[values_count_index][1][0],
+                values_positions[values_count_index][1][1]);
             break;
         case UT_DATA_TYPE_TEMP_PRESS:
             unitemp_draw_temperature(
@@ -181,11 +193,10 @@ void single_sensor_draw_sensor(Canvas* canvas, Sensor* sensor, SingleSensorViewM
                 false);
             break;
         case UT_DATA_TYPE_TEMP_HUM_PRESS:
-            values_count_index += (settings->heat_index ? 1 : 0);
-            unitemp_draw_temperature(
+            single_sensor_draw_temperature_or_heat_index(
                 canvas,
                 sensor,
-                settings->temperature_unit,
+                settings,
                 values_positions[values_count_index][0][0],
                 values_positions[values_count_index][0][1]);
             unitemp_draw_humidity(
@@ -193,30 +204,27 @@ void single_sensor_draw_sensor(Canvas* canvas, Sensor* sensor, SingleSensorViewM
                 sensor,
                 settings->humidity_unit,
                 settings->temperature_unit,
-                values_positions[values_count_index][settings->heat_index ? 3 : 1][0],
-                values_positions[values_count_index][settings->heat_index ? 3 : 1][1]);
-            unitemp_draw_pressure(
-                canvas,
-                sensor,
-                settings->pressure_unit,
-                values_positions[values_count_index][2][0] - (settings->heat_index ? 0 : 11),
-                values_positions[values_count_index][2][1],
-                settings->heat_index);
-            if(settings->heat_index) {
-                unitemp_draw_heat_index(
+                values_positions[values_count_index][1][0],
+                values_positions[values_count_index][1][1]);
+            if(sensor->air_quality != UT_AIR_QUALITY_NONE) {
+                //Gas sensor (BME680): pressure and air quality side by side on the bottom row
+                unitemp_draw_pressure_compact(canvas, sensor, settings->pressure_unit, 4, 39, 70);
+                unitemp_draw_air_quality(canvas, sensor, 75, 39, 49);
+            } else {
+                unitemp_draw_pressure(
                     canvas,
                     sensor,
-                    settings->temperature_unit,
-                    values_positions[values_count_index][1][0],
-                    values_positions[values_count_index][1][1]);
+                    settings->pressure_unit,
+                    values_positions[values_count_index][2][0] - 11,
+                    values_positions[values_count_index][2][1],
+                    false);
             }
             break;
         case UT_DATA_TYPE_TEMP_HUM_CO2:
-            values_count_index += (settings->heat_index ? 1 : 0);
-            unitemp_draw_temperature(
+            single_sensor_draw_temperature_or_heat_index(
                 canvas,
                 sensor,
-                settings->temperature_unit,
+                settings,
                 values_positions[values_count_index][0][0],
                 values_positions[values_count_index][0][1]);
             unitemp_draw_humidity(
@@ -224,23 +232,15 @@ void single_sensor_draw_sensor(Canvas* canvas, Sensor* sensor, SingleSensorViewM
                 sensor,
                 settings->humidity_unit,
                 settings->temperature_unit,
-                values_positions[values_count_index][settings->heat_index ? 3 : 1][0],
-                values_positions[values_count_index][settings->heat_index ? 3 : 1][1]);
+                values_positions[values_count_index][1][0],
+                values_positions[values_count_index][1][1]);
             unitemp_draw_co2(
                 canvas,
                 sensor,
-                (settings->heat_index ? values_positions[values_count_index][2][0] : 22),
+                22,
                 values_positions[values_count_index][2][1],
                 ColorWhite,
-                settings->heat_index);
-            if(settings->heat_index) {
-                unitemp_draw_heat_index(
-                    canvas,
-                    sensor,
-                    settings->temperature_unit,
-                    values_positions[values_count_index][1][0],
-                    values_positions[values_count_index][1][1]);
-            }
+                false);
             break;
         default:
             FURI_LOG_E(APP_NAME, "Unknown data type %d", sensor->model->data_type);

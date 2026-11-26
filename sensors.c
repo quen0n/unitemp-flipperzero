@@ -101,6 +101,9 @@ Sensor* unitemp_sensor_alloc(char* name, const SensorModel* model, char* args) {
     sensor->humidity = -128.0f;
     sensor->pressure = -128.0f;
     sensor->temperature_offset = 0;
+    sensor->air_quality = UT_AIR_QUALITY_NONE;
+    sensor->air_quality_warmup = 0;
+    sensor->air_quality_enabled = true;
     //Memory allocation for a sensor instance depending on its interface
     status = sensor->model->interface->allocator(sensor, args);
 
@@ -240,6 +243,8 @@ SensorStatus unitemp_sensor_update(Sensor* sensor, void* context) {
     if(app->settings->otg_auto_on && !power_is_otg_enabled(app->power)) {
         power_enable_otg(app->power, true);
     }
+
+    sensor->air_quality_enabled = app->settings->air_quality;
 
     //Если датчик дважды не ответил, то он переводится в неинициализированные (требуется для BME* и SDC30)
     SensorStatus status = sensor->model->interface->updater(sensor);

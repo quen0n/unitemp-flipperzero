@@ -74,6 +74,15 @@ static void unitemp_scene_settings_heat_index_change_callback(VariableItem* item
     UNITEMP_DEBUG("Heat index displaying set to %s", unitemp_scene_settings_off_on_text[index]);
 }
 
+static void unitemp_scene_settings_air_quality_change_callback(VariableItem* item) {
+    UnitempApp* app = variable_item_get_context(item);
+    const uint8_t index = variable_item_get_current_value_index(item);
+
+    variable_item_set_current_value_text(item, unitemp_scene_settings_off_on_text[index]);
+    app->settings->air_quality = (bool)index;
+    UNITEMP_DEBUG("Air quality set to %s", unitemp_scene_settings_off_on_text[index]);
+}
+
 static void unitemp_scene_settings_env_state_led_change_callback(VariableItem* item) {
     UnitempApp* app = variable_item_get_context(item);
     const uint8_t index = variable_item_get_current_value_index(item);
@@ -149,6 +158,16 @@ void unitemp_scene_settings_on_enter(void* context) {
         unitemp_scene_settings_heat_index_change_callback,
         app);
     value_index = app->settings->heat_index;
+    variable_item_set_current_value_index(item, value_index);
+    variable_item_set_current_value_text(item, unitemp_scene_settings_off_on_text[value_index]);
+
+    item = variable_item_list_add(
+        var_item_list,
+        "Air quality",
+        COUNT_OF(unitemp_scene_settings_off_on_text),
+        unitemp_scene_settings_air_quality_change_callback,
+        app);
+    value_index = app->settings->air_quality;
     variable_item_set_current_value_index(item, value_index);
     variable_item_set_current_value_text(item, unitemp_scene_settings_off_on_text[value_index]);
 
