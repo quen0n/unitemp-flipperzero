@@ -19,6 +19,7 @@
 #include "../unitemp.h"
 #include "../helpers/unitemp_draw.h"
 #include "../helpers/unitemp_utils.h"
+#include "../helpers/unitemp_logger.h"
 #include "../interfaces/singlewire_sensor.h"
 #include "../interfaces/i2c_sensor.h"
 #include "../interfaces/spi_sensor.h"
@@ -109,6 +110,7 @@ void single_sensor_draw_sensor(Canvas* canvas, Sensor* sensor, SingleSensorViewM
     //Drawing a frame
     canvas_draw_rframe(canvas, 0, 0, 128, 63, 7);
     canvas_draw_rframe(canvas, 0, 0, 128, 64, 7);
+    unitemp_logger_draw_indicator(canvas, 7, 7);
 
     //Right arrow
     if(unitemp_sensors_get_count() > 0 &&

@@ -18,6 +18,7 @@
 
 #include "../unitemp.h"
 #include "../helpers/unitemp_utils.h"
+#include "../helpers/unitemp_logger.h"
 
 static UnitempView view_mode = UnitempViewNoSensors;
 
@@ -39,6 +40,7 @@ void unitemp_scene_monitor_on_enter(void* context) {
         }
     }
     /* Start the reader thread. It will talk to the thermometer in the background. */
+    unitemp_logger_start(app);
     furi_thread_start(app->reader_thread);
     view_dispatcher_switch_to_view(app->view_dispatcher, view_mode);
 }
@@ -87,4 +89,5 @@ void unitemp_scene_monitor_on_exit(void* context) {
 
     /* Wait for the reader thread to finish */
     furi_thread_join(app->reader_thread);
+    unitemp_logger_stop();
 }

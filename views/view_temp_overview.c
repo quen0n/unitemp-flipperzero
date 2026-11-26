@@ -18,6 +18,7 @@
 #include "view_temp_overview.h"
 #include "../unitemp.h"
 #include "../helpers/unitemp_draw.h"
+#include "../helpers/unitemp_logger.h"
 
 #include <stdlib.h>
 #include <gui/elements.h>
@@ -74,6 +75,14 @@ void temp_overview_draw(Canvas* canvas, TempOverviewViewModel* view_model) {
     //Drawing a frame
     canvas_draw_rframe(canvas, 0, 0, 128, 63, 7);
     canvas_draw_rframe(canvas, 0, 0, 128, 64, 7);
+    //Logging indicator: between the two columns of values, clear of the sensor names
+    if(page_sensors_count == 1) {
+        unitemp_logger_draw_indicator(canvas, 7, 7);
+    } else if(page_sensors_count == 2) {
+        unitemp_logger_draw_indicator(canvas, 64, 35);
+    } else {
+        unitemp_logger_draw_indicator(canvas, 64, 20);
+    }
     for(uint8_t i = 0; i < page_sensors_count; i++) {
         unitemp_draw_sensor_single(
             canvas,

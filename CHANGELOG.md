@@ -1,4 +1,6 @@
 # Unitemp changelog
+## Unreleased
+- Added data logging to the SD card: "Log to SD" and "Log interval" settings (10 s to 1 h). While the sensor values are displayed, every sensor is appended to `apps_data/temp_sensors_reader/logs/YYYY-MM-DD.csv` (one file per day, fixed units, spreadsheet friendly), also with the screen off. A blinking dot shows that logging is on.
 ## Unitemp 2.1
 - Fixed AHT10 initialization
 ## Unitemp 2.0
